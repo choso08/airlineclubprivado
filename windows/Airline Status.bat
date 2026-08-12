@@ -58,6 +58,10 @@ wsl -d %DISTRO% -e bash -lc "journalctl -u airline-sim -n 400 --no-pager 2>/dev/
 wsl -d %DISTRO% -e bash -lc "journalctl -u airline-sim -n 400 --no-pager 2>/dev/null | grep -q 'spent' || { echo '  none yet - recent errors from the simulation:'; journalctl -u airline-sim -n 25 --no-pager 2>/dev/null | grep -iE 'error|exception|caused by|refused|failed' | tail -8; }"
 
 echo.
+echo   --- Automatic updates ---
+wsl -d %DISTRO% -e bash -lc "systemctl list-timers 'airline-*' --no-pager 2>/dev/null | head -4 || echo '  (timers not installed - run ./scripts/install-services.sh)'"
+wsl -d %DISTRO% -e bash -lc "grep -q '^AIRLINE_AUTO_UPDATE=off' %GAMEDIR%/game-settings.env 2>/dev/null && echo '  NOTE: AIRLINE_AUTO_UPDATE=off - updates are paused in game-settings.env' || true"
+echo.
 echo   --- Players registered ---
 wsl -d %DISTRO% -e bash -lc "cd %GAMEDIR% 2>/dev/null && set -a && . ./.env 2>/dev/null && set +a && mariadb --user=\"$AIRLINE_DB_USER\" --password=\"$AIRLINE_DB_PASSWORD\" --skip-column-names --batch -e 'SELECT COUNT(*) FROM user;' \"$AIRLINE_DB_SCHEMA\" 2>/dev/null || echo '  (could not read the database)'"
 
