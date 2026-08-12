@@ -64,8 +64,15 @@ public class SearchUtil {
 				System.out.println("Initializing ES alliances");
 				initAlliances(client);
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			// Elasticsearch is optional - it only powers the search boxes. A
+			// connection failure here arrives as an unchecked
+			// ElasticsearchException, which used to escape this static
+			// initializer and poison the whole class for the JVM's lifetime:
+			// every later call, including the SearchUtil.addAirline() on the
+			// signup path, then died with NoClassDefFoundError and nobody
+			// could register. Degrade quietly instead.
+			logger.warn("Elasticsearch unavailable (" + e.getMessage() + ") - search features disabled, everything else keeps working");
 		}
 		System.out.println("ES check finished");
 	}
@@ -199,8 +206,12 @@ public class SearchUtil {
 			IndexRequest indexRequest = new IndexRequest("airlines").source(jsonMap);
 			logger.info("Indexing new doc " + jsonMap);
 			client.index(indexRequest, RequestOptions.DEFAULT);
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			// Called from the signup flow. Indexing is a nice-to-have; failing
+			// here must not abort account creation, which previously left the
+			// user and airline committed to the database but returned a 500
+			// and no session, so the player appeared to have failed to register.
+			logger.warn("Could not index new airline in Elasticsearch (" + e.getMessage() + ") - registration itself succeeded");
 		}
 		System.out.println("Added airline " + airline + " to ES");
 	}
