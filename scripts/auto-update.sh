@@ -34,13 +34,22 @@ if [[ -z "$BRANCH" || "$BRANCH" == "HEAD" ]]; then
   exit 1
 fi
 
-# A dirty tree means someone edited files on the server. Pulling would either
-# fail or clobber their work, so stop and say so rather than guess. Changes to
-# .env and game-settings.env are expected and ignored.
-DIRTY="$(git status --porcelain -- . ':(exclude).env' ':(exclude)game-settings.env' 2>/dev/null)"
+# Stop if someone has edited TRACKED files on the server - pulling would
+# either fail or clobber their work.
+#
+# Untracked files are deliberately ignored. They cannot be overwritten by a
+# fast-forward (git refuses rather than clobbering), and treating them as
+# "local changes" meant the updater blocked itself forever over things nobody
+# considers changes: the backups/ directory our own script creates, and the
+# .lnk files Windows leaves behind when you drag a shortcut to the Desktop.
+#
+# .env and game-settings.env are excluded too - those are meant to differ.
+DIRTY="$(git status --porcelain --untracked-files=no \
+           -- . ':(exclude).env' ':(exclude)game-settings.env' 2>/dev/null)"
 if [[ -n "$DIRTY" ]]; then
-  echo "$(date '+%F %T') auto-update: local changes present, not touching them:" >&2
+  echo "$(date '+%F %T') auto-update: tracked files edited locally, not touching them:" >&2
   echo "$DIRTY" | head -5 >&2
+  echo "  Revert them, or commit them, and the updater will resume." >&2
   exit 1
 fi
 

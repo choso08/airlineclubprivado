@@ -27,3 +27,10 @@ airline-web/conf/gmail-credentials.json
 # Test dependencies
 test/node_modules/
 test/package-lock.json
+
+# Our own output - backup-db.sh writes here.
+backups/
+
+# Windows shortcuts. Dragging a .bat to the Desktop leaves a .lnk behind in
+# the folder, which used to trip the auto-updater's dirty-tree check.
+*.lnk
