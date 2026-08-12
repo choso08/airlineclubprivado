@@ -121,6 +121,10 @@
 	  window.MAP_DEFAULT_LAT = @configuration.getOptional[Double]("map.defaultLat").getOrElse(20.0);
 	  window.MAP_DEFAULT_LNG = @configuration.getOptional[Double]("map.defaultLng").getOrElse(150.644);
 	  window.MAP_DEFAULT_ZOOM = @configuration.getOptional[Int]("map.defaultZoom").getOrElse(2);
+	  @* Decorative Vimeo clips during negotiation. Off by default: they are the
+	     upstream author's, and browsers with tracking protection block them,
+	     leaving an error panel mid-dialog. *@
+	  window.NEGOTIATION_CLIPS_ENABLED = @configuration.getOptional[Boolean]("game.negotiationClips").getOrElse(false);
 	</script>
     <script src='@routes.Assets.versioned("javascripts/campaign.js")'></script>
 	<script src='@routes.Assets.versioned("javascripts/profile.js")'></script>

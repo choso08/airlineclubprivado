@@ -3052,11 +3052,23 @@ function negotiationAnimation(savedLink, callback, callbackParam) {
         $('#negotiationAnimation .animationLabel').empty()
     }
 
-    var animationUrl = animation.url
-    if (localStorage.getItem("autoplay") === 'true') {
-        animationUrl += "?autoplay=1"
+    // These clips are hosted on the upstream author's Vimeo account and are
+    // pure decoration. Browsers with tracking protection on - Firefox's default
+    // - refuse to load them and leave a "this video cannot be played here"
+    // panel sitting in the middle of the negotiation dialog, which looks like
+    // the game is broken.
+    //
+    // Set AIRLINE_NEGOTIATION_CLIPS=on in game-settings.env to bring them back.
+    if (window.NEGOTIATION_CLIPS_ENABLED) {
+        var animationUrl = animation.url
+        if (localStorage.getItem("autoplay") === 'true') {
+            animationUrl += "?autoplay=1"
+        }
+        $('#negotiationAnimation .clip').attr('src', animationUrl)
+        $('#negotiationAnimation .clip').show()
+    } else {
+        $('#negotiationAnimation .clip').attr('src', '').hide()
     }
-    $('#negotiationAnimation .clip').attr('src', animationUrl)
 
 
 	var gaugeValue = 0

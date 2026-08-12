@@ -26,9 +26,26 @@ object SimulationEventStream{
   
   class BridgeActor extends Actor {
     var currentCycle : Int = 0
-    var previousCycleEndTime : Long = 0
+    // Also seeded, so the elapsed fraction is sane before the first completion
+    // rather than dividing against an epoch 56 years ago.
+    var previousCycleEndTime : Long = System.currentTimeMillis()
     var cycleDurationHistory = ListBuffer[Long]()
-    var cycleDurationAverage : Long = 0
+    // Seeded from the configured cycle length rather than starting at zero.
+    //
+    // The average is only computed once a SECOND cycle completes, and it lives
+    // in memory, so every restart of the simulation reset it to 0. The browser
+    // treats 0 as "no estimate" and shows a dash instead of a countdown, and
+    // its clock falls back to a default rate - so after any restart the timer
+    // was dead for a full cycle. With automatic updates restarting the
+    // simulation, that could be most of the time.
+    //
+    // The configured duration is exactly the right first guess; measurements
+    // replace it as soon as they exist.
+    var cycleDurationAverage : Long = {
+      val config = com.typesafe.config.ConfigFactory.load()
+      val seconds = if (config.hasPath("simulation.cycleDurationSeconds")) config.getInt("simulation.cycleDurationSeconds") else 30 * 60
+      seconds.toLong * 1000
+    }
     var cycleCount : Int = 0
     val MAX_DURATION_SAMPLE = 10
 

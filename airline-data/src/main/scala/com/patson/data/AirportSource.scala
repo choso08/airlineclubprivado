@@ -6,7 +6,7 @@ import com.patson.model.{AirlineAppeal, _}
 import com.patson.util.ChampionUtil.ReputationBonus
 import com.patson.util.{AirlineCache, AirportCache, AirportChampionInfo}
 
-import java.sql.{Statement, Types}
+import java.sql.{Connection, ResultSet, Statement, Types}
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
 
@@ -231,6 +231,40 @@ object AirportSource {
 
 
 
+
+  /**
+   * Batch loaders for the per-airport lookups that used to run inside the
+   * airport loop.
+   *
+   * Each of these was one query per airport - roughly 3800 round trips each,
+   * about a second apiece - for data that comes back in a single IN query.
+   * Same approach as AirportAssetSource.loadAirportAssetsByAirports.
+   */
+  private[this] def batchByAirport[T](connection : Connection, table : String, airportIds : List[Int])(read : ResultSet => T) : Map[Int, List[T]] = {
+    if (airportIds.isEmpty) {
+      return Map.empty
+    }
+    val queryString = new StringBuilder(s"SELECT * FROM $table WHERE airport IN (")
+    queryString.append(List.fill(airportIds.size)("?").mkString(","))
+    queryString.append(")")
+
+    val statement = connection.prepareStatement(queryString.toString)
+    airportIds.zipWithIndex.foreach { case (id, index) => statement.setObject(index + 1, id) }
+
+    try {
+      val rs = statement.executeQuery()
+      val grouped = mutable.HashMap[Int, ListBuffer[T]]()
+      while (rs.next()) {
+        val airportId = rs.getInt("airport")
+        grouped.getOrElseUpdate(airportId, ListBuffer[T]()).append(read(rs))
+      }
+      rs.close()
+      grouped.view.mapValues(_.toList).toMap
+    } finally {
+      statement.close()
+    }
+  }
+
   def loadAirportsByQueryString(queryString : String, parameters : List[Any], fullLoad : Boolean = false, loadFeatures : Boolean = false) = {
     val connection = Meta.getConnection()
     try {
@@ -271,24 +305,8 @@ object AirportSource {
         airport.id = resultSet.getInt("id")
         airportData += airport
 
-        if (fullLoad || loadFeatures) {
-          //load features first, as it might affect income level and pop, which both might affect later loading
-          com.patson.CycleProfiler.phase("  .. features") {
-          val featureStatement = connection.prepareStatement("SELECT * FROM " + AIRPORT_FEATURE_TABLE + " WHERE airport = ?")
-          featureStatement.setInt(1, airport.id)
-
-          val featureResultSet = featureStatement.executeQuery()
-          val features = ListBuffer[AirportFeature]()
-          while (featureResultSet.next()) {
-            val featureType = AirportFeatureType.withName(featureResultSet.getString("feature_type"))
-            val strength = featureResultSet.getInt("strength")
-
-            features += AirportFeature(featureType, strength)
-          }
-          featureStatement.close()
-          airport.initFeatures(features.toList)
-          }
-        }
+        // Features, runways and bases are batched after this loop - see below.
+        // They used to be one query per airport each.
 
         if (fullLoad) {
           // Assets are loaded for every airport at once, after this loop.
@@ -303,102 +321,85 @@ object AirportSource {
           // initAirlineAppealsComputeLoyalty instead. That was one round trip
           // per airport, ~3800 per cycle, for nothing.
 
-          com.patson.CycleProfiler.phase("  .. bases") {
-          val airlineBaseStatement = connection.prepareStatement("SELECT * FROM " + AIRLINE_BASE_TABLE + " WHERE airport = ?")
-          airlineBaseStatement.setInt(1, airport.id)
-
-          val airlineBaseResultSet = airlineBaseStatement.executeQuery()
-          val airlineBases = ListBuffer[AirlineBase]()
-          while (airlineBaseResultSet.next()) {
-            val airlineId = airlineBaseResultSet.getInt("airline")
-            val airline = AirlineCache.getAirline(airlineId).getOrElse(Airline.fromId(airlineId))
-            val scale = airlineBaseResultSet.getInt("scale")
-            val foundedCycle = airlineBaseResultSet.getInt("founded_cycle")
-            val headquarter = airlineBaseResultSet.getBoolean("headquarter")
-            val countryCode = airlineBaseResultSet.getString("country")
-
-            airlineBases += AirlineBase(airline, airport, countryCode, scale, foundedCycle, headquarter)
-          }
-          airlineBaseStatement.close()
-          airport.initAirlineBases(airlineBases.toList)
-          }
+          // bases: batched after the loop
 
 
-//          val airlineBonusesByAirlineIdBeforeFlatten : Map[Int, Seq[(Int, List[AirlineBonus])]] = (getAirlineTitleBonuses(airport, countryAirlineTitleCache).toSeq ++ getCampaignBonuses(airport, currentCycle).toSeq).groupBy(_._1)
-//
-//          val airlineBonuses : Map[Int, List[AirlineBonus]] = airlineBonusesByAirlineIdBeforeFlatten.view.mapValues { entry =>
-//            entry.map {
-//              case ((airlineId, bonusList)) => bonusList
-//            }.flatten.toList
-//          }.toMap
-          //^^shorter but very unreadable...let's try something like below
-          val titleBonuses = getAirlineTitleBonuses(airport, countryAirlineTitleCache)
-          val campaignBonuses = getCampaignBonuses(airport, currentCycle)
-          val airlineBonusesMutable = mutable.Map[Int, ListBuffer[AirlineBonus]]()
-          (titleBonuses.toList ++ campaignBonuses.toList ++ airlineGlobalBonuses.toList).foreach {
-            case((airlineId, bonuses)) =>
-              val existingBonusesOfThisAirline = airlineBonusesMutable.getOrElseUpdate(airlineId, ListBuffer[AirlineBonus]())
-              existingBonusesOfThisAirline.appendAll(bonuses)
-          }
-          val airlineBonuses = airlineBonusesMutable.view.mapValues(_.toList).toMap
-
-          com.patson.CycleProfiler.phase("  .. loyalists+bonuses") { airport.initAirlineAppealsComputeLoyalty(airlineBonuses, LoyalistSource.loadLoyalistsByAirportId(airport.id)) }
-
-//          val slotAssignments = mutable.Map[Int, Int]()
-//
-//          //val slotStatement = connection.prepareStatement("SELECT airline, SUM(frequency) as total_frequency FROM " + LINK_TABLE + " WHERE (from_airport = ? OR to_airport = ?) GROUP BY airline")
-//          val slotStatement = connection.prepareStatement("SELECT airline, sum(a.frequency) as total_frequency FROM " + LINK_TABLE + " l INNER JOIN " + LINK_ASSIGNMENT_TABLE +  " a ON l.id = a.link AND (l.from_airport = ? OR l.to_airport = ?) GROUP BY airline")
-//
-//          slotStatement.setInt(1, airport.id)
-//          slotStatement.setInt(2, airport.id)
-//
-//          val slotResultSet = slotStatement.executeQuery()
-//          while (slotResultSet.next()) {
-//            val airlineId = slotResultSet.getInt("airline")
-//            slotAssignments.put(airlineId, slotResultSet.getInt("total_frequency"))
-//          }
-//          airport.initSlotAssignments(slotAssignments.toMap)
-//          slotStatement.close()
-          
-          
-          com.patson.CycleProfiler.phase("  .. lounges") { airport.initLounges(AirlineSource.loadLoungesByAirport(airport)) }
-          
-          // Removed: a per-airport SELECT on airport_image whose two uses were
-          // both commented out, so the rows were read and thrown away. Another
-          // ~3800 round trips per cycle for nothing. Airport images are served
-          // on demand by the web layer, not needed by the simulation.
-
-          //load runway
-          com.patson.CycleProfiler.phase("  .. runways") {
-          val runwayStatement = connection.prepareStatement("SELECT * FROM " + AIRPORT_RUNWAY_TABLE + " WHERE airport = ?")
-          runwayStatement.setInt(1, airport.id)
-
-          val runwayResultSet = runwayStatement.executeQuery()
-          val runways = ListBuffer[Runway]()
-
-          while (runwayResultSet.next()) {
-            val runwayType = RunwayType.withName(runwayResultSet.getString("runway_type"))
-            val code = runwayResultSet.getString("code")
-            val length = runwayResultSet.getInt("length")
-            val lighted = runwayResultSet.getBoolean("lighted")
-            runways += Runway(length, code, runwayType, lighted)
-          }
-          runwayStatement.close()
-          airport.setRunways(runways.toList)
-          }
-
-          airport.shouldLoadCities = true //set this flag so this airport can lazy load cities, which could be a lot of data
+          // The rest of the per-airport work happens in a second pass below,
+          // after the batched loads. It has to: features and bases must be in
+          // place before the appeal computation reads them, and they can only
+          // be fetched in bulk once every airport id is known.
         }
       }
       
       resultSet.close()
       preparedStatement.close()
 
+      if (fullLoad || loadFeatures) {
+        val airportIds = airportData.map(_.id).toList
+
+        val featuresByAirport = com.patson.CycleProfiler.phase("  .. features (batched)") {
+          batchByAirport(connection, AIRPORT_FEATURE_TABLE, airportIds) { rs =>
+            AirportFeature(AirportFeatureType.withName(rs.getString("feature_type")), rs.getInt("strength"))
+          }
+        }
+        airportData.foreach { airport =>
+          airport.initFeatures(featuresByAirport.getOrElse(airport.id, List.empty))
+        }
+      }
+
       if (fullLoad) {
-        com.patson.CycleProfiler.phase("  .. assets (batched)") {
-          val assetsByAirportId = AirportAssetSource.loadAirportAssetsByAirports(airportData.toList, currentCycle)
+        val airportIds = airportData.map(_.id).toList
+        // loadLoungesByCriteria wants a mutable Map, so give it one rather than
+        // letting the implicit conversion fail at the call site.
+        val airportsById = mutable.Map[Int, Airport]() ++ airportData.map(airport => (airport.id, airport))
+
+        val assetsByAirport = com.patson.CycleProfiler.phase("  .. assets (batched)") {
+          AirportAssetSource.loadAirportAssetsByAirports(airportData.toList, currentCycle)
+        }
+
+        val basesByAirport = com.patson.CycleProfiler.phase("  .. bases (batched)") {
+          batchByAirport(connection, AIRLINE_BASE_TABLE, airportIds) { rs =>
+            val airlineId = rs.getInt("airline")
+            val airline = AirlineCache.getAirline(airlineId).getOrElse(Airline.fromId(airlineId))
+            (rs.getInt("airport"), airline, rs.getString("country"), rs.getInt("scale"), rs.getInt("founded_cycle"), rs.getBoolean("headquarter"))
+          }
+        }
+
+        val runwaysByAirport = com.patson.CycleProfiler.phase("  .. runways (batched)") {
+          batchByAirport(connection, AIRPORT_RUNWAY_TABLE, airportIds) { rs =>
+            Runway(rs.getInt("length"), rs.getString("code"), RunwayType.withName(rs.getString("runway_type")), rs.getBoolean("lighted"))
+          }
+        }
+
+        val loyalistsByAirport = com.patson.CycleProfiler.phase("  .. loyalists (batched)") {
+          LoyalistSource.loadLoyalistsByCriteria(List.empty).groupBy(_.airport.id)
+        }
+
+        val loungesByAirport = com.patson.CycleProfiler.phase("  .. lounges (batched)") {
+          AirlineSource.loadLoungesByCriteria(List.empty, airportsById).groupBy(_.airport.id)
+        }
+
+        com.patson.CycleProfiler.phase("  .. apply + bonuses") {
           airportData.foreach { airport =>
-            airport.initAssets(assetsByAirportId.getOrElse(airport.id, List.empty))
+            airport.initAssets(assetsByAirport.getOrElse(airport.id, List.empty))
+
+            airport.initAirlineBases(basesByAirport.getOrElse(airport.id, List.empty).map {
+              case (_, airline, countryCode, scale, foundedCycle, headquarter) =>
+                AirlineBase(airline, airport, countryCode, scale, foundedCycle, headquarter)
+            })
+
+            val titleBonuses = getAirlineTitleBonuses(airport, countryAirlineTitleCache)
+            val campaignBonuses = getCampaignBonuses(airport, currentCycle)
+            val airlineBonusesMutable = mutable.Map[Int, ListBuffer[AirlineBonus]]()
+            (titleBonuses.toList ++ campaignBonuses.toList ++ airlineGlobalBonuses.toList).foreach {
+              case ((airlineId, bonuses)) =>
+                airlineBonusesMutable.getOrElseUpdate(airlineId, ListBuffer[AirlineBonus]()).appendAll(bonuses)
+            }
+            airport.initAirlineAppealsComputeLoyalty(airlineBonusesMutable.view.mapValues(_.toList).toMap, loyalistsByAirport.getOrElse(airport.id, List.empty))
+
+            airport.initLounges(loungesByAirport.getOrElse(airport.id, List.empty))
+            airport.setRunways(runwaysByAirport.getOrElse(airport.id, List.empty))
+            airport.shouldLoadCities = true //lazy load cities, which could be a lot of data
           }
         }
       }
