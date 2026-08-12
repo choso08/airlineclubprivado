@@ -13,6 +13,25 @@ REM
 REM  RE-RUN THIS AFTER EVERY RESTART. WSL2 gets a new internal IP each time it
 REM  boots, so the forwarding rule goes stale. (Tailscale installed inside
 REM  Linux avoids this problem entirely - see WINDOWS-SETUP.md section 6.)
+REM
+REM  ---------------------------------------------------------------------
+REM  THINK BEFORE RUNNING THIS IF YOU RUN ANYTHING ELSE ON THIS PC.
+REM
+REM  This opens port 9000 on every network interface, and tools like Radmin
+REM  VPN or Hamachi put this whole Windows machine on a shared network with
+REM  your friends. Anything else listening here - a dashboard, a scraper, a
+REM  test server, a file share - is then only as private as the Windows
+REM  firewall makes it.
+REM
+REM  Tailscale installed INSIDE Linux is the safer option: the tailnet member
+REM  is the Linux environment, not Windows, so nothing running on Windows is
+REM  reachable through it at all.
+REM
+REM  Check what is exposed with:
+REM     netstat -ano ^| findstr LISTENING ^| findstr /v "127.0.0.1 [::1]"
+REM
+REM  Undo everything this does with "Close For LAN.bat".
+REM  ---------------------------------------------------------------------
 REM ===========================================================================
 setlocal EnableDelayedExpansion
 
