@@ -31,8 +31,26 @@ class ProfileApplication @Inject()(cc: ControllerComponents) extends AbstractCon
     }
   }
 
-  val BASE_CAPITAL = 40000000
-  val BONUS_PER_DIFFICULTY_POINT = 1000000
+  // How much money a new airline starts with.
+  //
+  // This is the real starting-money knob, not the commented-out setBalance in
+  // SignUp: a new airline is created with nothing and only receives funds when
+  // the player picks a startup profile and a home airport, at which point
+  // setBalance(profile.cash) overwrites whatever was there before.
+  //
+  // capital = startingCapital + difficulty * difficultyBonus, and the three
+  // profiles offer capital, capital * 1.5 (with small aircraft) and
+  // capital * 4 (with large aircraft, plus a loan). So raising this scales
+  // every profile together and keeps their balance intact.
+  private[this] val economyConfig = com.typesafe.config.ConfigFactory.load()
+  val BASE_CAPITAL =
+    if (economyConfig.hasPath("economy.startingCapital")) economyConfig.getInt("economy.startingCapital")
+    else 40000000
+  // Extra capital per point of airport difficulty, so a hard home airport is
+  // not a pure penalty.
+  val BONUS_PER_DIFFICULTY_POINT =
+    if (economyConfig.hasPath("economy.difficultyBonus")) economyConfig.getInt("economy.difficultyBonus")
+    else 1000000
 
   def generateAirplanes(value : Int, capacityRange : scala.collection.immutable.Range, homeAirport : Airport, condition : Double, airline : Airline, random : Random) : List[Airplane] =  {
     val eligibleModels = allAirplaneModels.filter(model => capacityRange.contains(model.capacity))
