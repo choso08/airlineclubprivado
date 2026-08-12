@@ -476,7 +476,11 @@ var tickTimerCreator
 
 function updateTime(cycle, fraction, cycleDurationEstimation) {
 	$(".currentTime").attr("title", "Current Cycle: " + cycle)
-	gameTimeStart = (cycle + fraction) * totalmillisecPerWeek
+	//The in-game date is just "cycle 0 = the epoch", so a fresh world starts in
+	//January 1970 and the clock reads as 1970 + one week per cycle. The offset
+	//lets a private instance start in a year of its choosing instead; it is
+	//purely cosmetic, since nothing in the simulation reads the date.
+	gameTimeStart = (cycle + fraction) * totalmillisecPerWeek + (window.GAME_START_EPOCH || 0)
 
     var initialDurationTillNextTick
 	if (cycleDurationEstimation > 0) { //update incrementPerInterval
@@ -487,9 +491,16 @@ function updateTime(cycle, fraction, cycleDurationEstimation) {
 	var wallClockStart = new Date()
 
 	//how much wall clock duration should be multiplied as game time duration
+	//
+	//The estimate arrives over the websocket a moment after the page loads.
+	//Until then fall back to this instance's CONFIGURED cycle length rather
+	//than a hardcoded 30 minutes - otherwise a server running 5 minute cycles
+	//shows a clock crawling at a sixth of the real speed until the first
+	//message lands.
+	var configuredCycleMillis = (window.GAME_CYCLE_SECONDS || 1800) * 1000
 	var timeMultiplier = cycleDurationEstimation > 0 ?
 	    totalmillisecPerWeek / cycleDurationEstimation :
-		totalmillisecPerWeek / (30 * 60 * 1000) //by default 30 minutes per week
+		totalmillisecPerWeek / configuredCycleMillis
 
 
 	if (currentTickTimer) {
