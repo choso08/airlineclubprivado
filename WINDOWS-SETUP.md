@@ -280,17 +280,20 @@ changes — your friends keep using the same `airline` address.
 
 ---
 
-## 7. Make it start on its own
+## 7. Make it run itself
 
-So you do not have to open two windows every time.
+One command sets up everything: start at boot, restart on crash, automatic
+updates, nightly backups.
 
 ```bash
-sudo cp ~/airline/deploy/systemd/airline-*.service /etc/systemd/system/
-sudo sed -i "s|/opt/airline|$HOME/airline|g; s|User=%i|User=$USER|" \
-  /etc/systemd/system/airline-sim.service /etc/systemd/system/airline-web.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now airline-sim airline-web
+cd ~/airline && ./scripts/install-services.sh
 ```
+
+After this you never need a terminal window open to keep the game up, and new
+versions land on their own within ten minutes.
+
+It also grants your user permission to restart *only* these two services
+without a password, which is what lets the unattended updater work from cron.
 
 Check on them:
 

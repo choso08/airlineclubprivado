@@ -32,7 +32,30 @@ for arg in "$@"; do
   esac
 done
 
-have_systemd() { command -v systemctl >/dev/null 2>&1 && systemctl list-units >/dev/null 2>&1; }
+# systemd being available is not the same as the services being installed.
+# Checking only the former made this fail with "Unit airline-web.service not
+# found" for anyone who had not done the boot-time setup yet - after the build
+# had already succeeded, leaving a perfectly good new version unstarted.
+have_service() {
+  command -v systemctl >/dev/null 2>&1 || return 1
+  systemctl list-unit-files "$1.service" 2>/dev/null | grep -q "^$1.service" \
+    || systemctl cat "$1.service" >/dev/null 2>&1
+}
+
+manual_restart_note() {
+  local what="$1"
+  echo "   The $what is not installed as a service, so it cannot be restarted"
+  echo "   automatically. Stop it in its terminal window (Ctrl+C) and run:"
+  echo "       ./scripts/$2"
+  echo
+  echo "   To have this handled for you in future, install the services:"
+  echo "       see 'start on its own' in WINDOWS-SETUP.md"
+}
+
+# Whatever happens below, do not leave the restart announcement behind - a
+# stale one would park every player under a countdown.
+RESTART_FLAG="${AIRLINE_RESTART_FLAG:-/tmp/airline-restart-at}"
+trap 'rm -f "$RESTART_FLAG"' EXIT
 
 echo ">> [1/5] Backing up the database first"
 "$REPO_ROOT/scripts/backup-db.sh"
@@ -51,8 +74,16 @@ echo ">> [3/5] Building (the running game is untouched until this succeeds)"
 ( cd "$REPO_ROOT/airline-web"  && "$REPO_ROOT/scripts/sbt" stage )
 
 echo ">> [4/5] Restarting the web site (game clock keeps running throughout)"
-RESTART_FLAG="${AIRLINE_RESTART_FLAG:-/tmp/airline-restart-at}"
 WARN_SECONDS="${AIRLINE_UPDATE_WARNING_SECONDS:-30}"
+
+# Only announce a restart we can actually perform. Warning players and then
+# failing to restart is worse than not warning them.
+if ! have_service airline-web; then
+  echo
+  manual_restart_note "web site" "run-web.sh"
+  echo "   The new version is built and waiting - only the restart is missing."
+  exit 1
+fi
 
 # Tell anyone currently playing. The browser polls /instance-status, shows a
 # countdown, and reloads itself once the new instance answers - so nobody is
@@ -63,14 +94,11 @@ if [[ "$WARN_SECONDS" -gt 0 ]]; then
   sleep "$WARN_SECONDS"
 fi
 
-if have_systemd; then
-  sudo systemctl restart airline-web
-else
-  echo "   No systemd - restart ./scripts/run-web.sh by hand."
-fi
+sudo systemctl restart airline-web
 
 # The new process reports a different start time, which is what makes the
-# browsers reload; the flag has done its job.
+# browsers reload; the flag has done its job. (The EXIT trap covers the
+# failure paths.)
 rm -f "$RESTART_FLAG"
 
 if [[ "$WEB_ONLY" == "1" ]]; then
@@ -79,7 +107,11 @@ if [[ "$WEB_ONLY" == "1" ]]; then
 fi
 
 echo ">> [5/5] Restarting the simulation, waiting for the current cycle to end"
-if have_systemd; then
+if ! have_service airline-sim; then
+  manual_restart_note "simulation" "run-simulation.sh"
+  exit 1
+fi
+if true; then
   # Wait for a cycle boundary so we do not kill one halfway through. Cycles
   # take 1-3 minutes, so give it generous headroom before going anyway.
   LAST="$(journalctl -u airline-sim -n 200 --no-pager 2>/dev/null | grep -c 'spent .* secs' || echo 0)"
