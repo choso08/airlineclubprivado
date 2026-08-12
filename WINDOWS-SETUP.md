@@ -36,6 +36,24 @@ Then start it:
 
 and open <http://localhost:9000>.
 
+### Or just double-click
+
+The `windows\` folder has shortcuts so you do not have to open terminals at
+all. Copy them to your Desktop:
+
+| File | What it does |
+|---|---|
+| **Start Airline.bat** | Starts both halves, waits for the site, opens the browser |
+| **Stop Airline.bat** | Stops everything (safe — nothing is lost) |
+| **Airline Status.bat** | Shows what is running, cycle times, how many players |
+
+`Start Airline` is smart about it: if you have set up the services in §7 it
+just waits for them, otherwise it launches the two scripts itself in
+minimised windows.
+
+If your Linux is not called `Ubuntu` (check with `wsl -l -v`), edit the
+`DISTRO` line at the top of each file.
+
 The rest of this document is the same thing done by hand, plus the two
 things the installer deliberately leaves to you: letting friends in over
 Tailscale (§6) and starting at boot (§7).
