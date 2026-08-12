@@ -64,42 +64,44 @@ object MainSimulation extends App {
       invalidateCaches()
 
       println("Loading airports")
-      val airports: List[Airport] = AirportSource.loadAllAirports(true)
+      val airports: List[Airport] = CycleProfiler.phase("load airports") { AirportSource.loadAllAirports(true) }
       println("Loaded " + airports.size + " airports")
 
-      UserSimulation.simulate(cycle)
+      CycleProfiler.phase("users") { UserSimulation.simulate(cycle) }
       println("Event simulation")
-      EventSimulation.simulate(cycle, airports)
+      CycleProfiler.phase("events") { EventSimulation.simulate(cycle, airports) }
 
-      val (flightLinkResult, loungeResult, linkRidershipDetails) = LinkSimulation.linkSimulation(cycle, airports)
+      val (flightLinkResult, loungeResult, linkRidershipDetails) =
+        CycleProfiler.phase("links + passengers") { LinkSimulation.linkSimulation(cycle, airports) }
       println("Airport simulation")
-      val (airportChampionInfo, directDemand) = AirportSimulation.airportSimulation(cycle, airports, flightLinkResult, linkRidershipDetails)
+      val (airportChampionInfo, directDemand) =
+        CycleProfiler.phase("airports") { AirportSimulation.airportSimulation(cycle, airports, flightLinkResult, linkRidershipDetails) }
       SimulationEventStream.publish(DirectDemandInfo(cycle, directDemand.map{
         case (airport, demand) => (airport.id, demand)
       }))
 
       println("Airport assets simulation")
-      AirportAssetSimulation.simulate(cycle, linkRidershipDetails)
+      CycleProfiler.phase("airport assets") { AirportAssetSimulation.simulate(cycle, linkRidershipDetails) }
 
       println("Airplane simulation")
-      val airplanes = AirplaneSimulation.airplaneSimulation(cycle)
+      val airplanes = CycleProfiler.phase("airplanes") { AirplaneSimulation.airplaneSimulation(cycle) }
       println("Airline simulation")
-      AirlineSimulation.airlineSimulation(cycle, flightLinkResult, loungeResult, airplanes)
+      CycleProfiler.phase("airlines") { AirlineSimulation.airlineSimulation(cycle, flightLinkResult, loungeResult, airplanes) }
       println("Country simulation")
-      val countryChampionInfo = CountrySimulation.simulate(cycle)
+      val countryChampionInfo = CycleProfiler.phase("countries") { CountrySimulation.simulate(cycle) }
 
       println("Alliance simulation")
-      AllianceSimulation.simulate(cycle, flightLinkResult, loungeResult, airportChampionInfo, countryChampionInfo)
+      CycleProfiler.phase("alliances") { AllianceSimulation.simulate(cycle, flightLinkResult, loungeResult, airportChampionInfo, countryChampionInfo) }
       println("Airplane model simulation")
-      AirplaneModelSimulation.simulate(cycle)
+      CycleProfiler.phase("airplane models") { AirplaneModelSimulation.simulate(cycle) }
 
       //purge log
       println("Purging logs")
-      LogSource.deleteLogsBeforeCycle(cycle - com.patson.model.Log.RETENTION_CYCLE)
+      CycleProfiler.phase("purge logs") { LogSource.deleteLogsBeforeCycle(cycle - com.patson.model.Log.RETENTION_CYCLE) }
 
       //purge history
       println("Purging link history")
-      ChangeHistorySource.deleteLinkChangeByCriteria(List(("cycle", "<", cycle - 500)))
+      CycleProfiler.phase("purge history") { ChangeHistorySource.deleteLinkChangeByCriteria(List(("cycle", "<", cycle - 500))) }
 
       //purge airline modifier
       println("Purging airline modifier")
@@ -110,6 +112,7 @@ object MainSimulation extends App {
       val cycleEnd = System.currentTimeMillis()
       
       println("cycle " + cycle + " spent " + (cycleEnd - cycleStartTime) / 1000 + " secs")
+      CycleProfiler.report(cycle, cycleEnd - cycleStartTime)
       cycleEnd
   }
 
