@@ -23,3 +23,7 @@ airline-web/conf/gmail-credentials.json
 .classpath
 .project
 .settings/
+
+# Test dependencies
+test/node_modules/
+test/package-lock.json

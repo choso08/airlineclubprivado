@@ -1,0 +1,7 @@
+{
+  "name": "airline-club-tests",
+  "private": true,
+  "description": "Browser tests for the OpenStreetMap map shim",
+  "scripts": { "test": "node osm-shim-test.js" },
+  "dependencies": { "playwright": "^1.49.1" }
+}
