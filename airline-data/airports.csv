@@ -34200,7 +34200,7 @@
 4439,"LPAZ","medium_airport","Santa Maria Airport",36.97140121459961,-25.17060089111328,308,"EU","PT","PT-20","Vila do Porto","yes","LPAZ","SMA",,,"https://en.wikipedia.org/wiki/Santa_Maria_Airport",
 4440,"LPBG","medium_airport","Bragança Airport",41.8578,-6.70713,2241,"EU","PT","PT-04","Bragança","yes","LPBG","BGC",,,"https://en.wikipedia.org/wiki/Bragan%C3%A7a_Airport",
 323767,"LPBH","heliport","Braga Hospital Heliport",41.56855,-8.399884,865,"EU","PT","PT-03","Braga","no","LPBH",,,,,
-4441,"LPBJ","medium_airport","Beja Airport / Airbase",38.078899,-7.9324,636,"EU","PT","PT-02","Beja","no","LPBJ","BYJ",,"http://www.ana.pt/en-US/Aeroportos/alentejo/Beja/Pages/BejaHomepage.aspx","https://en.wikipedia.org/wiki/Beja_Airbase","Beja Air Base, Base Aérea de Beja, Base Aérea Nº 11, BA11"
+4441,"LPBJ","medium_airport","Beja Airport / Airbase",38.078899,-7.9324,636,"EU","PT","PT-02","Beja","yes","LPBJ","BYJ",,"http://www.ana.pt/en-US/Aeroportos/alentejo/Beja/Pages/BejaHomepage.aspx","https://en.wikipedia.org/wiki/Beja_Airbase","Beja Air Base, Base Aérea de Beja, Base Aérea Nº 11, BA11"
 4442,"LPBR","medium_airport","Braga Municipal Aerodrome",41.5871009827,-8.445139884949999,247,"EU","PT","PT-03","Braga","no","LPBR","BGZ",,"http://www.pelicano.com.pt/zp_braga.html","http://pt.wikipedia.org/wiki/Aer%C3%B3dromo_de_Braga","Aeródromo Municipal de Braga"
 315898,"LPCB","medium_airport","Aerodromo de Castelo Branco",39.847022,-7.44111,1300,"EU","PT","PT-05","Castelo Branco","no","LPCB",,,,,
 321239,"LPCC","heliport","Dr. Nélio Mendonça Hospital Heliport",32.647638,-16.92371,367,"EU","PT","PT-30","Funchal","no","LPCC",,,,"https://pt.wikipedia.org/wiki/Hospital_Dr._N%C3%A9lio_Mendon%C3%A7a","Cruz de Carvalho Hospital"
