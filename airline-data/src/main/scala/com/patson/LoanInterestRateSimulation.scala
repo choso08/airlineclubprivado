@@ -69,7 +69,9 @@ object LoanInterestRateSimulation {
     }
   }
 
-  val DEFAULT_ANNUAL_RATE : Double = 0.12 //12%
+  //MIN_RATE/MAX_RATE below are derived from this, so changing it moves the
+  //whole band the simulation drifts within.
+  val DEFAULT_ANNUAL_RATE : Double = com.patson.model.GameConfig.loanInterestRate //upstream default: 0.12 (12%)
   val MAX_DELTA : BigDecimal = 0.01
   val RATE_STEP : BigDecimal= 0.001 // 0.1 % is a step
   val MIN_RATE : BigDecimal= 0.01 //min rate is 1%

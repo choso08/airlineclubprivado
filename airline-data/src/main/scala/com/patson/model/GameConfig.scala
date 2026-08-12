@@ -1,0 +1,44 @@
+package com.patson.model
+
+import com.typesafe.config.ConfigFactory
+
+/**
+ * Tunable game economy values.
+ *
+ * These are numbers upstream hardcodes. On a private instance they are the
+ * things you actually want to play with, so they are read from configuration
+ * instead - every one defaults to upstream's original value, so leaving them
+ * unset changes nothing.
+ *
+ * Read once at startup: the simulation and the web front-end are separate
+ * processes, so BOTH application.conf files need the same values, and both
+ * have to be restarted for a change to take effect.
+ *
+ * Set them through game-settings.env rather than editing here.
+ */
+object GameConfig {
+  private[this] val config = ConfigFactory.load()
+
+  private def int(path: String, fallback: Int): Int =
+    if (config.hasPath(path)) config.getInt(path) else fallback
+
+  private def long(path: String, fallback: Long): Long =
+    if (config.hasPath(path)) config.getLong(path) else fallback
+
+  private def double(path: String, fallback: Double): Double =
+    if (config.hasPath(path)) config.getDouble(path) else fallback
+
+  /** Yearly interest the bank starts at. The simulation then drifts it up and
+    * down over time, within bounds derived from this. Upstream: 0.12 (12%). */
+  val loanInterestRate: Double = double("economy.loanInterestRate", 0.12)
+
+  /** Largest single loan an airline can take. Upstream: 500,000,000. */
+  val maxLoanAmount: Long = long("economy.maxLoanAmount", 500000000L)
+
+  /** How many loans an airline may hold at once. Upstream: 10. */
+  val maxLoans: Int = int("economy.maxLoans", 10)
+
+  /** Fuel price the market drifts around, per unit. Raising it squeezes every
+    * airline's margins; lowering it makes long routes cheap. Upstream: 70. */
+  val fuelPrice: Double = double("economy.fuelPrice", 70)
+}
