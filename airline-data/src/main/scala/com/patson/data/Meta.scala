@@ -318,6 +318,11 @@ object Meta {
     createUserModifier(connection)
     createAllianceLabelColor(connection)
     createAirportAsset(connection)
+    // Was missing: AllianceSimulation runs on every cycle and reads
+    // alliance_stats, so without this a freshly initialised database makes the
+    // simulation throw "Table 'alliance_stats' doesn't exist" every tick. The
+    // actor restarts, the cycle never completes, and the game clock is stuck.
+    createAllianceMission(connection)
 
     statement = connection.prepareStatement("CREATE TABLE " + AIRPORT_CITY_SHARE_TABLE + "(" +
       "airport INTEGER," +
