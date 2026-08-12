@@ -15,7 +15,10 @@ import play.api.mvc._
 import views._
 
 @Singleton
-class AccountApplication @Inject()(cc: ControllerComponents) extends AbstractController(cc) with play.api.i18n.I18nSupport {
+class AccountApplication @Inject()(cc: ControllerComponents, configuration: play.api.Configuration) extends AbstractController(cc) with play.api.i18n.I18nSupport {
+  // Same setting the signup form uses, so a password accepted at registration
+  // is not rejected when the player later resets it.
+  private[this] val minPasswordLength = configuration.getOptional[Int]("account.minPasswordLength").getOrElse(4)
   private[this] val configFactory = ConfigFactory.load()
   private[this] val fromEmail =
     if (configFactory.hasPath("server.email")) {
@@ -36,7 +39,7 @@ class AccountApplication @Inject()(cc: ControllerComponents) extends AbstractCon
     mapping(
       "resetToken" -> text,
       "password" -> tuple(
-        "main" -> text(minLength = 4),
+        "main" -> text(minLength = minPasswordLength),
         "confirm" -> text
       ).verifying(
         // Add an additional constraint: both passwords must match

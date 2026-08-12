@@ -39,6 +39,11 @@ class SignUp @Inject()(cc: ControllerComponents, configuration: play.api.Configu
   private[this] val recaptchaSiteKey = configuration.getOptional[String]("recaptcha.siteKey").getOrElse("6LespV8UAAAAAJkCUpR8_uNC3P-wZGq7vnTNKEZe")
   private[this] val recaptchaScoreThreshold = 0.5
 
+  // Minimum password length at signup. Upstream hardcoded 6 here while the
+  // change-password form accepted 4, so the two disagreed. Now both read this
+  // setting - override with AIRLINE_MIN_PASSWORD_LENGTH.
+  private[this] val minPasswordLength = configuration.getOptional[Int]("account.minPasswordLength").getOrElse(4)
+
   /**
    * Sign Up Form definition.
    *
@@ -58,7 +63,7 @@ class SignUp @Inject()(cc: ControllerComponents, configuration: play.api.Configu
       "email" -> email,
       // Create a tuple mapping for the password/confirm
       "password" -> tuple(
-        "main" -> text(minLength = 6),
+        "main" -> text(minLength = minPasswordLength),
         "confirm" -> text
       ).verifying(
         // Add an additional constraint: both passwords must match
