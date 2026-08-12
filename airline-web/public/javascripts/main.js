@@ -210,12 +210,11 @@ function loadUser(isLogin) {
 			  updateChatTabs()
 			  initAdminActions()
 			  
-			  if (window.location.hostname != 'localhost') {
-				  FS.identify(user.id, {
-					  displayName: user.userName,
-					  email: user.email
-					 });
-		      }
+			  // The FullStory session recorder was removed from this instance, so
+			  // FS no longer exists. This call was left behind and threw
+			  // "FS is not defined" on every login from any hostname other than
+			  // localhost - aborting the rest of this handler, which is what
+			  // selects the airline and fills in the top status bar.
 		  }
 		  if (user.airlineIds.length > 0) {
 			  selectAirline(user.airlineIds[0])
@@ -317,8 +316,13 @@ function hideUserSpecificElements() {
 function initMap() {
 	initStyles()
   map = new google.maps.Map(document.getElementById('map'), {
-	center: {lat: 20, lng: 150.644},
-   	zoom : 2,
+	// Where the map opens. Upstream centres on the Pacific (20, 150.644),
+	// which means dragging half way round the world on every visit if your
+	// airline is anywhere else. Set by AIRLINE_MAP_DEFAULT_* in
+	// game-settings.env.
+	center: {lat: (window.MAP_DEFAULT_LAT !== undefined ? window.MAP_DEFAULT_LAT : 20),
+	         lng: (window.MAP_DEFAULT_LNG !== undefined ? window.MAP_DEFAULT_LNG : 150.644)},
+   	zoom : (window.MAP_DEFAULT_ZOOM !== undefined ? window.MAP_DEFAULT_ZOOM : 2),
    	minZoom : 2,
    	gestureHandling: 'greedy',
    	styles: getMapStyles(),
