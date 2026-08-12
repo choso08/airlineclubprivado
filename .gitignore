@@ -1,0 +1,25 @@
+# Secrets
+.env
+
+# sbt / build output
+target/
+project/target/
+project/project/
+.bsp/
+logs/
+*.log
+
+# Play
+airline-web/RUNNING_PID
+airline-web/google-tokens/
+airline-web/conf/google-oauth-credentials.json
+airline-web/conf/gmail-credentials.json
+
+# IDE
+.idea/
+.metals/
+.bloop/
+*.iml
+.classpath
+.project
+.settings/
