@@ -308,10 +308,31 @@
     this.controls = buildControlContainers(this._leaflet.getContainer());
     this._shimType = 'Map';
 
-    // Leaflet sizes itself from the container. When the game reveals a hidden
-    // map div, Leaflet does not notice on its own and renders grey.
+    // Leaflet measures its container once and then assumes that size. Google's
+    // map re-measured itself, so the game never had to say anything.
+    //
+    // This matters immediately: the game ships two stylesheets, and #map is
+    // width:50% in the classic one but width:100% in the modern one. Switching
+    // theme resizes the container, Leaflet carries on drawing at the old width,
+    // and half the screen goes blank. Same on any window resize or when a
+    // hidden map is revealed.
     var self = this;
     setTimeout(function () { self._leaflet.invalidateSize(); }, 0);
+
+    if (typeof ResizeObserver !== 'undefined') {
+      var pending = null;
+      var observer = new ResizeObserver(function () {
+        // Coalesce: a theme switch fires several times as styles apply, and
+        // invalidateSize forces a full redraw of every tile and marker.
+        if (pending) clearTimeout(pending);
+        pending = setTimeout(function () { self._leaflet.invalidateSize(); }, 100);
+      });
+      observer.observe(element);
+      this._resizeObserver = observer;
+    } else {
+      // Older browsers: at least follow the window.
+      window.addEventListener('resize', function () { self._leaflet.invalidateSize(); });
+    }
   }
 
   // Google applies these immediately - code routinely does setCenter() and
