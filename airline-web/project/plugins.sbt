@@ -8,7 +8,11 @@ ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" 
 
 // web plugins
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-coffeescript" % "1.0.2")
+// sbt-coffeescript is disabled: the project contains no .coffee sources, and
+// the plugin is only published to repo.scala-sbt.org (never to Maven Central),
+// which makes the build fail on any host that cannot reach that repo.
+// Re-enable it if you ever add CoffeeScript assets.
+//addSbtPlugin("com.typesafe.sbt" % "sbt-coffeescript" % "1.0.2")
 
 //addSbtPlugin("com.typesafe.sbt" % "sbt-jshint" % "1.0.3")
 //
