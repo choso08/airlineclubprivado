@@ -10,15 +10,44 @@ a real Linux that Windows runs for you in the background.
 
 ## Short version
 
-1. Install WSL2 + Ubuntu.
-2. Install Java, MariaDB and the game inside Ubuntu.
-3. Build the world once (about 4–10 minutes on this machine).
-4. Install Tailscale **inside Ubuntu** so your friends can reach it.
-5. Make it start by itself when the PC boots.
+Two commands. In **PowerShell as Administrator**:
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+Reboot, let Ubuntu finish setting up, then in the **Ubuntu** window:
+
+```bash
+cd ~ && git clone https://github.com/choso08/airlineclubprivado.git airline && cd airline && ./scripts/setup.sh
+```
+
+That installs Java and MariaDB, configures the database, generates your
+passwords, builds the game and loads the world. It takes 15–25 minutes,
+mostly waiting, and it is safe to run again — it will not overwrite your
+settings or delete players.
+
+Then start it:
+
+```bash
+./scripts/run-simulation.sh    # first terminal
+./scripts/run-web.sh           # second terminal
+```
+
+and open <http://localhost:9000>.
+
+The rest of this document is the same thing done by hand, plus the two
+things the installer deliberately leaves to you: letting friends in over
+Tailscale (§6) and starting at boot (§7).
 
 Skip Docker and skip Elasticsearch. You do not need either, and on this
 machine they only cost you RAM and setup time. (Elasticsearch only powers the
 search box; the game works fine without it.)
+
+> One thing the installer cannot do for you: turn on the service manager, so
+> that the game starts by itself at boot. That is § "Install WSL2 and Ubuntu"
+> below, and it takes about a minute. Do it before running the installer if
+> you want autostart later.
 
 ---
 
