@@ -292,16 +292,60 @@ Two consequences worth knowing:
 
 - Anyone who can reach the site can register. That is fine on a tailnet, where
   only people you invited can reach it at all.
-- `init-database.sh` rebuilds the *world* (airports, cities, countries). It
-  does **not** delete users, airlines or money. Only a dropped schema does
-  that — which is what `backup-db.sh` protects you from.
+- **`init-database.sh` erases player accounts.** `MainInit` calls
+  `Meta.createSchema()`, which `DROP`s and recreates every table — `user`,
+  `user_secret`, `user_airline`, `airline`, `airplane` and `link` included. It
+  is a fresh start, not a world refresh.
+
+So settle your world changes — extra airports, adjusted sizes — **before**
+anyone registers. Afterwards, treat re-initialising as "everyone starts over".
+
+There is no safe way to swap the world out from under a running game:
+`GeoDataGenerator` deletes and re-inserts airports, so they come back with new
+auto-increment ids, while every saved route, aircraft and airline still points
+at the old ones. The script now refuses to run without an explicit `ERASE`
+confirmation when it finds registered players.
 
 ---
 
 ## 6. Configuration
 
-Secrets are read from the environment, so nothing sensitive is committed. Both
-`application.conf` files use `${?VAR}` overrides:
+Two files, split by what they hold:
+
+| File | Holds | In git? |
+|---|---|---|
+| **`game-settings.env`** | How the game plays — pace, signup, backups | Yes |
+| **`.env`** | Passwords and the session secret | No |
+
+`game-settings.env` is the one to edit when you want to change the game.
+Precedence is: anything exported on the command line beats `.env`, which
+beats `game-settings.env` — so you can try a value for one run without
+editing anything:
+
+```bash
+AIRLINE_CYCLE_SECONDS=120 ./scripts/run-simulation.sh
+```
+
+### Game pace
+
+One cycle is one in-game week. Upstream ships 30 minutes per cycle, which
+means a game year takes about 26 real hours — sensible for a public server,
+painfully slow for friends playing an evening.
+
+`AIRLINE_CYCLE_SECONDS` controls it. The floor is how long a cycle takes to
+compute, which the simulation logs every tick:
+
+```
+cycle 2 spent 66 secs
+```
+
+Measured on a 4-core box: **66–77 seconds** per cycle. Most of that is the
+global passenger simulation over ~3800 airports, which barely grows with the
+number of players. On a 2-core i3 expect 2–2.5 minutes, so 300 seconds
+(5 minutes) leaves comfortable headroom. Set it too low and cycles queue up
+behind each other and the game drifts.
+
+### Everything the environment can override
 
 | Variable | Default | Used for |
 |---|---|---|
@@ -314,6 +358,35 @@ Secrets are read from the environment, so nothing sensitive is committed. Both
 | `AIRLINE_GOOGLE_API_KEY` | — | Airport image search |
 | `AIRLINE_SBT_HEAP` | `6G` | Build/init heap |
 | `AIRLINE_SBT_REPOS_FILE` | — | Restricted-egress resolver list |
+| `AIRLINE_CYCLE_SECONDS` | `1800` | Real seconds per in-game week |
+| `AIRLINE_RECAPTCHA_ENABLED` | `false` | Anti-bot check on signup |
+| `AIRLINE_WEB_PORT` | `9000` | Port the site listens on |
+| `AIRLINE_BACKUP_KEEP` | `14` | Nightly backups retained |
+
+---
+
+## 6b. Updating without stopping the game
+
+```bash
+./scripts/update.sh              # backup, pull, build, restart
+./scripts/update.sh --web-only   # front-end fixes only
+```
+
+The two halves are independent processes sharing a database, which is what
+makes low-disruption updates possible:
+
+- **Restarting the web site does not pause the game.** The clock keeps
+  ticking, flights keep flying, income keeps accruing. Players get a dead page
+  for ~15 seconds. Most fixes — pages, buttons, displayed numbers — need only
+  this, so reach for `--web-only`.
+- **Restarting the simulation** is the disruptive one, so the script waits for
+  the running cycle to finish before it does. Killing it mid-cycle can leave a
+  cycle half-applied.
+- **The new version compiles before anything stops.** A build that fails costs
+  no downtime at all — the old version is still serving and untouched.
+
+The one thing that genuinely cannot be done live is a change to the world data
+(§ Accounts), because that reassigns airport ids under existing routes.
 
 **Change `AIRLINE_APP_SECRET` before letting anyone in.** With the default,
 anyone who knows it can forge a session cookie for any account.
