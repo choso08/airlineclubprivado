@@ -291,8 +291,11 @@ object AirportSource {
         }
 
         if (fullLoad) {
-          //load assets
-          com.patson.CycleProfiler.phase("  .. assets") { airport.initAssets(AirportAssetSource.loadAirportAssetsByAirport(airport.id, Some(airport))) }
+          // Assets are loaded for every airport at once, after this loop.
+          // Doing it here cost three connection checkouts and three queries per
+          // airport. Nothing between here and the end of the loop reads them -
+          // initAssets only populates fields, and the appeal computation below
+          // does not consult them - so deferring is safe.
 
           // Removed: a per-airport SELECT on airline_appeal whose result was
           // discarded - the only line in the loop body was already commented
@@ -390,6 +393,16 @@ object AirportSource {
       
       resultSet.close()
       preparedStatement.close()
+
+      if (fullLoad) {
+        com.patson.CycleProfiler.phase("  .. assets (batched)") {
+          val assetsByAirportId = AirportAssetSource.loadAirportAssetsByAirports(airportData.toList, currentCycle)
+          airportData.foreach { airport =>
+            airport.initAssets(assetsByAirportId.getOrElse(airport.id, List.empty))
+          }
+        }
+      }
+
       airportData.toList
     } finally {
       connection.close()

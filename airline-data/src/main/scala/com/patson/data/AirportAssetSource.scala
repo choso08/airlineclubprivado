@@ -102,6 +102,74 @@ object AirportAssetSource {
     loadAirportAssetsByBlueprintCriteria(List(("airport", airportId)), loadedAirport)
   }
 
+  /**
+   * Assets for many airports at once, keyed by airport id.
+   *
+   * The per-airport version costs roughly three connection checkouts and three
+   * queries EACH - one for the blueprints, one inside CycleSource.loadCycle,
+   * one for the built assets - so loading a world of 3800 airports was making
+   * over ten thousand round trips for data that fits comfortably in three.
+   *
+   * `currentCycle` is passed in rather than looked up because the caller
+   * already knows it and it cannot change while a cycle is being computed.
+   *
+   * Airports are supplied by the caller so the blueprints can point at the
+   * same instances it is building, which is what the per-airport version was
+   * doing with its `loadedAirport` argument - and it avoids a cyclic load back
+   * through AirportCache.
+   */
+  def loadAirportAssetsByAirports(airports : List[Airport], currentCycle : Int) : Map[Int, List[AirportAsset]] = {
+    if (airports.isEmpty) {
+      return Map.empty
+    }
+
+    val airportsById = airports.map(airport => (airport.id, airport)).toMap
+    val connection = Meta.getConnection()
+
+    try {
+      val idList = airportsById.keys.toList
+      val queryString = new StringBuilder(s"SELECT * FROM $AIRPORT_ASSET_BLUEPRINT_TABLE WHERE airport IN (")
+      queryString.append(List.fill(idList.size)("?").mkString(","))
+      queryString.append(")")
+
+      val preparedStatement = connection.prepareStatement(queryString.toString)
+      idList.zipWithIndex.foreach {
+        case (airportId, index) => preparedStatement.setObject(index + 1, airportId)
+      }
+
+      val resultSet = preparedStatement.executeQuery()
+      val idToAssetBlueprint = mutable.HashMap[Int, AirportAssetBlueprint]()
+
+      while (resultSet.next()) {
+        val assetType = AirportAssetType.withName(resultSet.getString("asset_type"))
+        val id = resultSet.getInt("id") //same id as blueprint
+        val airportId = resultSet.getInt("airport")
+        airportsById.get(airportId).foreach { airport =>
+          idToAssetBlueprint.put(id, AirportAssetBlueprint(airport, assetType, id))
+        }
+      }
+
+      resultSet.close()
+      preparedStatement.close()
+
+      // One more query for every built asset across every airport, instead of
+      // one per airport.
+      val idToOwnedAssets = loadBuiltAirportAssetsByIds(idToAssetBlueprint.keys.toList).map(entry => (entry.id, entry)).toMap
+
+      val assets = idToAssetBlueprint.map {
+        case (id, blueprint) =>
+          idToOwnedAssets.getOrElse(id, AirportAsset.getAirportAsset(blueprint, airline = None, name = "", level = 0, completionCycle = None, boosts = List.empty, revenue = 0, expense = 0, roi = blueprint.assetType.initRoi, upgradeApplied = false, properties = Map.empty, currentCycle))
+      }
+
+      // Airports with no assets must still appear, with an empty list, so the
+      // caller can initialise every airport the same way.
+      val grouped = assets.toList.groupBy(_.blueprint.airport.id)
+      airportsById.keys.map(airportId => (airportId, grouped.getOrElse(airportId, List.empty))).toMap
+    } finally {
+      connection.close()
+    }
+  }
+
 
   private[this] def loadAirportAssetsByBlueprintCriteria(criteria : List[(String, Any)], loadedAirport : Option[Airport] = None) = {
     val connection = Meta.getConnection()

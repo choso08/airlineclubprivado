@@ -191,6 +191,39 @@ were cheap; the cost was in the *checkout* before each one, which is why the
 pool change mattered so much more. A good reminder that the profiler, not
 intuition, decides what to work on next.
 
+### Asset loading batched — 6.4s to 2.7s
+
+`loadAirportAssetsByAirport` was called once per airport and each call cost
+three connection checkouts and three queries: one for the blueprints, one
+inside `CycleSource.loadCycle()`, one for the built assets. Across 3 800
+airports that is over ten thousand round trips for data that fits in three.
+
+`loadAirportAssetsByAirports` now loads the lot in one pass, and the cycle
+number is passed in rather than re-queried — it cannot change while a cycle is
+being computed.
+
+The per-airport call sat in the middle of the airport loop, so the loading had
+to move to after it. That is safe here: `initAssets` only populates fields, and
+nothing between that point and the end of the loop reads them — in particular
+the appeal computation does not.
+
+Verified before trusting it, over 400 airports: 601 assets loaded by the old
+path, 601 by the new, and the blueprint ids match airport for airport with
+zero mismatches.
+
+### Where it stands
+
+Cumulatively, on the same world:
+
+|                    | baseline | now   |
+|--------------------|----------|-------|
+| whole cycle        | 73.3s    | 58.5s |
+| load airports      | 18.2s    | 7.9s  |
+| .. of which assets | 10.7s    | 2.7s  |
+
+Airport loading is down 57%, assets 75%. It is no longer the second most
+expensive phase — `airports` (the simulation, 11.2s) has overtaken it.
+
 ### What the sub-phase numbers say now
 
 Inside `load airports`, after both changes:
@@ -204,10 +237,14 @@ Inside `load airports`, after both changes:
   .. bases                0.9s
 ```
 
-Assets still dominate. `loadAirportAssetsByAirport` opens its own connection
-per airport and calls `CycleSource.loadCycle()` - a full query - for a number
-that cannot change during a cycle. Those are the next two things to look at,
-and both are mechanical.
+The remaining five are around 1s each and all have the same shape: one query
+per airport for runways, lounges, features, bases and loyalists. Batching them
+the same way should take most of that 4.6s, using `loadAirportAssetsByAirports`
+as the pattern.
+
+After that, the big one is `links + passengers` at ~39s — but that is the
+game's actual simulation rather than loading, so it changes what players see.
+Not something to do without tests passing and a deliberate decision.
 
 ---
 
