@@ -33,11 +33,19 @@ load_env_file() {
   done < "$file"
 }
 
+# .env first (secrets, machine-specific), then game-settings.env (how the
+# game plays, tracked in git). Because load_env_file never overwrites an
+# existing value, .env wins on any key set in both, and anything you export
+# on the command line wins over both.
 if [[ -f "$REPO_ROOT/.env" ]]; then
   load_env_file "$REPO_ROOT/.env"
 else
   echo "WARNING: no .env found at $REPO_ROOT/.env - falling back to defaults" >&2
   echo "         cp .env.example .env and edit it." >&2
+fi
+
+if [[ -f "$REPO_ROOT/game-settings.env" ]]; then
+  load_env_file "$REPO_ROOT/game-settings.env"
 fi
 
 sbt_run() {

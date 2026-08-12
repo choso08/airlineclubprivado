@@ -15,7 +15,20 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 object MainSimulation extends App {
-  val CYCLE_DURATION : Int = 30 * 60
+  // Real seconds between cycles. One cycle is one in-game week, so the stock
+  // 30 minutes means a game year takes about 26 hours of real time - fine for
+  // a public server people check in on daily, very slow for a few friends
+  // playing one evening. Override with simulation.cycleDurationSeconds, or
+  // the AIRLINE_CYCLE_SECONDS environment variable.
+  //
+  // Keep this comfortably above how long a cycle takes to compute (the
+  // "cycle N spent X secs" line in the log). If cycles take longer than the
+  // interval they queue up behind each other and the game drifts.
+  val CYCLE_DURATION : Int = {
+    val config = com.typesafe.config.ConfigFactory.load()
+    if (config.hasPath("simulation.cycleDurationSeconds")) config.getInt("simulation.cycleDurationSeconds") else 30 * 60
+  }
+  println(s"!!!!!!!!!!!!!!!CYCLE DURATION IS $CYCLE_DURATION seconds")
   var currentWeek: Int = 0
 
 //  implicit val actorSystem = ActorSystem("rabbit-akka-stream")
