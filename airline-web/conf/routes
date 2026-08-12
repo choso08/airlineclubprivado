@@ -5,6 +5,10 @@
 #	Home	page
 GET		/							controllers.Application.index
 GET		/test						controllers.Application.test
+
+# Polled by the browser so players get a countdown before an update, and the
+# page reloads itself once the new instance is up.
+GET		/instance-status			controllers.InstanceStatusApplication.status
 GET		/chat						controllers.ChatApplication.chatSocket
 
 #Web Socket management

@@ -50,12 +50,28 @@ echo ">> [3/5] Building (the running game is untouched until this succeeds)"
 ( cd "$REPO_ROOT/airline-data" && "$REPO_ROOT/scripts/sbt" publishLocal )
 ( cd "$REPO_ROOT/airline-web"  && "$REPO_ROOT/scripts/sbt" stage )
 
-echo ">> [4/5] Restarting the web site (~15s of dead pages, game keeps running)"
+echo ">> [4/5] Restarting the web site (game clock keeps running throughout)"
+RESTART_FLAG="${AIRLINE_RESTART_FLAG:-/tmp/airline-restart-at}"
+WARN_SECONDS="${AIRLINE_UPDATE_WARNING_SECONDS:-30}"
+
+# Tell anyone currently playing. The browser polls /instance-status, shows a
+# countdown, and reloads itself once the new instance answers - so nobody is
+# left staring at a page that has quietly stopped working.
+if [[ "$WARN_SECONDS" -gt 0 ]]; then
+  echo "   Warning players, restarting in ${WARN_SECONDS}s..."
+  echo $(( ($(date +%s) + WARN_SECONDS) * 1000 )) > "$RESTART_FLAG"
+  sleep "$WARN_SECONDS"
+fi
+
 if have_systemd; then
   sudo systemctl restart airline-web
 else
   echo "   No systemd - restart ./scripts/run-web.sh by hand."
 fi
+
+# The new process reports a different start time, which is what makes the
+# browsers reload; the flag has done its job.
+rm -f "$RESTART_FLAG"
 
 if [[ "$WEB_ONLY" == "1" ]]; then
   echo ">> [5/5] --web-only: leaving the simulation alone. Done."
