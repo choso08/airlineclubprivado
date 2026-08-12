@@ -22,8 +22,19 @@ $( document ).ready(function() {
 })
 
 function signup(form) {
+	// On a private instance reCAPTCHA is normally disabled: the upstream site
+	// key is registered for airline-club.com, so it rejects tokens from any
+	// other host and nobody would be able to register. The server skips
+	// verification in that case, so an empty token is fine.
+	if (!window.RECAPTCHA_ENABLED) {
+		$('body .loadingSpinner').show()
+		form.append('<input type="hidden" name="recaptchaToken" value="" />');
+		form.submit()
+		return;
+	}
+
 	grecaptcha.ready(function() {
-		grecaptcha.execute('6LespV8UAAAAAJkCUpR8_uNC3P-wZGq7vnTNKEZe', {action: 'signup'})
+		grecaptcha.execute(window.RECAPTCHA_SITE_KEY, {action: 'signup'})
 			.then(function(token) {
 			    $('body .loadingSpinner').show()
              	form.append('<input type="hidden" name="recaptchaToken" value="' + token + '" />');

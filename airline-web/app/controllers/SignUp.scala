@@ -26,10 +26,17 @@ import play.api.libs.json.JsObject
 import play.api.libs.json.JsNumber
 import play.api.libs.json.JsString
 
-class SignUp @Inject()(cc: ControllerComponents)(ws: WSClient) extends AbstractController(cc) with play.api.i18n.I18nSupport {
+class SignUp @Inject()(cc: ControllerComponents, configuration: play.api.Configuration)(ws: WSClient) extends AbstractController(cc) with play.api.i18n.I18nSupport {
   private[this] val recaptchaUrl = "https://www.google.com/recaptcha/api/siteverify"
   private[this] val recaptchaAction = "signup"
-  private[this] val recaptchaSecret = "6LespV8UAAAAAErZ7LWP51SWmYaYrnAz6Z61jKBC"
+  // The upstream keys below are registered for airline-club.com. A self-hosted
+  // instance reached under any other hostname (a Tailscale name, a LAN IP)
+  // gets its tokens rejected, which makes registration impossible - so private
+  // instances set recaptcha.enabled = false and skip verification entirely.
+  // Keep it enabled, with your own keys, if you ever expose signup publicly.
+  private[this] val recaptchaEnabled = configuration.getOptional[Boolean]("recaptcha.enabled").getOrElse(true)
+  private[this] val recaptchaSecret = configuration.getOptional[String]("recaptcha.secret").getOrElse("6LespV8UAAAAAErZ7LWP51SWmYaYrnAz6Z61jKBC")
+  private[this] val recaptchaSiteKey = configuration.getOptional[String]("recaptcha.siteKey").getOrElse("6LespV8UAAAAAJkCUpR8_uNC3P-wZGq7vnTNKEZe")
   private[this] val recaptchaScoreThreshold = 0.5
 
   /**
@@ -81,7 +88,7 @@ class SignUp @Inject()(cc: ControllerComponents)(ws: WSClient) extends AbstractC
    * Display an empty form.
    */
   def form = Action { implicit request =>
-    Ok(html.signup(signupForm))
+    Ok(html.signup(signupForm, recaptchaEnabled, recaptchaSiteKey))
   }
   
   /**
@@ -106,9 +113,9 @@ class SignUp @Inject()(cc: ControllerComponents)(ws: WSClient) extends AbstractC
   def submit = Action { implicit request =>
     signupForm.bindFromRequest().fold(
       // Form has errors, redisplay it
-      errors => BadRequest(html.signup(errors)), { userInput =>
+      errors => BadRequest(html.signup(errors, recaptchaEnabled, recaptchaSiteKey)), { userInput =>
         
-        if (isValidRecaptcha(userInput.recaptchaToken)) {
+        if (!recaptchaEnabled || isValidRecaptcha(userInput.recaptchaToken)) {
           // We got a valid User value, display the summary
           val user = User(userInput.username, userInput.email, Calendar.getInstance, Calendar.getInstance, UserStatus.ACTIVE, level = 0, None, List.empty)
           UserSource.saveUser(user)
