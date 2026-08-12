@@ -12,6 +12,9 @@ EnvironmentFile=/opt/airline/.env
 ExecStart=/opt/airline/scripts/run-web.sh
 Restart=always
 RestartSec=15
+# SIGTERM shows up as exit 143; without this a normal restart is logged as a
+# failure.
+SuccessExitStatus=143 SIGTERM
 StandardOutput=journal
 StandardError=journal
 

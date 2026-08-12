@@ -57,6 +57,10 @@ WorkingDirectory=$REPO_ROOT
 ExecStart=$exec
 Restart=always
 RestartSec=15
+# A stop or restart sends SIGTERM, which the JVM reports as exit 143. Without
+# this systemd logs a perfectly ordinary restart as "Failed with result
+# 'exit-code'", which reads like a crash when reading the journal later.
+SuccessExitStatus=143 SIGTERM
 StandardOutput=journal
 StandardError=journal
 
