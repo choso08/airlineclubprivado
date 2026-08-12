@@ -55,6 +55,11 @@ echo "   java: $(java -version 2>&1 | head -1)"
 say "Configuring MariaDB"
 # utf8mb4 is mandatory: without it the world import dies on the first city
 # name with an accent or non-Latin characters.
+#
+# The directory only exists once mariadb-server is installed, which is why
+# this runs after apt and not before. Create it anyway so a partial install
+# gives a clear failure later rather than "No such file or directory" here.
+sudo mkdir -p /etc/mysql/mariadb.conf.d
 sudo tee /etc/mysql/mariadb.conf.d/99-airline.cnf > /dev/null <<'EOF'
 [mysqld]
 character_set_server = utf8mb4
