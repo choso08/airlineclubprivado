@@ -268,6 +268,34 @@ Two things to get right:
 already accepts any Host header, so the Tailscale hostname works with no extra
 configuration.
 
+### Prefer this over port forwarding
+
+Tailscale never needs an inbound port opened: both ends dial out, and when a
+direct path cannot be established the traffic is relayed. That means it keeps
+working behind **CGNAT** and on **IPv6-only** connections, where port
+forwarding is simply not available.
+
+If you are on a connection that still gives you a public IPv4 address, it is
+tempting to forward port 9000 instead. Don't — it puts the game on the open
+internet, and it breaks the day the connection changes. Building on Tailscale
+from the start means an ISP change is a non-event: the address your friends
+use stays the same.
+
+### Accounts and saved progress
+
+Everything a player builds — airline, routes, aircraft, balance — lives in the
+database, so progress persists across restarts on its own. Each player just
+registers their own account at `/signup`; there is no invite system and no
+email verification, and users are created `ACTIVE` immediately.
+
+Two consequences worth knowing:
+
+- Anyone who can reach the site can register. That is fine on a tailnet, where
+  only people you invited can reach it at all.
+- `init-database.sh` rebuilds the *world* (airports, cities, countries). It
+  does **not** delete users, airlines or money. Only a dropped schema does
+  that — which is what `backup-db.sh` protects you from.
+
 ---
 
 ## 6. Configuration
@@ -307,11 +335,35 @@ Kept deliberately small, so upstream changes stay easy to merge.
    upstream behaviour is preserved when nothing is set.
 4. **`README.md`** — a pointer to this document, since upstream's instructions
    describe the older `activator` tooling.
+5. **`SignUp.scala`, `signup.scala.html`, `signup.js`** — reCAPTCHA is now
+   configurable and off by default. Upstream hardcodes the keys for
+   airline-club.com, so on any other hostname Google rejects the token and
+   **nobody can register**. The same change removes the FullStory session
+   recorder, which streamed player sessions to upstream's analytics account.
+6. **`SearchUtil.java`** — Elasticsearch failures are no longer fatal. See
+   below; this is the difference between "search is disabled" and "no one can
+   create an account".
 
 Added, not modified: `docker-compose.yml`, `.env.example`, `scripts/`,
-`conf/sbt-repositories`, `.gitignore` and this file.
+`deploy/systemd/`, `conf/sbt-repositories`, `.gitattributes`, `.gitignore`,
+`WINDOWS-SETUP.md` and this file.
 
 Everything else is upstream as-is.
+
+### Elasticsearch was not actually optional
+
+Upstream documents Elasticsearch as optional, but `SearchUtil` ran
+`checkInit()` from a **static initialiser** and only caught `IOException`. A
+refused connection surfaces as `ElasticsearchException`, which is unchecked,
+so it escaped the initialiser and permanently poisoned the class for the
+lifetime of the JVM. Because the signup flow calls `SearchUtil.addAirline()`
+*after* committing the user, registration would write the account to the
+database and then return HTTP 500 with no session — the player sees a crash,
+retries, and is told the username is already taken.
+
+Both that initialiser and `addAirline` now catch `Exception` and log a
+warning. Verified: with no Elasticsearch running at all, signup returns 303
+and login succeeds.
 
 ---
 

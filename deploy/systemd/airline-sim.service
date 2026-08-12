@@ -1,0 +1,24 @@
+# Background simulation. Without this running the game world is frozen:
+# no cycles advance, no passengers move, no income is paid.
+#
+#   sudo cp deploy/systemd/*.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now airline-sim airline-web
+[Unit]
+Description=Airline Club background simulation
+After=network-online.target docker.service mariadb.service mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/opt/airline
+EnvironmentFile=/opt/airline/.env
+ExecStart=/opt/airline/scripts/run-simulation.sh
+Restart=always
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+# The web site your friends connect to.
+[Unit]
+Description=Airline Club web front-end
+After=network-online.target docker.service mariadb.service mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/opt/airline
+EnvironmentFile=/opt/airline/.env
+ExecStart=/opt/airline/scripts/run-web.sh
+Restart=always
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

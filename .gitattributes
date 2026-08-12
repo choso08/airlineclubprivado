@@ -1,0 +1,15 @@
+# The shell scripts run inside WSL2/Linux. If git checks them out with
+# Windows line endings, bash fails with confusing "bad interpreter: No such
+# file or directory" errors, so pin them to LF regardless of platform.
+*.sh text eol=lf
+scripts/sbt text eol=lf
+*.service text eol=lf
+.env.example text eol=lf
+
+# Large game data - keep git from trying to normalise or diff these.
+airline-data/cities500.txt -text
+airline-data/cities1000.txt -text
+airline-data/airports.csv -text
+airline-data/runways.csv -text
+airline-data/runways-imported-2022-dec.csv -text
+airline-data/airport-weather.csv -text
