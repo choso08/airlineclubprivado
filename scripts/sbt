@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Thin sbt launcher using the sbt-launch.jar vendored in this repo, so sbt
+# does not have to be installed and the version stays pinned by
+# project/build.properties (1.9.9).
+#
+# Env knobs:
+#   AIRLINE_SBT_HEAP        JVM max heap (default 6G). MainInit streams ~80MB
+#                           of CSV and builds large in-memory maps.
+#   AIRLINE_SBT_REPOS_FILE  Path to an sbt repositories file. When set, it is
+#                           forced as the only resolver list. Use this on hosts
+#                           whose egress policy blocks repo.scala-sbt.org /
+#                           repo.typesafe.com; see conf/sbt-repositories.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+JVM_ARGS=(
+  -Xms512M
+  -Xmx"${AIRLINE_SBT_HEAP:-6G}"
+  -XX:ReservedCodeCacheSize=256m
+)
+
+if [[ -n "${AIRLINE_SBT_REPOS_FILE:-}" ]]; then
+  JVM_ARGS+=(
+    -Dsbt.repository.config="$AIRLINE_SBT_REPOS_FILE"
+    -Dsbt.override.build.repos=true
+  )
+fi
+
+exec java "${JVM_ARGS[@]}" -jar "$REPO_ROOT/sbt-launch.jar" "$@"

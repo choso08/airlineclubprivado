@@ -1,0 +1,9 @@
+# Resolver list for hosts whose egress policy blocks the sbt/Typesafe Ivy
+# repos. Everything this build needs is on Maven Central once the unused
+# sbt-coffeescript plugin is disabled (see project/plugins.sbt).
+#
+# Use with:
+#   export AIRLINE_SBT_REPOS_FILE="$PWD/conf/sbt-repositories"
+[repositories]
+  local
+  maven-central: https://repo1.maven.org/maven2/

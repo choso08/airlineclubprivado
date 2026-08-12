@@ -1,0 +1,74 @@
+# Backing services for a self-hosted Airline Club instance.
+#
+#   docker compose up -d
+#
+# Both services bind to 127.0.0.1 only. The JVM processes (airline-data
+# simulation and airline-web) run on the host and connect over localhost;
+# nothing here should ever be reachable from the public internet.
+# Exposure to other people is handled by Tailscale - see SELF-HOSTING.md.
+
+services:
+  mysql:
+    # 5.7 on purpose: upstream warns 8.x may not work, and the app ships
+    # mysql-connector-java 5.1.49, which cannot speak MySQL 8's default
+    # caching_sha2_password auth plugin.
+    image: mysql:5.7
+    container_name: airline-mysql
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}"
+      MYSQL_DATABASE: "${AIRLINE_DB_SCHEMA:-airline_v2_1}"
+      MYSQL_USER: "${AIRLINE_DB_USER:-sa}"
+      MYSQL_PASSWORD: "${AIRLINE_DB_PASSWORD:?set AIRLINE_DB_PASSWORD in .env}"
+    command:
+      # utf8mb4 avoids the "Incorrect string value" crash on city names with
+      # non-latin characters. See upstream issue #267.
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --max-connections=300
+      - --innodb-buffer-pool-size=2G
+      # The simulation writes in large batches; this trades a little crash
+      # durability for a large speedup during MainInit.
+      - --innodb-flush-log-at-trx-commit=2
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  elasticsearch:
+    # Optional - only powers the flight/airport search box. The app degrades
+    # gracefully without it; every other screen keeps working.
+    # 7.x is required: the app uses the 7.17 RestHighLevelClient, which
+    # refuses to talk to an 8.x cluster.
+    image: elasticsearch:7.17.22
+    container_name: airline-elasticsearch
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+volumes:
+  mysql-data:
+  elasticsearch-data:

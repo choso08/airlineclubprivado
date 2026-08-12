@@ -1,3 +1,15 @@
+> **This is a private fork of [patsonluk/airline](https://github.com/patsonluk/airline)**
+> (vendored at upstream commit `77647f1`), set up for self-hosting.
+>
+> **→ Read [SELF-HOSTING.md](SELF-HOSTING.md) for setup.** The instructions
+> below are upstream's and are partly out of date: they describe the old
+> `activator` tooling, while this tree builds with sbt 1.9.9 / Scala 2.13 /
+> Play 3.0.5 and runs on JDK 21.
+>
+> This fork also adds **Beja (BYJ/LPBJ)** as a playable airport.
+
+---
+
 An opensource airline game. 
 
 Live at https://www.airline-club.com/
