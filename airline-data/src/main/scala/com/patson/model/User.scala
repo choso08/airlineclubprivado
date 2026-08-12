@@ -24,12 +24,23 @@ case class User(userName : String, email : String, creationTime : Calendar, last
   val isSuperAdmin = adminStatus.isDefined && adminStatus.get == AdminStatus.SUPER_ADMIN
   val isChatBanned = modifiers.exists(_._1 == UserModifier.CHAT_BANNED)
   val isBanned = modifiers.exists(_._1 == UserModifier.BANNED)
-  val isPremium = level > 0
+  // Upstream sells the "premium" features through Patreon, so level is only
+  // above zero for donors. On a private instance there is nobody to donate to,
+  // and the gates just lock the owner out of their own game - so they can be
+  // opened for everyone with account.allFeaturesUnlocked.
+  val isPremium = level > 0 || User.allFeaturesUnlocked
 
   val maxAirlinesAllowed = if (isPremium) 3 else 2
 }
 
 object User {
+  // Defaults to false so upstream behaviour is unchanged when unset; this
+  // instance turns it on in both application.conf files.
+  val allFeaturesUnlocked : Boolean = {
+    val config = com.typesafe.config.ConfigFactory.load()
+    config.hasPath("account.allFeaturesUnlocked") && config.getBoolean("account.allFeaturesUnlocked")
+  }
+
 //  val SUPER_ADMIN_LEVEL = 20
 //  val ADMIN_LEVEL = 10
 

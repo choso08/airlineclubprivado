@@ -1133,7 +1133,10 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
   def getRenameRejection(airline : Airline, newName : String) : Option[String] = {
     UserSource.loadUserByAirlineId(airline.id) match {
       case Some(user) =>
-        if (user.level <= 0) {
+        // Was `user.level <= 0`, which bypassed isPremium and so ignored
+        // account.allFeaturesUnlocked - the button would enable in the browser
+        // and the rename would then be refused by the server.
+        if (!user.isPremium) {
           return Some(s"User is not allowed to rename airline, username ${user.userName}")
         }
         val cooldown = getRenameCooldown(airline)

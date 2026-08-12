@@ -22,6 +22,10 @@ class UserApplication @Inject()(cc: ControllerComponents) extends AbstractContro
         "email" -> JsString(user.email),
         "status" -> JsString(user.status.toString()),
         "level" -> JsNumber(user.level),
+        // The browser used to infer premium from level > 0. Send the decision
+        // itself so account.allFeaturesUnlocked reaches the client too, rather
+        // than having to fake everyone's donor level to unlock the features.
+        "isPremium" -> JsBoolean(user.isPremium),
         "creationTime" -> JsString(user.creationTime.getTime.toString()),
         "lastActiveTime" -> JsString(user.lastActiveTime.getTime.toString()),
         "airlineIds" -> JsArray(user.getAccessibleAirlines().map { airline => JsNumber(airline.id) })))

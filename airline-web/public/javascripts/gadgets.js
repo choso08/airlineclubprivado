@@ -838,6 +838,12 @@ function bindEnter(bindToElement, actionFunction) {
 }
 
 function isPremium() {
+    // Prefer the server's own answer, which accounts for
+    // account.allFeaturesUnlocked. Falls back to the old level check so this
+    // still behaves correctly against an unmodified server.
+    if (activeUser && typeof activeUser.isPremium === 'boolean') {
+        return activeUser.isPremium
+    }
     return activeUser && activeUser.level > 0
 }
 
