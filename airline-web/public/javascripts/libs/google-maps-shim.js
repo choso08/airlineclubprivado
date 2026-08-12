@@ -209,6 +209,66 @@
     return this;
   };
 
+  // ------------------------------------------------------- control containers
+  //
+  // Google's map.controls[position] is an MVCArray whose push() physically
+  // moves your element into the map's own overlay. Reproduce that with one
+  // absolutely positioned container per position, layered above the map.
+
+  var CONTROL_PLACEMENT = {
+    0:  'top:10px; left:50%; transform:translateX(-50%);',        // TOP_CENTER
+    1:  'top:10px; left:10px;',                                    // TOP_LEFT
+    2:  'top:10px; right:10px;',                                   // TOP_RIGHT
+    3:  'top:50%; left:10px; transform:translateY(-50%);',         // LEFT_CENTER
+    4:  'bottom:24px; left:10px;',                                 // LEFT_BOTTOM
+    5:  'top:50%; right:10px; transform:translateY(-50%);',        // RIGHT_CENTER
+    6:  'bottom:24px; right:10px;',                                // RIGHT_BOTTOM
+    7:  'bottom:24px; left:50%; transform:translateX(-50%);',      // BOTTOM_CENTER
+    8:  'top:60px; left:10px;',                                    // LEFT_TOP
+    9:  'top:60px; right:10px;'                                    // RIGHT_TOP
+  };
+
+  function buildControlContainers(mapElement) {
+    var buckets = {};
+
+    Object.keys(CONTROL_PLACEMENT).forEach(function (pos) {
+      var box = document.createElement('div');
+      box.className = 'osm-shim-controls osm-shim-controls-' + pos;
+      box.setAttribute('style',
+        'position:absolute; z-index:800; display:flex; flex-direction:column; ' +
+        'gap:4px; align-items:flex-start; pointer-events:none; ' +
+        CONTROL_PLACEMENT[pos]);
+      mapElement.appendChild(box);
+
+      buckets[pos] = {
+        _box: box,
+        push: function (el) {
+          if (!el) return this.getLength();
+          // Buttons must remain clickable even though the container is
+          // click-through, so the map underneath still pans.
+          el.style.pointerEvents = 'auto';
+          box.appendChild(el);
+          return this.getLength();
+        },
+        insertAt: function (index, el) {
+          if (!el) return;
+          el.style.pointerEvents = 'auto';
+          box.insertBefore(el, box.children[index] || null);
+        },
+        clear: function () { while (box.firstChild) box.removeChild(box.firstChild); },
+        removeAt: function (i) {
+          var child = box.children[i];
+          if (child) box.removeChild(child);
+        },
+        getAt: function (i) { return box.children[i]; },
+        getLength: function () { return box.children.length; },
+        forEach: function (fn) { Array.prototype.slice.call(box.children).forEach(fn); }
+      };
+    });
+
+    return buckets;
+  }
+
   // --------------------------------------------------------------------- Map
 
   var TILE_URL = (global.OSM_TILE_URL ||
@@ -239,7 +299,13 @@
       crossOrigin: true
     }).addTo(this._leaflet);
 
-    this.controls = { 0: [], 1: [], 2: [] };   // ControlPosition buckets
+    // Google lets you park your own DOM inside the map with
+    //   map.controls[position].push(element)
+    // and the game builds its whole button bar that way. Leaving these as
+    // plain arrays silently swallowed every button: the elements stayed
+    // wherever they were created, unpositioned, showing as ghostly circles
+    // floating over the map. Each position gets a real container instead.
+    this.controls = buildControlContainers(this._leaflet.getContainer());
     this._shimType = 'Map';
 
     // Leaflet sizes itself from the container. When the game reveals a hidden
@@ -552,11 +618,22 @@
     LatLngBounds: LatLngBounds,
     Point: Point,
 
+    // These MUST match the keys of CONTROL_PLACEMENT above. They did not:
+    // RIGHT_BOTTOM resolved to 2 (top-right) and BOTTOM_* to 3, which has no
+    // container at all - so map.controls[BOTTOM_LEFT].push threw "Cannot read
+    // properties of undefined", aborting initMap half way and leaving the top
+    // status bar empty.
     ControlPosition: {
-      TOP: 1, TOP_LEFT: 1, TOP_CENTER: 1, TOP_RIGHT: 1,
-      LEFT: 0, LEFT_TOP: 0, LEFT_CENTER: 0, LEFT_BOTTOM: 0,
-      RIGHT: 2, RIGHT_TOP: 2, RIGHT_CENTER: 2, RIGHT_BOTTOM: 2,
-      BOTTOM: 3, BOTTOM_LEFT: 3, BOTTOM_CENTER: 3, BOTTOM_RIGHT: 3
+      TOP: 0, TOP_CENTER: 0,
+      TOP_LEFT: 1,
+      TOP_RIGHT: 2,
+      LEFT: 3, LEFT_CENTER: 3,
+      LEFT_BOTTOM: 4, BOTTOM_LEFT: 4,
+      RIGHT: 5, RIGHT_CENTER: 5,
+      RIGHT_BOTTOM: 6, BOTTOM_RIGHT: 6,
+      BOTTOM: 7, BOTTOM_CENTER: 7,
+      LEFT_TOP: 8,
+      RIGHT_TOP: 9
     },
 
     SymbolPath: {

@@ -107,7 +107,11 @@ function updateCustomWallpaperPanel() {
         $('#settingsModal .customWallpaper').show()
         $('#settingsModal .customWallpaper .warning').hide()
 
-        if (activeUser.level > 0) {
+        // Was activeUser.level > 0, which bypassed isPremium() and therefore
+        // ignored account.allFeaturesUnlocked - the upload stayed refused with
+        // "only avaiable to Patreons" even on an instance where the feature is
+        // open to everyone.
+        if (isPremium()) {
             wallpaperUploaderObj = $("#settingsModal .customWallpaper .fileuploader").uploadFile({
                         url:"users/" + activeUser.id + "/wallpaper",
                         multiple:false,

@@ -1,0 +1,47 @@
+/*
+ * Adjustments so Leaflet behaves like the Google map the game was built
+ * around. Loaded straight after leaflet.css.
+ */
+
+/*
+ * Leaflet stacks its panes at z-index 400 (tiles, markers) up to 800
+ * (controls). The game's own menus and dialogs sit at 10, 11 and 12, so the
+ * map painted straight over every one of them - open the settings dialog and
+ * half of it was behind the map.
+ *
+ * Giving the map container its own stacking context at z-index 0 keeps
+ * Leaflet's internal ordering intact while confining all of it beneath
+ * anything the game puts above. Google's container never claimed a z-index,
+ * which is why this only appeared after the switch.
+ */
+.leaflet-container {
+  z-index: 0 !important;
+  position: relative;
+}
+
+/*
+ * Containers for elements the game hands to map.controls[...]. They are
+ * click-through so the map still pans underneath; the buttons themselves
+ * re-enable pointer events.
+ */
+.osm-shim-controls {
+  pointer-events: none;
+}
+.osm-shim-controls > * {
+  pointer-events: auto;
+}
+
+/*
+ * The game's map buttons are round icons that assume they are being placed
+ * by Google. Keep them from stretching to the flex container's width.
+ */
+.osm-shim-controls > * {
+  flex: 0 0 auto;
+}
+
+/* Attribution is required by OpenStreetMap's terms, but it does not need to
+   shout - keep it small and out of the way. */
+.leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.7);
+}

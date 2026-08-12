@@ -33,6 +33,9 @@
 	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("javascripts/splitting/splitting-cells.css")'>
 	  <link rel="stylesheet" type="text/css" href='/assets/stylesheets/classic.css' id="uiTheme">
 	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/mobile.css")'> <!-- this has to be last so it overrides the CSS if mobile-->
+	  @* Optional: squarer corners throughout. Left OFF so the interface keeps
+	     the original look. Uncomment the line below to try it. *@
+	  @*<link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/square-ui.css")'>*@
 
 
     
@@ -5528,6 +5531,7 @@
 	</script>
 } else {
     <link rel="stylesheet" href='@routes.Assets.versioned("javascripts/libs/leaflet/leaflet.css")'>
+    <link rel="stylesheet" href='@routes.Assets.versioned("javascripts/libs/leaflet-fixes.css")'>
     <script src='@routes.Assets.versioned("javascripts/libs/leaflet/leaflet.js")'></script>
     <script>
       // Override these to use a different tile server.

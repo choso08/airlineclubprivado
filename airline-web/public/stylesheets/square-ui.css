@@ -1,0 +1,41 @@
+/*
+ * Squarer corners.
+ *
+ * Loaded after the game's own stylesheets, so it wins without editing 70
+ * scattered border-radius rules across main.css, modern.css and the rest -
+ * which keeps upstream changes easy to merge.
+ *
+ * To go back to rounded, remove the <link> for this file in
+ * app/views/index.scala.html. To go part way, raise the 0 below to 2px or 3px.
+ */
+
+/*
+ * Panels, dialogs, buttons, inputs and tooltips. Deliberately broad: the game
+ * rounds a lot of different classes, and listing them individually would miss
+ * some and then look inconsistent.
+ */
+.mainPanel, .subPanel, .detailsPanel, .modal, .modalContent,
+.button, .buttonSmall, .clickable, .tab, .tabContent,
+input, select, textarea, table, td, th,
+.tooltip, .popup, .warning, .notice, .banner,
+div[class*="Panel"], div[class*="Modal"], div[class*="Box"],
+div[class*="Canvas"], div[class*="Dialog"] {
+  border-radius: 0 !important;
+}
+
+/*
+ * Round icon buttons - the map controls and the toolbar - come in via
+ * border-radius: 50%. Squaring those too, since half-round buttons next to
+ * square panels looks accidental rather than deliberate.
+ */
+.mapButton, .iconButton, .roundButton,
+.leaflet-control-zoom a, .leaflet-bar, .leaflet-bar a,
+.osm-shim-controls > * {
+  border-radius: 0 !important;
+}
+
+/* The map's own popups, so they match the rest. */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip,
+.leaflet-control-attribution {
+  border-radius: 0 !important;
+}
