@@ -149,6 +149,68 @@ cd airline-data && ../scripts/sbt test
 
 ---
 
+## Done so far
+
+### Connection validation — cycle 73s to ~60s, airport loading 17.3s to ~11s
+
+`Meta` set `testConnectionOnCheckout(true)`, which runs a validation round trip
+to MySQL before handing over *every* connection. The simulation asks for
+connections constantly - loading airports alone takes several per airport, so
+tens of thousands per cycle - and each was paying for that probe.
+
+c3p0's own documentation calls checkout testing its most expensive option and
+recommends idle testing instead: connections are validated in the background
+while unused, so a checkout costs nothing. Cover for a connection dying between
+tests is still there via `acquireRetryAttempts` and `autoReconnect=true` in the
+JDBC URL.
+
+Measured on the same world, warm cycles only (the first cycle after a restart
+is always slower - cold JIT, cold database cache - so it is excluded):
+
+|                    | before | after        |
+|--------------------|--------|--------------|
+| whole cycle        | 71.8s  | 57.9s, 62.6s |
+| load airports      | 17.3s  | 11.6s, 10.9s |
+| .. of which assets | 10.7s  | 6.9s, 6.4s   |
+| links + passengers | 40.9s  | 36.2s, 41.7s |
+
+Airport loading is reliably a third faster. The whole-cycle figure moves around
+by several seconds between cycles - `links + passengers` varies with what the
+world is doing - so treat it as "roughly 60s, was roughly 72s" rather than a
+precise number.
+
+### Two dead queries removed
+
+`loadAirportsByQueryString` ran a `SELECT` on `airline_appeal` whose loop body
+was commented out, and one on `airport_image` whose two uses were also
+commented out. Both read rows and discarded them, once per airport - about
+7,600 wasted round trips per cycle.
+
+Worth recording that this barely moved the clock: 18.2s to 18.0s. The queries
+were cheap; the cost was in the *checkout* before each one, which is why the
+pool change mattered so much more. A good reminder that the profiler, not
+intuition, decides what to work on next.
+
+### What the sub-phase numbers say now
+
+Inside `load airports`, after both changes:
+
+```
+  .. assets               6.4s
+  .. runways              1.0s
+  .. loyalists+bonuses    1.1s
+  .. lounges              1.0s
+  .. features             1.0s
+  .. bases                0.9s
+```
+
+Assets still dominate. `loadAirportAssetsByAirport` opens its own connection
+per airport and calls `CycleSource.loadCycle()` - a full query - for a number
+that cannot change during a cycle. Those are the next two things to look at,
+and both are mechanical.
+
+---
+
 ## Suggested order
 
 1. **Fix the 11 inherited test failures**, so the suite can be trusted as a

@@ -273,6 +273,7 @@ object AirportSource {
 
         if (fullLoad || loadFeatures) {
           //load features first, as it might affect income level and pop, which both might affect later loading
+          com.patson.CycleProfiler.phase("  .. features") {
           val featureStatement = connection.prepareStatement("SELECT * FROM " + AIRPORT_FEATURE_TABLE + " WHERE airport = ?")
           featureStatement.setInt(1, airport.id)
 
@@ -286,23 +287,20 @@ object AirportSource {
           }
           featureStatement.close()
           airport.initFeatures(features.toList)
+          }
         }
 
         if (fullLoad) {
           //load assets
-          airport.initAssets(AirportAssetSource.loadAirportAssetsByAirport(airport.id, Some(airport))) //pass the airport loaded so far to avoid cyclic load
+          com.patson.CycleProfiler.phase("  .. assets") { airport.initAssets(AirportAssetSource.loadAirportAssetsByAirport(airport.id, Some(airport))) }
 
-          val loyaltyStatement = connection.prepareStatement("SELECT airline, loyalty FROM " + AIRLINE_APPEAL_TABLE + " WHERE airport = ?")
-          loyaltyStatement.setInt(1, airport.id)
-          val loyaltyResultSet = loyaltyStatement.executeQuery()
-          while (loyaltyResultSet.next()) {
-            val airlineId = loyaltyResultSet.getInt("airline")
-            //airlineAppeals.put(airlineId, AirlineAppeal(loyaltyResultSet.getDouble("loyalty"), loyaltyResultSet.getDouble("awareness")))
-          }
+          // Removed: a per-airport SELECT on airline_appeal whose result was
+          // discarded - the only line in the loop body was already commented
+          // out. Loyalty is computed further down from
+          // initAirlineAppealsComputeLoyalty instead. That was one round trip
+          // per airport, ~3800 per cycle, for nothing.
 
-          loyaltyResultSet.close()
-          loyaltyStatement.close()
-
+          com.patson.CycleProfiler.phase("  .. bases") {
           val airlineBaseStatement = connection.prepareStatement("SELECT * FROM " + AIRLINE_BASE_TABLE + " WHERE airport = ?")
           airlineBaseStatement.setInt(1, airport.id)
 
@@ -320,6 +318,7 @@ object AirportSource {
           }
           airlineBaseStatement.close()
           airport.initAirlineBases(airlineBases.toList)
+          }
 
 
 //          val airlineBonusesByAirlineIdBeforeFlatten : Map[Int, Seq[(Int, List[AirlineBonus])]] = (getAirlineTitleBonuses(airport, countryAirlineTitleCache).toSeq ++ getCampaignBonuses(airport, currentCycle).toSeq).groupBy(_._1)
@@ -340,7 +339,7 @@ object AirportSource {
           }
           val airlineBonuses = airlineBonusesMutable.view.mapValues(_.toList).toMap
 
-          airport.initAirlineAppealsComputeLoyalty(airlineBonuses, LoyalistSource.loadLoyalistsByAirportId(airport.id))
+          com.patson.CycleProfiler.phase("  .. loyalists+bonuses") { airport.initAirlineAppealsComputeLoyalty(airlineBonuses, LoyalistSource.loadLoyalistsByAirportId(airport.id)) }
 
 //          val slotAssignments = mutable.Map[Int, Int]()
 //
@@ -359,27 +358,15 @@ object AirportSource {
 //          slotStatement.close()
           
           
-          val lounges = AirlineSource.loadLoungesByAirport(airport)
-          airport.initLounges(lounges)
+          com.patson.CycleProfiler.phase("  .. lounges") { airport.initLounges(AirlineSource.loadLoungesByAirport(airport)) }
           
-          //load profile pics
-           val imageStatement = connection.prepareStatement("SELECT * FROM " + AIRPORT_IMAGE_TABLE + " WHERE airport = ?")
-          imageStatement.setInt(1, airport.id)
-          
-          val imageResultSet = imageStatement.executeQuery()
-          if (imageResultSet.next()) {
-            val airportUrl = imageResultSet.getString("airport_url")
-            val cityUrl = imageResultSet.getString("city_url")
-//            if (airportUrl != null) {
-//              airport.setAirportImageUrl(airportUrl)
-//            }
-//            if (cityUrl != null) {
-//              airport.setCityImageUrl(cityUrl)
-//            }
-          }
-          imageStatement.close()
+          // Removed: a per-airport SELECT on airport_image whose two uses were
+          // both commented out, so the rows were read and thrown away. Another
+          // ~3800 round trips per cycle for nothing. Airport images are served
+          // on demand by the web layer, not needed by the simulation.
 
           //load runway
+          com.patson.CycleProfiler.phase("  .. runways") {
           val runwayStatement = connection.prepareStatement("SELECT * FROM " + AIRPORT_RUNWAY_TABLE + " WHERE airport = ?")
           runwayStatement.setInt(1, airport.id)
 
@@ -395,6 +382,7 @@ object AirportSource {
           }
           runwayStatement.close()
           airport.setRunways(runways.toList)
+          }
 
           airport.shouldLoadCities = true //set this flag so this airport can lazy load cities, which could be a lot of data
         }

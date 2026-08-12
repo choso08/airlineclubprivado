@@ -21,7 +21,22 @@ object Meta {
   dataSource.setPassword(DATABASE_PASSWORD)
   dataSource.setJdbcUrl(DATABASE_CONNECTION)
   dataSource.setMaxPoolSize(100)
-  dataSource.setTestConnectionOnCheckout(true)
+
+  // Connection validation.
+  //
+  // testConnectionOnCheckout used to be true, which runs a round trip to MySQL
+  // before handing over EVERY connection. The simulation asks for connections
+  // constantly - loading airports alone takes several per airport, so tens of
+  // thousands per cycle - and each one was paying for a validation query.
+  //
+  // c3p0's own documentation calls checkout testing the most expensive option
+  // and recommends idle testing instead: connections are validated in the
+  // background while unused, so a checkout is free. A connection that dies
+  // between tests is still covered by acquireRetryAttempts and by
+  // autoReconnect=true in the JDBC URL.
+  dataSource.setTestConnectionOnCheckout(false)
+  dataSource.setIdleConnectionTestPeriod(30)          // seconds
+  dataSource.setPreferredTestQuery("SELECT 1")        // cheaper than the default metadata probe
 
   def getConnection(enforceForeignKey: Boolean = true) = {
 
