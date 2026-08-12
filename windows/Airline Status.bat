@@ -36,11 +36,26 @@ wsl -d %DISTRO% -e bash -lc "systemctl is-active airline-web 2>/dev/null || (pgr
 echo.
 echo   --- Is the site answering? ---
 curl -s -o nul -m 5 http://localhost:9000 >nul 2>&1
-if errorlevel 1 (echo   NO - http://localhost:9000 is not responding) else (echo   YES - http://localhost:9000 is up)
+if errorlevel 1 (
+  echo   NO - http://localhost:9000 is not responding
+  echo.
+  echo   --- Why not: last errors from the web site ---
+  REM "active" only means systemd is keeping it alive; with Restart=always a
+  REM process that crashes on startup still reports active while it loops.
+  wsl -d %DISTRO% -e bash -lc "journalctl -u airline-web -n 25 --no-pager 2>/dev/null | grep -iE 'error|exception|caused by|refused|failed|Address already in use' | tail -12 || echo '  (no service log - started by hand?)'"
+  echo.
+  echo   --- Last lines, whatever they are ---
+  wsl -d %DISTRO% -e bash -lc "journalctl -u airline-web -n 12 --no-pager 2>/dev/null | tail -12 || echo '  (none)'"
+) else (
+  echo   YES - http://localhost:9000 is up
+)
 
 echo.
 echo   --- Recent cycles (how long each in-game week takes to compute) ---
-wsl -d %DISTRO% -e bash -lc "journalctl -u airline-sim -n 300 --no-pager 2>/dev/null | grep 'spent' | tail -5 || echo '  (no service logs - if you started it by hand, look at that window)'"
+REM An empty list here with the service "active" means the simulation is not
+REM completing cycles - either it only just started, or it is crash-looping.
+wsl -d %DISTRO% -e bash -lc "journalctl -u airline-sim -n 400 --no-pager 2>/dev/null | grep 'spent' | tail -5 || echo '  (none)'"
+wsl -d %DISTRO% -e bash -lc "journalctl -u airline-sim -n 400 --no-pager 2>/dev/null | grep -q 'spent' || { echo '  none yet - recent errors from the simulation:'; journalctl -u airline-sim -n 25 --no-pager 2>/dev/null | grep -iE 'error|exception|caused by|refused|failed' | tail -8; }"
 
 echo.
 echo   --- Players registered ---
