@@ -433,12 +433,20 @@ object NegotiationUtil {
       // still shown, but it is a price now instead of a wait. No delegates are
       // asked for, so nothing here can be refused or has to be tried again.
       val fee = (finalRequirementValue * GameConfig.negotiationFeePerPoint).toLong
+      val remark =
+        if (fee > 0) {
+          f"Difficulty $finalRequirementValue%.2f - costs $$${fee}%,d on top of the usual fee, and no delegates"
+        } else {
+          // The fee is switched off, so the difficulty is now only a remark.
+          // Saying so beats an awkward "costs $0", which reads like a fault.
+          f"Difficulty $finalRequirementValue%.2f - no negotiation, no delegates, nothing extra to pay"
+        }
       return NegotiationUtil.NO_NEGOTIATION_REQUIRED.copy(
         fromAirportRequirements = fromAirportRequirements,
         toAirportRequirements = toAirportRequirements,
         fromAirportDiscounts = fromAirportDiscounts,
         toAirportDiscounts = toAirportDiscounts,
-        remarks = Some(f"Difficulty $finalRequirementValue%.2f - costs $$${fee}%,d on top of the usual fee, and no delegates"))
+        remarks = Some(remark))
     }
 
     val info = NegotiationInfo(fromAirportRequirements, toAirportRequirements, fromAirportDiscounts, toAirportDiscounts, totalFromDiscount, totalToDiscount, finalRequirementValue, computeOdds(finalRequirementValue, Math.min(MAX_ASSIGNED_DELEGATE, airline.getDelegateInfo().availableCount)))
