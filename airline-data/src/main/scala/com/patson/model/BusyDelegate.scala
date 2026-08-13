@@ -42,7 +42,11 @@ object CampaignDelegateTask {
 abstract class LevelingDelegateTask(startCycle : Int, delegateTaskType: DelegateTaskType.Value) extends DelegateTask(startCycle, delegateTaskType) {
   override val coolDown: Int = 0
 
-  val LEVEL_CYCLE_THRESHOLDS = List(4, 1 * 52, 3 * 52, 10 * 52)
+  // Upstream: 4 weeks, then one year, three years, ten. Divided by
+  // AIRLINE_DELEGATE_LEVEL_SPEED, because ten in-game years is a length of time
+  // that only means anything on a server people play for years.
+  val LEVEL_CYCLE_THRESHOLDS =
+    List(4, 1 * 52, 3 * 52, 10 * 52).map(t => Math.max(1, t / GameConfig.delegateLevelSpeed))
   val level = (currentCycle: Int) => {
     var levelWalker = 0
     val taskDuration = currentCycle - startCycle

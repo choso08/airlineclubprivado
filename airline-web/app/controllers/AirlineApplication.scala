@@ -907,7 +907,12 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
   }
  def getLogo(airlineId : Int) = Action {
    Ok(LogoUtil.getLogo(airlineId)).as("image/png").withHeaders(
-    CACHE_CONTROL -> "max-age=3600"
+    // Revalidate rather than trust an hour-old copy. The address of a logo or
+    // a livery never changes, so with max-age every browser kept showing the
+    // old picture for an hour after it was replaced - including the browser of
+    // the person who had just uploaded it, which reads as the upload silently
+    // failing. These are a few hundred bytes; asking every time costs nothing.
+    CACHE_CONTROL -> "no-cache"
    )
    //Ok(ImageUtil.generateLogo("/logo/p0.bmp", Color.BLACK.getRGB, Color.BLUE.getRGB)).as("image/png")
  }
@@ -972,7 +977,9 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
 
   def getLivery(airlineId : Int) = Action {
     Ok(LiveryUtil.getLivery(airlineId)).as("image/png").withHeaders(
-      CACHE_CONTROL -> "max-age=604800"
+      // A week, at an address that never changes: a livery replaced today would
+      // not be seen by anyone until next Tuesday. Same reasoning as the logo.
+      CACHE_CONTROL -> "no-cache"
     )
     //Ok(ImageUtil.generateLogo("/logo/p0.bmp", Color.BLACK.getRGB, Color.BLUE.getRGB)).as("image/png")
   }

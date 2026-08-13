@@ -330,6 +330,9 @@
     });
 
     this._theme = currentTheme();
+    if (darkFilterWanted(this._theme)) {
+      this._leaflet.getContainer().classList.add('osm-dark-filter');
+    }
     this._tileLayer = L.tileLayer(tileUrlFor(this._theme), {
       attribution: TILE_ATTRIBUTION,
       maxZoom: 19,
@@ -404,6 +407,28 @@
     if (o.styles !== undefined) this.applyTheme(currentTheme());
   };
 
+  /*
+   * Some tile sources have no dark twin. Wikimedia's international style is the
+   * one that matters here: it is the only free source that labels the world in
+   * English rather than in each country's own language, which on a map you are
+   * planning routes across is the difference between reading it and not - and
+   * it comes in one palette only.
+   *
+   * So when light and dark would draw the same tiles, the dark theme is made in
+   * the browser instead: the tile images are inverted and their hue rotated
+   * back, which turns a light map into a credible dark one. Only the tile layer
+   * is touched. Routes, aircraft and airport markers live in their own panes
+   * and keep their real colours, which is the whole reason this is done with a
+   * filter on one pane rather than on the map as a whole.
+   */
+  function darkFilterWanted(theme) {
+    if (theme !== 'dark') return false;
+    var mode = global.OSM_DARK_FILTER || 'auto';
+    if (mode === 'on') return true;
+    if (mode === 'off') return false;
+    return tileUrlFor('dark') === tileUrlFor('light');   // auto
+  }
+
   /** Swap the tile layer when the light/dark setting changes. */
   Map.prototype.applyTheme = function (theme) {
     if (theme === this._theme) return;
@@ -416,6 +441,11 @@
     }).addTo(this._leaflet);
     // Keep it under the markers and routes.
     if (this._tileLayer.bringToBack) this._tileLayer.bringToBack();
+
+    var container = this._leaflet.getContainer();
+    if (container && container.classList) {
+      container.classList.toggle('osm-dark-filter', darkFilterWanted(theme));
+    }
   };
   Map.prototype.addListener = function (ev, fn) { return bindListener(this, ev, fn, false); };
   Map.prototype.setMapTypeId = function () { /* no map types here */ };

@@ -5574,8 +5574,20 @@
     <script>
       // Tile sources. Light and dark are a matched pair so the two themes look
       // like the same map in two palettes; set map.tileUrl to override both.
+      @* map.labels = "english" swaps in the one free style that labels the
+         world in English. It has a single palette, so the dark theme is made
+         by inverting it in the browser. *@
+      @defining(configuration.getOptional[String]("map.labels").getOrElse("local") == "english") { english =>
+      @if(english) {
+      window.OSM_TILE_URL_LIGHT = 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png';
+      window.OSM_TILE_URL_DARK  = 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png';
+      window.OSM_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles by <a href="https://foundation.wikimedia.org/wiki/Maps_Terms_of_Use">Wikimedia</a>';
+      } else {
       window.OSM_TILE_URL_LIGHT = '@configuration.getOptional[String]("map.tileUrlLight").getOrElse("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png")';
       window.OSM_TILE_URL_DARK  = '@configuration.getOptional[String]("map.tileUrlDark").getOrElse("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png")';
+      }
+      }
+      window.OSM_DARK_FILTER = '@configuration.getOptional[String]("map.darkFilter").getOrElse("auto")';
       @configuration.getOptional[String]("map.tileUrl").map { url =>
       window.OSM_TILE_URL = '@url';
       }.getOrElse(play.twirl.api.Html(""))

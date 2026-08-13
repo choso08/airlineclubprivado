@@ -42,6 +42,12 @@ object GameConfig {
     * airline's margins; lowering it makes long routes cheap. Upstream: 70. */
   val fuelPrice: Double = double("economy.fuelPrice", 70)
 
+  /** How much faster delegates gain their levels than upstream. A delegate
+    * assigned to a country levels up after 4 weeks, then a year, then three
+    * years, then ten. Ten in-game years at five minute cycles is forty-three
+    * hours of real time, which no one on a private server will ever see. */
+  val delegateLevelSpeed: Int = int("rules.delegateLevelSpeed", 4)
+
   /** Airlines needed before an alliance counts as established rather than
     * merely forming - only an established alliance gets the code-sharing and
     * the bonuses. Upstream: 3, which on a server of five people means half of

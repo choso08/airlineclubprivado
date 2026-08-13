@@ -19,8 +19,13 @@ const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome
 const results = [];
 const ok = (name, pass, detail) => results.push({ name, pass: !!pass, detail: detail || '' });
 
-const isDark = url => /dark_all/.test(url || '');
-const isLight = url => /light_all/.test(url || '');
+// Which tiles are showing. When the source has a dark twin the URL says so;
+// when it does not - the English-labelled style has one palette only - the
+// dark theme is made by filtering the tiles, and the class on the container is
+// what says so. Testing only the URL would fail against a perfectly good dark
+// map, which is the sort of test people learn to ignore.
+const isDark = (s) => /dark_all/.test(s.tiles || '') || s.filtered === true;
+const isLight = (s) => /light_all/.test(s.tiles || '') || (s.onepalette && s.filtered === false);
 
 (async () => {
   const browser = await chromium.launch({ executablePath: CHROME });
@@ -31,7 +36,10 @@ const isLight = url => /light_all/.test(url || '');
     tiles: window.map && window.map._tileLayer && window.map._tileLayer._url,
     game: document.documentElement.getAttribute('data-theme'),
     stored: window.localStorage.getItem('theme'),
-    mapStyles: window.currentStyles
+    mapStyles: window.currentStyles,
+    filtered: !!(window.map && window.map._leaflet &&
+                 window.map._leaflet.getContainer().classList.contains('osm-dark-filter')),
+    onepalette: window.OSM_TILE_URL_LIGHT === window.OSM_TILE_URL_DARK
   }));
 
   // ------------------------------------------------- a game set to dark
@@ -43,7 +51,7 @@ const isLight = url => /light_all/.test(url || '');
     await page.waitForTimeout(5000);
 
     const start = await state(page);
-    ok('a dark game opens a dark map', isDark(start.tiles), start.tiles);
+    ok('a dark game opens a dark map', isDark(start), start.tiles);
     ok('the two agree at load', start.mapStyles === start.game, start.mapStyles + ' / ' + start.game);
 
     // ---------------------------------------- Settings moves the map with it
@@ -54,7 +62,7 @@ const isLight = url => /light_all/.test(url || '');
     });
     await page.waitForTimeout(1500);
     const toLight = await state(page);
-    ok('switching the game to light lightens the map', isLight(toLight.tiles), toLight.tiles);
+    ok('switching the game to light lightens the map', isLight(toLight), toLight.tiles);
     ok('the game is light too', toLight.game === 'light', toLight.game);
 
     await page.evaluate(() => {
@@ -64,13 +72,13 @@ const isLight = url => /light_all/.test(url || '');
     });
     await page.waitForTimeout(1500);
     const backToDark = await state(page);
-    ok('switching back darkens the map again', isDark(backToDark.tiles), backToDark.tiles);
+    ok('switching back darkens the map again', isDark(backToDark), backToDark.tiles);
 
     // --------------------------------- and the switch on the map moves both
     await page.evaluate(() => toggleMapLight());
     await page.waitForTimeout(1500);
     const viaMap = await state(page);
-    ok('the map switch lightens the map', isLight(viaMap.tiles), viaMap.tiles);
+    ok('the map switch lightens the map', isLight(viaMap), viaMap.tiles);
     ok('the map switch lightens the game as well', viaMap.game === 'light', viaMap.game);
     ok('and Settings shows it', await page.evaluate(() => document.getElementById('switchLight').checked));
 
@@ -85,7 +93,7 @@ const isLight = url => /light_all/.test(url || '');
     await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 90000 });
     await page.waitForTimeout(5000);
     const start = await state(page);
-    ok('a light game opens a light map', isLight(start.tiles), start.tiles);
+    ok('a light game opens a light map', isLight(start), start.tiles);
     await ctx.close();
   }
 
@@ -100,7 +108,7 @@ const isLight = url => /light_all/.test(url || '');
     const start = await state(page);
     // Whatever the map was last left on, the game's theme is the setting now -
     // otherwise one old cookie keeps a player's map out of step for ever.
-    ok('an old map cookie loses to the game theme', isDark(start.tiles), start.tiles);
+    ok('an old map cookie loses to the game theme', isDark(start), start.tiles);
     await ctx.close();
   }
 
@@ -120,7 +128,7 @@ const isLight = url => /light_all/.test(url || '');
     await page.waitForTimeout(5000);
 
     const pinned = await state(page);
-    ok('a pinned map ignores a light game', isDark(pinned.tiles), pinned.tiles);
+    ok('a pinned map ignores a light game', isDark(pinned), pinned.tiles);
 
     await page.evaluate(() => {
       document.getElementById('switchDark').checked = true;
@@ -129,14 +137,14 @@ const isLight = url => /light_all/.test(url || '');
     });
     await page.waitForTimeout(1500);
     const afterSwitch = await state(page);
-    ok('a pinned map stays put when the game changes', isDark(afterSwitch.tiles), afterSwitch.tiles);
+    ok('a pinned map stays put when the game changes', isDark(afterSwitch), afterSwitch.tiles);
 
     // The switch on the map is the one thing that still moves a pinned map,
     // and it moves only the map.
     await page.evaluate(() => toggleMapLight());
     await page.waitForTimeout(1500);
     const afterMapSwitch = await state(page);
-    ok('the map switch still works on a pinned map', isLight(afterMapSwitch.tiles), afterMapSwitch.tiles);
+    ok('the map switch still works on a pinned map', isLight(afterMapSwitch), afterMapSwitch.tiles);
     ok('and leaves the game alone', afterMapSwitch.game === 'dark', afterMapSwitch.game);
 
     await ctx.close();
