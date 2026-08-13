@@ -41,7 +41,37 @@ const ok = (name, pass, detail) => results.push({ name, pass: !!pass, detail: de
     r.hasProgress = typeof flightProgress === 'function';
     r.hasPopup = typeof showFlightPopup === 'function';
     r.hasClock = typeof currentGameWeekMinute === 'function';
+    r.hasInterpolate = typeof interpolateAlongDrawnLine === 'function';
     if (!r.hasSchedule) return r;
+
+    // Frankfurt to Lisbon, the longest route in the report that showed the
+    // aircraft beside its own line rather than on it.
+    if (r.hasInterpolate) {
+      const FRA = new google.maps.LatLng(50.033, 8.570);
+      const LIS = new google.maps.LatLng(38.774, -9.134);
+      const project = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+      const drawn = f => {
+        // Where the line itself is at this fraction: straight in the projection
+        // the map draws in.
+        const y = project(50.033) + (project(38.774) - project(50.033)) * f;
+        return {
+          lat: (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI,
+          lng: 8.570 + (-9.134 - 8.570) * f
+        };
+      };
+      r.online = [0.1, 0.29, 0.5, 0.9].map(f => {
+        const p = interpolateAlongDrawnLine(FRA, LIS, f);
+        const want = drawn(f);
+        const lat = typeof p.lat === 'function' ? p.lat() : p.lat;
+        const lng = typeof p.lng === 'function' ? p.lng() : p.lng;
+        return Math.max(Math.abs(lat - want.lat), Math.abs(lng - want.lng));
+      });
+      const start = interpolateAlongDrawnLine(FRA, LIS, 0);
+      const end = interpolateAlongDrawnLine(FRA, LIS, 1);
+      r.endsAtAirports =
+        Math.abs((typeof start.lat === 'function' ? start.lat() : start.lat) - 50.033) < 0.001 &&
+        Math.abs((typeof end.lat === 'function' ? end.lat() : end.lat) - 38.774) < 0.001;
+    }
 
     // Lisbon (a major airport), 1868 km, airline 8, fourteen flights a week.
     // The running server put these at 00:20 and 12:20 every day.
@@ -118,6 +148,15 @@ const ok = (name, pass, detail) => results.push({ name, pass: !!pass, detail: de
     ok('a flight over midnight on Saturday keeps going',
        out.acrossMidnight && out.acrossMidnight.outbound === true,
        JSON.stringify(out.acrossMidnight));
+  }
+
+  if (out.hasInterpolate) {
+    ok('the aircraft sits on the line that is drawn, not beside it',
+       out.online && out.online.every(d => d < 0.0001),
+       out.online && out.online.map(d => d.toFixed(6)).join(', '));
+    ok('and starts and finishes at the two airports', out.endsAtAirports);
+  } else {
+    ok('the aircraft follows the drawn line', false, 'interpolateAlongDrawnLine is missing');
   }
 
   const inherited = [/angular is not defined/];

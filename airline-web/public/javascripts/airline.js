@@ -540,6 +540,47 @@ function flightSpeed() {
 	return configured
 }
 
+/**
+ * A point along the route as it is DRAWN, not along the great circle.
+ *
+ * The line between two airports is a straight line on the map - both map
+ * providers draw it that way unless asked otherwise. The shortest path over
+ * the earth is not straight on a flat map, so an aeroplane placed by the
+ * spherical interpolation the maps API offers drifts off the very line it is
+ * supposed to be following: a few kilometres on a European leg, a great deal
+ * more the longer and the further north the route.
+ *
+ * So the position is worked out in the same space the line is drawn in.
+ * Mercator stretches latitude - that stretch is the whole discrepancy - so
+ * the latitude goes through the projection, is interpolated there, and comes
+ * back. Longitude needs none of that.
+ */
+function interpolateAlongDrawnLine(from, to, fraction) {
+	var lat1 = typeof from.lat === 'function' ? from.lat() : from.lat
+	var lng1 = typeof from.lng === 'function' ? from.lng() : from.lng
+	var lat2 = typeof to.lat === 'function' ? to.lat() : to.lat
+	var lng2 = typeof to.lng === 'function' ? to.lng() : to.lng
+
+	if (typeof lat1 !== 'number' || typeof lat2 !== 'number') {
+		// Whatever these are, the maps API knows what to do with them.
+		return google.maps.geometry.spherical.interpolate(from, to, fraction)
+	}
+
+	// The poles are infinitely far away in this projection; nothing flies
+	// there, but clamping keeps the arithmetic finite if anything ever does.
+	var clamp = function(lat) { return Math.max(-85.05, Math.min(85.05, lat)) }
+	var project = function(lat) {
+		return Math.log(Math.tan(Math.PI / 4 + clamp(lat) * Math.PI / 360))
+	}
+	var unproject = function(y) {
+		return (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI
+	}
+
+	var y = project(lat1) + (project(lat2) - project(lat1)) * fraction
+	var lng = lng1 + (lng2 - lng1) * fraction
+	return new google.maps.LatLng(unproject(y), lng)
+}
+
 /** Departure times, in minutes from Sunday 00:00, exactly as the game places them. */
 function flightDepartureMinutes(link) {
 	var frequency = link.frequency
@@ -678,7 +719,7 @@ function drawFlightMarker(line, link) {
 			}
 			var start = progress.outbound ? from : to
 			var end = progress.outbound ? to : from
-			marker.setPosition(google.maps.geometry.spherical.interpolate(start, end, progress.fraction))
+			marker.setPosition(interpolateAlongDrawnLine(start, end, progress.fraction))
 			marker.flightInfo = { link: link, progress: progress }
 			if (!marker.getMap()) marker.setMap(map)
 		})
