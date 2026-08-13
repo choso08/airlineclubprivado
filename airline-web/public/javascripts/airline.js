@@ -592,10 +592,18 @@ function drawFlightMarker(line, link) {
 
 	var from = line.getPath().getAt(0)
 	var to = line.getPath().getAt(1)
+	// The dot is a 12 pixel image. Drawn at that size it is a fair picture of an
+	// aeroplane at this scale and an unfair thing to ask anyone to click, since
+	// it is also moving. Given a 20 pixel box it stays small on screen and
+	// becomes something a hand can actually land on.
 	var image = {
 		url: "assets/images/markers/dot.png",
 		origin: new google.maps.Point(0, 0),
-		anchor: new google.maps.Point(6, 6),
+		// A plain object rather than google.maps.Size: the OpenStreetMap shim
+		// reads .width and .height and does not define that class, and the real
+		// Google API accepts either.
+		scaledSize: { width: 20, height: 20 },
+		anchor: new google.maps.Point(10, 10),
 	}
 
 	var departures = flightDepartureMinutes(link)
