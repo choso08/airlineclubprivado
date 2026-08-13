@@ -8,12 +8,10 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.8" % "test",
   "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0",
   //"org.xerial" % "sqlite-jdbc" % "3.8.11.2",
-  // 5.1.49 is the last of a line that ended in 2020 and it speaks to the
-  // server through com.mysql.jdbc; everything since is com.mysql.cj under a
-  // new artefact name. See Constants.DB_DRIVER, and the scrollable statements
-  // in this package - the old driver let a forward-only result set be rewound
-  // and this one does not.
-  "com.mysql" % "mysql-connector-j" % "8.4.0",
+  // Back on 5.1.49 after 8.4.0 took the live game down. The scrollable
+  // statements it needed are staying - both drivers honour those - so the
+  // upgrade is one line here and one in Constants when it is understood.
+  "mysql" % "mysql-connector-java" % "5.1.49",
   "org.apache.pekko" %% "pekko-actor" % "1.0.3",
   "org.apache.pekko" %% "pekko-stream" % "1.0.3",
   "org.apache.pekko" %% "pekko-remote" % "1.0.3",
