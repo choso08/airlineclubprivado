@@ -42,7 +42,11 @@
 .select-search {
 	display: block;
 	box-sizing: border-box;
-	width: 100%;
+	/* Width is set in script to match the dropdown below it. 100% here meant
+	   100% of the cell the dropdown sits in, which in the route planner is the
+	   whole dialog - a grey bar across the panel with a narrow dropdown under
+	   it. This is only the fallback for before it has been measured. */
+	width: auto;
 	max-width: 100%;
 	margin: 0 0 3px 0;
 	padding: .2em .6em;

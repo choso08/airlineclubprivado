@@ -10,10 +10,9 @@
  * This puts a text box above such a dropdown and narrows it as you type,
  * matching anywhere in the name. Two details matter more than they look:
  *
- *   - the currently selected option is never filtered away. Removing it would
- *     make the browser silently move the selection to whatever is left, which
- *     on the route planner would quietly change the aircraft the player is
- *     costing out.
+ *   - options are hidden rather than removed. Removing one makes the browser
+ *     silently move the selection to whatever is left, which on the route
+ *     planner would quietly change the aircraft the player is costing out.
  *   - the game rebuilds these lists whenever the route changes, so the filter
  *     has to notice and start again rather than hold a stale set of options.
  */
@@ -33,48 +32,66 @@
 
   function State(select) {
     this.select = select;
-    this.options = [];       // every option, as the game last built them
-    this.suppress = false;   // our own rebuilds must not look like the game's
     this.box = null;
   }
 
-  State.prototype.capture = function () {
-    this.options = Array.prototype.slice.call(this.select.options);
+  /**
+   * Match the dropdown's width.
+   *
+   * The box used to be 100% wide, which is 100% of whatever cell the dropdown
+   * sits in - and in the route planner that is the width of the whole dialog.
+   * The result was a grey bar stretching across the panel with a narrow
+   * dropdown underneath it, which reads as two unrelated controls and made a
+   * mess of the layout around them.
+   *
+   * Measured rather than guessed, and measured again on every rebuild: the
+   * dropdown is only as wide as the longest aircraft name in it, and it is
+   * zero while the dialog is closed.
+   */
+  State.prototype.matchWidth = function () {
+    var width = this.select.getBoundingClientRect().width;
+    if (width > 0) {
+      this.box.style.width = Math.round(width) + 'px';
+    }
   };
 
+  /**
+   * Hide what does not match.
+   *
+   * Hidden rather than removed. Removing an option makes the browser silently
+   * move the selection to whatever is left - on the route planner that
+   * quietly changes the aircraft being costed out - so the selected one used
+   * to be kept in the list whatever was typed. Which is worse: you filter for
+   * "dhc" and something called Cessna is still sitting there, and the box
+   * looks broken. Hiding keeps the selection intact without showing it.
+   */
   State.prototype.render = function () {
     var term = normalise(this.box.value).trim();
-    var selected = this.select.value;
-
-    this.suppress = true;
-    while (this.select.firstChild) this.select.removeChild(this.select.firstChild);
-
     var shown = 0;
-    for (var i = 0; i < this.options.length; i++) {
-      var option = this.options[i];
-      // Keep the selection whatever the filter says - see the note above.
-      var keep = !term || option.value === selected ||
-                 normalise(option.textContent).indexOf(term) !== -1;
-      if (keep) {
-        this.select.appendChild(option);
-        if (normalise(option.textContent).indexOf(term) !== -1 || !term) shown++;
+
+    for (var i = 0; i < this.select.options.length; i++) {
+      var option = this.select.options[i];
+      var match = !term || normalise(option.textContent).indexOf(term) !== -1;
+      option.hidden = !match;
+      // Belt and braces: not every browser has always honoured the attribute
+      // on an option, and all of them honour this.
+      option.style.display = match ? '' : 'none';
+      if (match) {
+        shown++;
       }
     }
-    this.select.value = selected;
-    this.suppress = false;
 
     // Say so rather than leaving an apparently broken box.
     this.box.classList.toggle('select-search-empty', term !== '' && shown === 0);
   };
 
   State.prototype.refresh = function () {
-    if (this.suppress) return;
-    this.capture();
     // A rebuild means a different route or a different airline; the old filter
     // is about the old list.
     this.box.value = '';
     this.box.classList.remove('select-search-empty');
-    this.box.style.display = this.options.length >= MIN_OPTIONS ? '' : 'none';
+    this.box.style.display = this.select.options.length >= MIN_OPTIONS ? '' : 'none';
+    this.matchWidth();
   };
 
   /**

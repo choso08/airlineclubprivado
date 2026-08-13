@@ -39,6 +39,7 @@ run "search matching"   "$HERE/search-matching-test.sh"
 # These need the game up.
 if curl -s -o /dev/null -m 5 "$URL"; then
   run "search"          node "$HERE/search-test.js" "$URL"
+  run "dropdown filter" node "$HERE/select-search-test.js" "$URL"
   run "game mechanics"  node "$HERE/mechanics-test.js" "$URL"
   run "translation"     node "$HERE/translate-test.js" "$URL"
   run "map theme"       node "$HERE/theme-test.js" "$URL"
