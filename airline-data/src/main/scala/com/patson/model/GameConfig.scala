@@ -97,6 +97,18 @@ object GameConfig {
     * 0 turns the mechanism off entirely. */
   val maxModelDiscountPercent: Int = int("rules.maxModelDiscountPercent", 70)
 
+  /** Whether the climb and descent allowance scales with the aircraft.
+    *
+    * Upstream caps the first 300 km of any flight at 350 km/h, the next 400 at
+    * 500 and the next 400 at 700. Those are fixed numbers, so on anything
+    * shorter than about 700 km every aircraft faster than 700 km/h takes
+    * exactly the same time: a turboprop and a regional jet fly a 500 km leg in
+    * the same 75 minutes, and paying for the faster one buys nothing.
+    *
+    * True makes each cap the same fraction of that aircraft's own cruise
+    * speed. An aircraft cruising at exactly 700 km/h is unaffected. */
+  val proportionalClimb: Boolean = boolean("rules.proportionalClimb", false)
+
   /** Whether applying to an alliance joins it outright.
     *
     * Upstream makes every application wait for a leader to approve it, which

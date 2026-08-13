@@ -38,8 +38,29 @@ object Computation {
     (allAirports.maxBy(_.basePower).basePower, allAirports.maxBy(_.basePopulation).basePopulation, allAirports.maxBy(_.baseIncome).baseIncome)
   }
 
-  //distance vs max speed
-  val speedLimits = List((300, 350), (400, 500), (400, 700))  
+  /*
+   * How fast an aircraft covers the first stretch of a route.
+   *
+   * A flight is not flown at cruise speed from the runway: it climbs and it
+   * descends, and the shorter the leg the more of it is spent doing so. The
+   * game models that by capping the first 300 km at 350 km/h, the next 400 at
+   * 500, the next 400 at 700, and only then letting the aircraft's own speed
+   * count.
+   *
+   * Fixed caps have a consequence nobody intends. Under about 700 km EVERY
+   * aircraft that cruises above 700 km/h takes exactly the same time, so a
+   * turboprop and a regional jet fly a 500 km leg in the same 75 minutes and
+   * the faster aircraft is worth nothing on the routes most people fly. On the
+   * map they move identically, which is how this was noticed.
+   *
+   * With rules.proportionalClimb each cap becomes the same FRACTION of that
+   * aircraft's own cruise speed - a half, five sevenths, all of it - so a
+   * faster aircraft is faster everywhere. One cruising at exactly 700 km/h
+   * flies precisely as before, which makes this a pivot rather than a general
+   * speed-up.
+   */
+  val speedLimits = List((300, 350), (400, 500), (400, 700))
+  private[this] val topSpeedLimit = speedLimits.map(_._2).max
   def calculateDuration(airplaneModel: Model, distance : Int) : Int = {
     val speed =
       if (airplaneModel.category == com.patson.model.airplane.Model.Category.SUPERSONIC) {
@@ -53,7 +74,13 @@ object Computation {
     var remainDistance = distance
     var duration = 0;
     for ((distanceBucket, maxSpeed) <- speedLimits if(remainDistance > 0)) {
-      val speed = Math.min(maxSpeed, airplaneSpeed)
+      val speed =
+        if (GameConfig.proportionalClimb) {
+          // The fraction is never above one, so this cannot outrun the aircraft.
+          Math.max(1, (airplaneSpeed * maxSpeed.toDouble / topSpeedLimit).toInt)
+        } else {
+          Math.min(maxSpeed, airplaneSpeed)
+        }
       if (distanceBucket >= remainDistance) {
         duration += remainDistance * 60 / speed
       } else {
