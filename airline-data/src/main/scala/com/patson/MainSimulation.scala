@@ -29,16 +29,7 @@ object MainSimulation extends App {
     if (config.hasPath("simulation.cycleDurationSeconds")) config.getInt("simulation.cycleDurationSeconds") else 30 * 60
   }
   println(s"!!!!!!!!!!!!!!!CYCLE DURATION IS $CYCLE_DURATION seconds")
-  var currentWeek: Int = 0
 
-//  implicit val actorSystem = ActorSystem("rabbit-akka-stream")
-
-//  import actorSystem.dispatcher
-
-//  implicit val materializer = FlowMaterializer()
-  
-  mainFlow
-  
   // A file whose appearance runs a cycle at once, without waiting out the rest
   // of the interval. The web site cannot simply ask for one - it is a separate
   // process, and reaching into this one would mean opening a door that stays
@@ -51,6 +42,16 @@ object MainSimulation extends App {
     else "/tmp/airline-force-cycle"
   }
 
+  var currentWeek: Int = 0
+
+//  implicit val actorSystem = ActorSystem("rabbit-akka-stream")
+
+//  import actorSystem.dispatcher
+
+//  implicit val materializer = FlowMaterializer()
+  
+  mainFlow
+  
   def mainFlow() = {
     val actor = actorSystem.actorOf(Props[MainSimulationActor])
     actorSystem.scheduler.schedule(Duration.Zero, Duration(CYCLE_DURATION, TimeUnit.SECONDS), actor, Start)

@@ -322,12 +322,21 @@
       zoom: opts.zoom != null ? opts.zoom : 3,
       minZoom: opts.minZoom != null ? opts.minZoom : 2,
       maxZoom: opts.maxZoom != null ? opts.maxZoom : 18,
-      zoomControl: opts.disableDefaultUI ? false : true,
+      // Leaflet puts its zoom buttons at the top left, where the game's own
+      // top bar is - so they showed through it, half hidden behind the money
+      // and the airline name. Google, which this page was built around, puts
+      // them at the bottom right, so that is where they go; the corner is
+      // added below rather than here.
+      zoomControl: false,
       attributionControl: true,
       // The game draws thousands of markers; canvas keeps that usable.
       preferCanvas: true,
       worldCopyJump: true
     });
+
+    if (!opts.disableDefaultUI) {
+      L.control.zoom({ position: 'bottomright' }).addTo(this._leaflet);
+    }
 
     this._theme = currentTheme();
     if (darkFilterWanted(this._theme)) {

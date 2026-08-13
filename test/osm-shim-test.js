@@ -267,6 +267,21 @@ const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome
          map.controls && map.controls[google.maps.ControlPosition.LEFT] !== undefined);
     });
 
+    // ------------------------------------------------------------- the corner
+    // Leaflet parks its zoom buttons at the top left by default, which is
+    // where the game's own top bar is - money, airline name, reputation. They
+    // showed through it. Google, which this page was built around, puts them
+    // at the bottom right.
+    group('zoom buttons', () => {
+      const container = (map._leaflet && map._leaflet.getContainer()) || document.body;
+      ok('the zoom buttons exist',
+         !!container.querySelector('.leaflet-control-zoom'));
+      ok('they are not under the top bar',
+         !container.querySelector('.leaflet-top.leaflet-left .leaflet-control-zoom'));
+      ok('they are in the bottom right, where Google puts them',
+         !!container.querySelector('.leaflet-bottom.leaflet-right .leaflet-control-zoom'));
+    });
+
     // --------------------------------------------------------------- heatmap
     group('heatmap', () => {
       const h = new google.maps.visualization.HeatmapLayer({ data: [] });
