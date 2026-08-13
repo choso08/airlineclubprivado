@@ -935,7 +935,7 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
           case Some(rejection) =>
             Ok(Json.obj("error" -> JsString(rejection))) //have to send ok as the jquery plugin's error cannot read the response
           case None =>
-            val data =Files.readAllBytes(logoFile)
+            val data = LogoUtil.toLogoSize(logoFile)
             LogoUtil.saveLogo(airlineId, data)
 
             println("Uploaded logo for airline " + request.user)

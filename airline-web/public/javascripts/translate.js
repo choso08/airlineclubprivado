@@ -776,6 +776,146 @@
       '&gt;&gt; Search for a Flight in-game': '&gt;&gt; Procurar um voo no jogo',
       'What changed': 'O que mudou',
 
+
+      // ------------------------------------------- explanations and hints
+      // The sentences the game uses to explain itself. These matter most of
+      // all: a label can be guessed from where it sits, a paragraph cannot.
+      '* Drag and drop airplane icon to another airplane icon to swap schedules and settings':
+        '* Arrasta o ícone de um avião para cima de outro para trocar horários e definições',
+      '* Drag and drop airplane icon to another box to switch configuration':
+        '* Arrasta o ícone de um avião para outra caixa para mudar a configuração',
+      '* Drag and drop airplane icon to another box to switch home base':
+        '* Arrasta o ícone de um avião para outra caixa para mudar a base',
+      '* Airplane Family # +': '* Família de aviões # +',
+      '* Airplane Model #': '* Modelo de avião #',
+      '- Adjustments': '- Ajustes',
+      '- Factors': '- Fatores',
+      '- Fleet age': '- Idade da frota',
+      '- Fleet Age per Route': '- Idade da frota por rota',
+      '- Service level per route': '- Nível de serviço por rota',
+      '- Service Star level per route': '- Estrelas de serviço por rota',
+      '- Company wide Service Quality': '- Qualidade do serviço em toda a companhia',
+      '- Company wide level Service Quality (by Service Funding in Office View)':
+        '- Qualidade do serviço da companhia (definida pelo investimento no Escritório)',
+      'Airport loyalty affects:': 'A lealdade do aeroporto afeta:',
+      'Airport loyalty is built up by:': 'A lealdade do aeroporto ganha-se com:',
+      'Increasing number of loyalists of this airport':
+        'Aumentar o número de fiéis neste aeroporto',
+      'Loyalist are gained by providing satisfying services to passengers originate from this airport.':
+        'Ganham-se fiéis dando bom serviço aos passageiros que partem deste aeroporto.',
+      'Becoming national or partnered airlines of this country':
+        'Tornar-se companhia nacional ou parceira deste país',
+      'Flight Quality Expectation': 'Qualidade esperada do voo',
+      'Flight Quality is affected by:': 'A qualidade do voo depende de:',
+      'Overall quality is determined by:': 'A qualidade geral resulta de:',
+      'Some passengers are reluctant to take flights that do not match expected quality':
+        'Há passageiros que evitam voos que não chegam à qualidade que esperam',
+      'Passenger satisfaction is reflected by Satisfaction Factor (SF) of a flight.':
+        'A satisfação dos passageiros aparece no Fator de Satisfação (SF) do voo.',
+      'Quality expection for this route from passengers of this airport:':
+        'Qualidade que os passageiros deste aeroporto esperam nesta rota:',
+      'Airplane maintenance cost is multiplied by this factor. Maintenance factor =':
+        'O custo de manutenção é multiplicado por este fator. Fator de manutenção =',
+      'In order to completely fix fuel price, Oil Contract should be signed':
+        'Para fixar o preço do combustível por completo é preciso assinar um contrato',
+      'Oil from inventory still fluctuates with the market price but to a smaller degree depending on the policy type':
+        'O combustível em reserva ainda acompanha o mercado, mas menos, conforme a política escolhida',
+      'Other than the cash price, all the other boosts are one-time only. The value will drop back to normal after a while':
+        'Tirando o dinheiro, os reforços são todos temporários e voltam ao normal passado algum tempo',
+      'Temporary boost such as negotiation great success or events':
+        'Reforço temporário, por exemplo de um grande sucesso numa negociação ou de um evento',
+      'Exceeding operation capacity of current base. Extra overtime compensation of':
+        'Ultrapassa a capacidade da base atual. Compensação extra de horas extra de',
+      'Difficulty value should be less than delegates available below.':
+        'A dificuldade tem de ser menor do que os delegados disponíveis em baixo.',
+      'Hover over the Red Cross icon above for details.':
+        'Passa o rato pela cruz vermelha acima para veres os detalhes.',
+      'Each delegate level provides': 'Cada nível de delegado dá',
+      'First delegate with each level provides': 'O primeiro delegado de cada nível dá',
+      'delegates to maintain current bases in this country':
+        'delegados para manter as bases atuais neste país',
+      'loyalty. Each additional delegates will only be 50% as effective as the previous one. Delegate starts at level 0 and progress over time. Hover over each delegate above to see details':
+        'de lealdade. Cada delegado a mais rende metade do anterior. Os delegados começam no nível 0 e sobem com o tempo. Passa o rato por cada um para veres os detalhes',
+      'relationship points. Delegate starts at level 0 and progress over time. Hover over each delegate above to see details':
+        'pontos de relação. Os delegados começam no nível 0 e sobem com o tempo. Passa o rato por cada um para veres os detalhes',
+      'Discount is capped at 80%': 'O desconto não passa dos 80%',
+      'Common in low income countries': 'Comum em países de baixo rendimento',
+      'For more info, please refer to the survey': 'Para saber mais, vê o inquérito',
+      'will be charged per week for this change.': 'será cobrado por semana por esta alteração.',
+      'This will replace': 'Isto vai substituir',
+      'Confirm Purchase of': 'Confirmar a compra de',
+      'reputation points (': 'pontos de reputação (',
+      'Reputation increased by': 'Reputação aumentada em',
+      'edit here': 'editar aqui',
+      'as Favorite': 'como favorito',
+      'as your new Favorite': 'como o teu novo favorito',
+
+      // ---------------------------------------------------- more labels
+      'Airline Mod:': 'Moderação da companhia:',
+      'User Mod:': 'Moderação do utilizador:',
+      'Basic support:': 'Apoio base:',
+      'Capacity support:': 'Apoio em capacidade:',
+      'Frequency support:': 'Apoio em frequência:',
+      'Charms:': 'Encantos:',
+      'Construction Time Discount:': 'Desconto no tempo de construção:',
+      'Price Discount:': 'Desconto no preço:',
+      'Discount:': 'Desconto:',
+      'Discount /': 'Desconto /',
+      'Penalty': 'Penalização',
+      'Factor': 'Fator',
+      'Growth': 'Crescimento',
+      'Elite': 'Elite',
+      'Require': 'Requer',
+      'Role:': 'Função:',
+      'Owner:': 'Dono:',
+      'Pool': 'Disponíveis',
+      'Supplies:': 'Consumíveis:',
+      'SF': 'FS',
+      'IATA:': 'IATA:',
+      'IATA/ICAO:': 'IATA/ICAO:',
+      'IP:': 'IP:',
+      'UUID:': 'UUID:',
+      'Principal Airport:': 'Aeroporto principal:',
+      'Weekly Revenue:': 'Receita semanal:',
+      'Sold Assets': 'Bens vendidos',
+      'Sold Bases': 'Bases vendidas',
+      'Normal (10 attempts)': 'Normal (10 tentativas)',
+      'Hard (5 attempts, double reward)': 'Difícil (5 tentativas, recompensa a dobrar)',
+      'You have exhausted all your attempts! Try again next week!':
+        'Esgotaste as tentativas todas. Tenta outra vez para a semana.',
+      'You will get new clue for each guess you make':
+        'Cada palpite dá-te uma pista nova',
+      'You have picked the reward as below': 'Escolheste a recompensa abaixo',
+      'Please pick your reward as below:': 'Escolhe a tua recompensa:',
+      'Please pick your reward as below, you can always come back later to make your choice!':
+        'Escolhe a tua recompensa. Podes sempre voltar mais tarde para decidir.',
+
+      // -------------------------------------------------------- olympics
+      'Host City': 'Cidade anfitriã',
+      'Host City:': 'Cidade anfitriã:',
+      'Voted City:': 'Cidade votada:',
+      'Olympics Host City Voting (1 : highest precedence)':
+        'Votação da cidade anfitriã (1 = maior preferência)',
+      'Current Olympics Passenger Score:': 'Pontuação olímpica atual:',
+      'Olympics Passenger Score Goal:': 'Objetivo de pontuação olímpica:',
+      'Olympics Passenger Score from previous week:': 'Pontuação olímpica da semana anterior:',
+      'Target Olympics Passenger Score of this week:': 'Pontuação olímpica pretendida esta semana:',
+      'Total Olympics Passengers (all airlines):': 'Total de passageiros olímpicos (todas as companhias):',
+      'Total Olympics Passengers transported': 'Total de passageiros olímpicos transportados',
+      'Total Olympics Passengers missed': 'Total de passageiros olímpicos perdidos',
+      'Phase 1: Select Mission Candidates': 'Fase 1: escolher as candidatas',
+      'Phase 2: Mission In Progress': 'Fase 2: missão a decorrer',
+      'Year 1 - Host City Voting': 'Ano 1 - votação da cidade anfitriã',
+      'Year 2 - Winning City Bid Announcement': 'Ano 2 - anúncio da cidade vencedora',
+      'Year 3 - Games Preparation': 'Ano 3 - preparação dos jogos',
+      'Year 4 - Year of Summer Olympics': 'Ano 4 - ano dos Jogos de Verão',
+
+      // ------------------------------------------------------- christmas
+      'Santa, Where are you?': 'Pai Natal, onde estás?',
+      'Santa is at': 'O Pai Natal está em',
+      'Search for Santa here': 'Procurar o Pai Natal aqui',
+      'Woohoo! You have found Santa!': 'Boa! Encontraste o Pai Natal!',
+
       // ------------------------------------------- added by this instance
       'search aircraft': 'procurar avião',
       'search airport': 'procurar aeroporto',

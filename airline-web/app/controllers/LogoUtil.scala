@@ -36,10 +36,49 @@ object LogoUtil {
     }
 
     val image = ImageIO.read(logoFile.toFile)
-    if (image.getHeight() != imageHeight || image.getWidth() != imageWidth) {
-      return Some("Image should be " + imageWidth + "px wide and " + imageHeight + "px tall")
+    if (image == null) {
+      return Some("Cannot read that image")
     }
+    // Deliberately no size check. It used to insist on exactly 24 by 12 and
+    // reject anything else, which is a size nobody has an image in - so the
+    // usual outcome was an upload that appeared to work, a logo that never
+    // changed, and no explanation. The picture is scaled instead; see
+    // toLogoSize.
     return None
+  }
+
+  /**
+   * Scale an uploaded picture to the size the game draws logos at.
+   *
+   * The logo appears beside the airline name at 24 by 12 pixels and nowhere
+   * else, so there is nothing to be gained by insisting the file already be
+   * that size and a great deal lost: 24 by 12 is a size no image editor
+   * produces by accident, and the rejection came back through an uploader that
+   * shows it quietly.
+   *
+   * Anything already the right size is returned untouched, so nothing is
+   * re-encoded for no reason.
+   */
+  def toLogoSize(source : Path) : Array[Byte] = {
+    val image = ImageIO.read(source.toFile)
+    if (image.getWidth == imageWidth && image.getHeight == imageHeight) {
+      return java.nio.file.Files.readAllBytes(source)
+    }
+
+    val scaled = new java.awt.image.BufferedImage(imageWidth, imageHeight, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+    val graphics = scaled.createGraphics()
+    // Bilinear rather than nearest neighbour: shrinking a photograph to 24
+    // pixels wide without it is a mess of stray pixels.
+    graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+      java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+    graphics.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
+      java.awt.RenderingHints.VALUE_RENDER_QUALITY)
+    graphics.drawImage(image, 0, 0, imageWidth, imageHeight, null)
+    graphics.dispose()
+
+    val out = new java.io.ByteArrayOutputStream()
+    ImageIO.write(scaled, "png", out)
+    out.toByteArray
   }
   
   def getBlankLogo() = {
