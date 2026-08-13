@@ -111,6 +111,13 @@ public class GoogleImageUtil {
 				logger.info("Google resource on " + key + " is no longer valid");
 				GoogleResourceSource.deleteResource(key.getId(), ResourceType.apply(resourceTypeValue));
 				return Optional.empty();
+			} catch (WikimediaImageUtil.LookupFailedException e) {
+				// Not an answer - we could not ask. Rethrowing keeps it out of
+				// both the database and the in-memory cache, so the next page
+				// view tries again instead of inheriting one bad minute of
+				// network for the rest of the game.
+				logger.info("Image lookup for " + key + " could not be made: " + e.getMessage());
+				throw e;
 			} catch (Throwable t) {
 				logger.warn("Unexpected failure for google resource loading on " + key + " : " + t.getMessage(), t);
 				return Optional.empty();
@@ -315,7 +322,10 @@ public class GoogleImageUtil {
 			Optional<URL> result = cityCache.get(new CityKey(airportId, cityName, latitude, longitude));
 			return result.orElse(null);
 		} catch (Exception e) {
-			if (!(e.getCause() instanceof OverLimitException)) {
+			// An unreachable image service is an ordinary condition on a home
+			// server, not something to print a stack trace over on every view.
+			if (!(e.getCause() instanceof OverLimitException)
+					&& !(e.getCause() instanceof WikimediaImageUtil.LookupFailedException)) {
 				e.printStackTrace();
 			}
 			return null;
@@ -330,7 +340,10 @@ public class GoogleImageUtil {
 			Optional<URL> result = airportCache.get(new AirportKey(airportId, airportName, latitude, longitude));
 			return result.orElse(null);
 		} catch (Exception e) {
-			if (!(e.getCause() instanceof OverLimitException)) {
+			// An unreachable image service is an ordinary condition on a home
+			// server, not something to print a stack trace over on every view.
+			if (!(e.getCause() instanceof OverLimitException)
+					&& !(e.getCause() instanceof WikimediaImageUtil.LookupFailedException)) {
 				e.printStackTrace();
 			}
 			return null;

@@ -293,8 +293,12 @@
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>');
 
   // The game keeps its choice in a global (and a cookie) from map-style.js.
+  // Before a player has ever used the switch that global is not set yet, and
+  // then the server's map.theme decides.
   function currentTheme() {
-    return (global.currentStyles === 'light') ? 'light' : 'dark';
+    if (global.currentStyles === 'light') return 'light';
+    if (global.currentStyles === 'dark') return 'dark';
+    return (global.OSM_DEFAULT_THEME === 'light') ? 'light' : 'dark';
   }
 
   function tileUrlFor(theme) {

@@ -40,6 +40,22 @@ import java.util.regex.Pattern;
 public class WikimediaImageUtil {
 	private final static Logger logger = LoggerFactory.getLogger(WikimediaImageUtil.class);
 
+	/**
+	 * Wikipedia could not be asked - no network, a timeout, an error status.
+	 *
+	 * This exists to keep "there is no photograph of this place" apart from "I
+	 * was unable to find out". The caller records the first permanently, so
+	 * that a place with no picture is not looked up again on every page view.
+	 * Recording the second the same way would be a lie that never expires: one
+	 * bad minute of network, and that airport has no picture for the rest of
+	 * the game's life.
+	 */
+	public static class LookupFailedException extends RuntimeException {
+		public LookupFailedException(String message, Throwable cause) {
+			super(message, cause);
+		}
+	}
+
 	private final static String USER_AGENT =
 		"AirlineClubSelfHosted/1.0 (private game server; https://github.com/patsonluk/airline)";
 
@@ -80,9 +96,11 @@ public class WikimediaImageUtil {
 				URLEncoder.encode(language(), StandardCharsets.UTF_8),
 				latitude, longitude, radius, THUMB_WIDTH);
 
+			// fetch returns null when Wikipedia answered with something other
+			// than 200 - that is a failure to ask, not an answer of "no photo".
 			String body = fetch(endpoint);
 			if (body == null) {
-				return null;
+				throw new LookupFailedException("Wikipedia did not answer for " + describeFor, null);
 			}
 
 			// The response is small and its shape is fixed, so a regex is
@@ -98,12 +116,15 @@ public class WikimediaImageUtil {
 			logger.info("Wikipedia image for {} -> {}", describeFor, imageUrl);
 			return new URL(imageUrl);
 
+		} catch (LookupFailedException e) {
+			throw e;
 		} catch (Exception e) {
 			// Never let a missing decorative picture break the page that wanted
-			// it. The caller treats null as "no image" and shows its
-			// placeholder.
+			// it - but do say that this was a failure rather than an answer, so
+			// the caller does not write "no photograph" into the database and
+			// leave this place blank for good.
 			logger.warn("Could not fetch a Wikipedia image for {}: {}", describeFor, e.toString());
-			return null;
+			throw new LookupFailedException("Could not reach Wikipedia for " + describeFor, e);
 		}
 	}
 

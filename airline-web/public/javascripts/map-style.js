@@ -16,7 +16,10 @@ function initStyles() {
 	if ($.cookie('currentMapStyles')) {
 		currentStyles = $.cookie('currentMapStyles')
 	} else {
-		currentStyles = 'dark'
+		// First visit: take the server's map.theme setting. Upstream always
+		// started dark, which is still the default, but a host who prefers
+		// light maps should not have to tell every player to click the switch.
+		currentStyles = (window.OSM_DEFAULT_THEME === 'light') ? 'light' : 'dark'
 		$.cookie('currentMapStyles', currentStyles);
 	}
 	console.log("onload " + currentStyles)
@@ -55,7 +58,15 @@ function toggleMapLight() {
 	console.log($.cookie('currentMapStyles'))
 	
 	map.setOptions({styles: getMapStyles()});
-	refreshLinks(false)
+	// Redrawing the routes in the new palette is a nicety; the theme has
+	// already changed by this point. It throws on the sign-in page, where
+	// there is no airline to draw routes for, and an uncaught error there
+	// looks to a player as though the switch is broken.
+	try {
+		refreshLinks(false)
+	} catch (e) {
+		console.log('map theme changed, routes not redrawn: ' + e.message)
+	}
 }
 
 var darkStyles =  
