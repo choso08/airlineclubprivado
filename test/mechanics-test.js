@@ -236,6 +236,19 @@ const NOTES = [
     describe: n => `${n} route(s) have no delivered aircraft, so they fly nothing`
   },
   {
+    // The symptom of a route priced out of the market, and indistinguishable
+    // by eye from a broken one: the aircraft fly, the costs are paid, and
+    // nobody boards. Worth surfacing because the game gives no hint that a
+    // price is the reason.
+    name: 'flights carrying nobody',
+    sql: `SELECT COUNT(*) FROM link_consumption lc JOIN link l ON l.id = lc.link
+          WHERE l.transport_type = 0 AND lc.capacity_economy > 0
+            AND lc.sold_seats_economy = 0 AND lc.sold_seats_business = 0
+            AND lc.sold_seats_first = 0`,
+    describe: n => `${n} route(s) flew with every seat empty - usually the price, `
+                 + `not a fault. Compare with what the route dialog suggests`
+  },
+  {
     name: 'stored frequency out of date',
     sql: `SELECT COUNT(*) FROM link l
           WHERE l.transport_type = 0 AND l.frequency <> COALESCE((
