@@ -701,6 +701,12 @@
       'Negative Comment': 'Comentário negativo',
       'Add Self Note': 'Adicionar nota pessoal',
       'Search History': 'Histórico de procuras',
+      // What the search boxes answer when they have nothing to show. These
+      // come down from the server as text, not as a panel, which is why they
+      // are here rather than in a template.
+      'No match': 'Nada encontrado',
+      'Search with at least 2 characters': 'Escreve pelo menos 2 letras',
+      'Search with at least 3 characters': 'Escreve pelo menos 3 letras',
       'Event': 'Evento',
       'Clue': 'Pista',
       'Selection': 'Seleção',

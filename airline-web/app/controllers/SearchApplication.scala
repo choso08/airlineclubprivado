@@ -235,25 +235,14 @@ class SearchApplication @Inject()(cc: ControllerComponents) extends AbstractCont
     if (input.length < 3) {
       Ok(Json.obj("message" -> "Search with at least 3 characters"))
     } else {
-      // Elasticsearch first, the database if it is not there.
-      //
-      // Upstream documents Elasticsearch as optional, and it is - for signing
-      // up. It is not optional for this, and without it these boxes accept
-      // what you type and answer nothing at all, for ever. Which makes every
-      // airport the map does not already show unreachable: the map draws the
+      // Answered from the game's own index - see SearchService. Upstream
+      // documents Elasticsearch as optional, and it is - for signing up. It
+      // was not optional for this, and without it these boxes accepted what
+      // you typed and answered nothing at all, for ever. Which made every
+      // airport the map does not already draw unreachable: the map shows the
       // four thousand most powerful and one per country, so somewhere like
-      // Principe exists in the world and cannot be found by anyone.
-      //
-      // Four thousand rows is nothing for a LIKE, so the fallback is not a
-      // degraded mode - it is simply how this works here.
-      val result: List[AirportSearchResult] = {
-        val fromIndex = try {
-          SearchUtil.searchAirport(input).asScala.toList
-        } catch {
-          case _ : Throwable => List.empty
-        }
-        if (fromIndex.nonEmpty) fromIndex else searchAirportInDatabase(input)
-      }
+      // Principe existed in the world and could not be found by anyone.
+      val result: List[AirportSearchResult] = SearchService.searchAirport(input).asScala.toList
       if (result.isEmpty) {
         Ok(Json.obj("message" -> "No match"))
       } else {
@@ -262,68 +251,11 @@ class SearchApplication @Inject()(cc: ControllerComponents) extends AbstractCont
     }
   }
 
-  /**
-   * Airports whose code, name or city starts with (or contains) what was typed.
-   *
-   * Ordered so that the ones a player is most likely to mean come first: an
-   * exact IATA code, then names that start with the text, then anything that
-   * contains it, and within each group the busiest airport first. Someone
-   * typing "lis" wants Lisbon before Lisburn.
-   */
-  /**
-   * Strip accents and case, so what someone types finds what is written.
-   *
-   * Sao Tome is stored with both of its accents, and nobody reaches for them at
-   * a search box - so "tome" found nothing at all, which reads as the airport
-   * not existing. Works in both directions: the accented spelling still finds
-   * it too.
-   */
-  private def fold(text : String) : String = {
-    if (text == null) return ""
-    java.text.Normalizer.normalize(text.trim, java.text.Normalizer.Form.NFD)
-      .replaceAll("\\p{M}", "")
-      .toUpperCase
-  }
-
-  private def searchAirportInDatabase(input : String) : List[AirportSearchResult] = {
-    val term = fold(input)
-    if (term.isEmpty) {
-      return List.empty
-    }
-    val matches = AirportSource.loadAirportsByCriteria(List.empty, false).filter { airport =>
-      fold(airport.iata) == term ||
-      fold(airport.name).contains(term) ||
-      fold(airport.city).contains(term)
-    }
-    matches.map { airport =>
-      val rank =
-        if (fold(airport.iata) == term) 3.0
-        else if (fold(airport.city).startsWith(term) || fold(airport.name).startsWith(term)) 2.0
-        else 1.0
-      new AirportSearchResult(airport.id, airport.iata, airport.name, airport.city,
-        airport.countryCode, airport.power, rank)
-    }.sortBy(result => (-result.getScore, -result.getPower)).take(20)
-  }
-
   def searchCountry(input : String) = Action {
     if (input.length < 2) {
       Ok(Json.obj("message" -> "Search with at least 2 characters"))
     } else {
-      val result: List[CountrySearchResult] = {
-        val fromIndex = try { SearchUtil.searchCountry(input).asScala.toList }
-                        catch { case _ : Throwable => List.empty }
-        if (fromIndex.nonEmpty) fromIndex else {
-          val term = fold(input)
-          CountrySource.loadAllCountries()
-            .filter(country => fold(country.name).contains(term) || fold(country.countryCode) == term)
-            .sortBy(country => (if (fold(country.name).startsWith(term)) 0 else 1, -country.airportPopulation))
-            .take(20)
-            .map(country => new CountrySearchResult(country.name, country.countryCode,
-              country.airportPopulation,
-              if (fold(country.countryCode) == term) 3.0
-              else if (fold(country.name).startsWith(term)) 2.0 else 1.0))
-        }
-      }
+      val result: List[CountrySearchResult] = SearchService.searchCountry(input).asScala.toList
       if (result.isEmpty) {
         Ok(Json.obj("message" -> "No match"))
       } else {
@@ -336,7 +268,7 @@ class SearchApplication @Inject()(cc: ControllerComponents) extends AbstractCont
     if (input.length < 2) {
       Ok(Json.obj("message" -> "Search with at least 2 characters"))
     } else {
-      val result: List[ZoneSearchResult] = SearchUtil.searchZone(input).asScala.toList
+      val result: List[ZoneSearchResult] = SearchService.searchZone(input).asScala.toList
       if (result.isEmpty) {
         Ok(Json.obj("message" -> "No match"))
       } else {
@@ -347,24 +279,12 @@ class SearchApplication @Inject()(cc: ControllerComponents) extends AbstractCont
 
   def searchAirline(input : String) = Action {
     if (input.length < 2) {
-      Ok(Json.obj("message" -> "Search with at least 3 characters"))
+      Ok(Json.obj("message" -> "Search with at least 2 characters"))
     } else {
-      // Same fallback as the airports: without Elasticsearch this returned
-      // nothing, and a filter that matches nothing is silently no filter at
-      // all - so searching by airline listed every route in the world.
-      val result: List[AirlineSearchResult] = {
-        val fromIndex = try { SearchUtil.searchAirline(input).asScala.toList }
-                        catch { case _ : Throwable => List.empty }
-        if (fromIndex.nonEmpty) fromIndex else {
-          val term = fold(input)
-          AirlineSource.loadAllAirlines(false)
-            .filter(airline => fold(airline.name).contains(term))
-            .sortBy(airline => (if (fold(airline.name).startsWith(term)) 0 else 1, airline.name))
-            .take(20)
-            .map(airline => new AirlineSearchResult(airline,
-              if (fold(airline.name).startsWith(term)) 2.0 else 1.0, false))
-        }
-      }
+      // Same as the airports: without Elasticsearch this returned nothing, and
+      // a filter that matches nothing is silently no filter at all - so
+      // searching by airline listed every route in the world.
+      val result: List[AirlineSearchResult] = SearchService.searchAirline(input).asScala.toList
       if (result.isEmpty) {
         Ok(Json.obj("message" -> "No match"))
       } else {
@@ -375,20 +295,9 @@ class SearchApplication @Inject()(cc: ControllerComponents) extends AbstractCont
 
   def searchAlliance(input : String) = Action {
     if (input.length < 2) {
-      Ok(Json.obj("message" -> "Search with at least 3 characters"))
+      Ok(Json.obj("message" -> "Search with at least 2 characters"))
     } else {
-      val result: List[AllianceSearchResult] = {
-        val fromIndex = try { SearchUtil.searchAlliance(input).asScala.toList }
-                        catch { case _ : Throwable => List.empty }
-        if (fromIndex.nonEmpty) fromIndex else {
-          val term = fold(input)
-          AllianceSource.loadAllAlliances(false)
-            .filter(alliance => fold(alliance.name).contains(term))
-            .take(20)
-            .map(alliance => new AllianceSearchResult(alliance.id, alliance.name,
-              if (fold(alliance.name).startsWith(term)) 2.0 else 1.0))
-        }
-      }
+      val result: List[AllianceSearchResult] = SearchService.searchAlliance(input).asScala.toList
       if (result.isEmpty) {
         Ok(Json.obj("message" -> "No match"))
       } else {

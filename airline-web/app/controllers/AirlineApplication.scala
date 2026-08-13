@@ -882,7 +882,7 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
         val airline = request.user
         airline.setAirlineCode(airlineCode)
         AirlineSource.saveAirlineCode(airlineId, airlineCode)
-        SearchUtil.updateAirline(AirlineCache.getAirline(airlineId).get)
+        SearchService.airlineUpdated(AirlineCache.getAirline(airlineId).get)
         Ok(Json.toJson(airline))
       }
     } else {
@@ -898,7 +898,7 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
         case Some(rejection) => BadRequest(Json.obj("reason"-> rejection))
         case None =>
           AirlineSource.updateAirlineName(airlineId, request.user.name, newName)
-          SearchUtil.updateAirline(AirlineCache.getAirline(airlineId).get)
+          SearchService.airlineUpdated(AirlineCache.getAirline(airlineId).get)
           Ok(Json.obj("name" -> newName))
       }
     } else {

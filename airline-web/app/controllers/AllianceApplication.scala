@@ -210,7 +210,7 @@ class AllianceApplication @Inject()(cc: ControllerComponents) extends AbstractCo
             val currentCycle = CycleSource.loadCycle()
             val newAlliance = Alliance(name = allianceName, creationCycle = currentCycle, members = List())
             AllianceSource.saveAlliance(newAlliance)
-            SearchUtil.addAlliance(newAlliance)
+            SearchService.allianceAdded(newAlliance)
 
             val allianceMember = AllianceMember(allianceId = newAlliance.id, airline = request.user, role = LEADER, joinedCycle = currentCycle)
             AllianceSource.saveAllianceMember(allianceMember)

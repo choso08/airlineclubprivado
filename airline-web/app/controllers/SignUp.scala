@@ -133,7 +133,7 @@ class SignUp @Inject()(cc: ControllerComponents, configuration: play.api.Configu
           AirlineSource.saveAirlines(List(newAirline))
           UserSource.setUserAirline(user, newAirline)
 
-          SearchUtil.addAirline(newAirline)
+          SearchService.airlineAdded(newAirline)
           
 //          val profile = StartupProfile.profilesById(userInput.profileId)
 //          profile.initializeAirline(newAirline)

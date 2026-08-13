@@ -7,7 +7,7 @@ import com.patson.model.notice.{AirlineNotice, NoticeCategory, TrackingNotice}
 import com.patson.stream.{CycleCompleted, CycleInfo, DirectDemandInfo, KeepAlivePing, KeepAlivePong, ReconnectPing, SimulationEvent}
 import com.patson.util.{AirlineCache, AirplaneModelDiscountCache, AirplaneOwnershipCache, AirportCache, DemandCache}
 import com.typesafe.config.ConfigFactory
-import controllers.{AirlineTutorial, AirportUtil, GooglePhotoUtil, PromptUtil, SearchUtil}
+import controllers.{AirlineTutorial, AirportUtil, GooglePhotoUtil, PromptUtil, SearchService}
 import models.PendingAction
 import play.api.libs.json.{JsNumber, JsObject, Json, OWrites}
 import websocket.chat.TriggerPing
@@ -119,7 +119,7 @@ sealed class LocalMainActor(remoteActor : ActorSelection) extends Actor {
           AirplaneOwnershipCache.invalidateAll()
           AirplaneModelDiscountCache.invalidateAll()
           AirportUtil.refreshAirports()
-          SearchUtil.refreshAlliances() //as sim might have deleted alliances
+          SearchService.alliancesChanged() //as sim might have deleted alliances
           if (bannerEnabled) {
             println("Banner is enabled. Refreshing banner on cycle complete")
             GooglePhotoUtil.refreshBanners()
