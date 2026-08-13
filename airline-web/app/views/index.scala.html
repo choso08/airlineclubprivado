@@ -117,6 +117,7 @@
 	     world's calendar starts from. *@
 	  window.GAME_CYCLE_SECONDS = @configuration.getOptional[Int]("simulation.cycleDurationSeconds").getOrElse(1800);
 	  window.GAME_START_EPOCH = Date.UTC(@configuration.getOptional[Int]("game.startYear").getOrElse(1970), 0, 1);
+	  window.GAME_TIME_SPEED = @configuration.getOptional[Double]("ui.gameTimeSpeed").getOrElse(1.0);
 	  @* Where the world map opens. *@
 	  window.MAP_DEFAULT_LAT = @configuration.getOptional[Double]("map.defaultLat").getOrElse(20.0);
 	  window.MAP_DEFAULT_LNG = @configuration.getOptional[Double]("map.defaultLng").getOrElse(150.644);

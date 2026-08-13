@@ -525,6 +525,30 @@ function refreshVisibleCanvas() {
 }
 
 var totalmillisecPerWeek = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * How much in-game time one cycle is worth, in milliseconds.
+ *
+ * A cycle has always been exactly one week: the clock crosses a whole week
+ * while the cycle runs, and the date advances seven days when it ends. At
+ * seven real minutes to the cycle that is a day every minute, which is a lot
+ * of calendar for a game people play an evening of.
+ *
+ * ui.gameTimeSpeed scales it without touching the simulation, which still
+ * thinks in weeks and pays out weekly. At 0.5 the clock and the calendar move
+ * at half the pace and a game week takes two cycles - the flights on the map
+ * slow to match, since they are drawn against this same clock.
+ *
+ * It stays continuous either way: where one cycle's clock ends is where the
+ * next one's begins, so the date never jumps.
+ */
+function gameTimePerCycle() {
+	var speed = parseFloat(window.GAME_TIME_SPEED)
+	if (isNaN(speed) || speed <= 0) {
+		speed = 1
+	}
+	return totalmillisecPerWeek * speed
+}
 var refreshInterval = 5000 //every 5 second
 var hasTickEstimation = false
 var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -569,7 +593,7 @@ function updateTime(cycle, fraction, cycleDurationEstimation) {
 	//January 1970 and the clock reads as 1970 + one week per cycle. The offset
 	//lets a private instance start in a year of its choosing instead; it is
 	//purely cosmetic, since nothing in the simulation reads the date.
-	gameTimeStart = (cycle + fraction) * totalmillisecPerWeek + (window.GAME_START_EPOCH || 0)
+	gameTimeStart = (cycle + fraction) * gameTimePerCycle() + (window.GAME_START_EPOCH || 0)
 
     var initialDurationTillNextTick
 	if (cycleDurationEstimation > 0) { //update incrementPerInterval
@@ -590,8 +614,8 @@ function updateTime(cycle, fraction, cycleDurationEstimation) {
 	//message lands.
 	var configuredCycleMillis = (window.GAME_CYCLE_SECONDS || 1800) * 1000
 	var timeMultiplier = cycleDurationEstimation > 0 ?
-	    totalmillisecPerWeek / cycleDurationEstimation :
-		totalmillisecPerWeek / configuredCycleMillis
+	    gameTimePerCycle() / cycleDurationEstimation :
+		gameTimePerCycle() / configuredCycleMillis
 	gameClockMultiplier = timeMultiplier
 
 
