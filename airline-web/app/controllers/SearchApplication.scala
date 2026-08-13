@@ -1,7 +1,7 @@
 package controllers
 
 import com.patson.DemandGenerator
-import com.patson.data.{AirportSource, AllianceSource, ConsumptionHistorySource, CountrySource, LinkSource}
+import com.patson.data.{AirlineSource, AirportSource, AllianceSource, ConsumptionHistorySource, CountrySource, LinkSource}
 import com.patson.model.Scheduling.TimeSlot
 import com.patson.model.{PassengerType, _}
 import com.patson.util.AirportCache
@@ -309,7 +309,21 @@ class SearchApplication @Inject()(cc: ControllerComponents) extends AbstractCont
     if (input.length < 2) {
       Ok(Json.obj("message" -> "Search with at least 2 characters"))
     } else {
-      val result: List[CountrySearchResult] = SearchUtil.searchCountry(input).asScala.toList
+      val result: List[CountrySearchResult] = {
+        val fromIndex = try { SearchUtil.searchCountry(input).asScala.toList }
+                        catch { case _ : Throwable => List.empty }
+        if (fromIndex.nonEmpty) fromIndex else {
+          val term = fold(input)
+          CountrySource.loadAllCountries()
+            .filter(country => fold(country.name).contains(term) || fold(country.countryCode) == term)
+            .sortBy(country => (if (fold(country.name).startsWith(term)) 0 else 1, -country.airportPopulation))
+            .take(20)
+            .map(country => new CountrySearchResult(country.name, country.countryCode,
+              country.airportPopulation,
+              if (fold(country.countryCode) == term) 3.0
+              else if (fold(country.name).startsWith(term)) 2.0 else 1.0))
+        }
+      }
       if (result.isEmpty) {
         Ok(Json.obj("message" -> "No match"))
       } else {
@@ -335,7 +349,22 @@ class SearchApplication @Inject()(cc: ControllerComponents) extends AbstractCont
     if (input.length < 2) {
       Ok(Json.obj("message" -> "Search with at least 3 characters"))
     } else {
-      val result: List[AirlineSearchResult] = SearchUtil.searchAirline(input).asScala.toList
+      // Same fallback as the airports: without Elasticsearch this returned
+      // nothing, and a filter that matches nothing is silently no filter at
+      // all - so searching by airline listed every route in the world.
+      val result: List[AirlineSearchResult] = {
+        val fromIndex = try { SearchUtil.searchAirline(input).asScala.toList }
+                        catch { case _ : Throwable => List.empty }
+        if (fromIndex.nonEmpty) fromIndex else {
+          val term = fold(input)
+          AirlineSource.loadAllAirlines(false)
+            .filter(airline => fold(airline.name).contains(term))
+            .sortBy(airline => (if (fold(airline.name).startsWith(term)) 0 else 1, airline.name))
+            .take(20)
+            .map(airline => new AirlineSearchResult(airline,
+              if (fold(airline.name).startsWith(term)) 2.0 else 1.0, false))
+        }
+      }
       if (result.isEmpty) {
         Ok(Json.obj("message" -> "No match"))
       } else {
@@ -348,7 +377,18 @@ class SearchApplication @Inject()(cc: ControllerComponents) extends AbstractCont
     if (input.length < 2) {
       Ok(Json.obj("message" -> "Search with at least 3 characters"))
     } else {
-      val result: List[AllianceSearchResult] = SearchUtil.searchAlliance(input).asScala.toList
+      val result: List[AllianceSearchResult] = {
+        val fromIndex = try { SearchUtil.searchAlliance(input).asScala.toList }
+                        catch { case _ : Throwable => List.empty }
+        if (fromIndex.nonEmpty) fromIndex else {
+          val term = fold(input)
+          AllianceSource.loadAllAlliances(false)
+            .filter(alliance => fold(alliance.name).contains(term))
+            .take(20)
+            .map(alliance => new AllianceSearchResult(alliance.id, alliance.name,
+              if (fold(alliance.name).startsWith(term)) 2.0 else 1.0))
+        }
+      }
       if (result.isEmpty) {
         Ok(Json.obj("message" -> "No match"))
       } else {
