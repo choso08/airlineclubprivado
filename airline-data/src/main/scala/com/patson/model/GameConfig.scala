@@ -56,7 +56,7 @@ object GameConfig {
 
   /** Weeks a delegate is tied up after negotiating a route, before it can be
     * sent anywhere else. Upstream: 12. */
-  val delegateCooldownCycles: Int = int("rules.delegateCooldownCycles", 6)
+  val delegateCooldownCycles: Int = int("rules.delegateCooldownCycles", 3)
 
   /** Reputation needed before an airline may upload its own logo or livery.
     * Upstream requires 40, which is a brake on a public server where anyone
