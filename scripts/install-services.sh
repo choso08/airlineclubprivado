@@ -175,7 +175,7 @@ if crontab -l >/dev/null 2>&1; then
   crontab -l 2>/dev/null | grep -v 'airline.*scripts/\(auto-update\|backup-db\).sh' | crontab - || true
 fi
 
-echo "   every 10 minutes: check for updates (does nothing when there are none)"
+echo "   every ${UPDATE_INTERVAL} minutes: check for updates (does nothing when there are none)"
 echo "   every night at 4am: back up the database"
 
 # ------------------------------------------------------------------ report ---
@@ -189,7 +189,7 @@ cat <<EOF
    The game now:
      - starts by itself when Linux starts
      - restarts by itself if it crashes
-     - updates itself within 10 minutes of a new version
+     - updates itself within ${UPDATE_INTERVAL} minutes of a new version
      - backs itself up every night at 4am
 
    Useful commands:
@@ -198,9 +198,10 @@ cat <<EOF
      journalctl -u airline-web -f                 watch the web site
      ./scripts/game-time.sh                       where the game is
      systemctl list-timers 'airline-*'            when updates/backups next run
+     ./scripts/update-status.sh                  why it is or is not updating
      journalctl -u airline-update -n 30           what the last update check did
 
-   To pause automatic updates without touching cron, set
+   To pause automatic updates, set
    AIRLINE_AUTO_UPDATE=off in game-settings.env.
 
 EOF
