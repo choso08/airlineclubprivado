@@ -76,7 +76,9 @@ object AllianceEvent extends Enumeration {
 
 object Alliance {
   val MAX_MEMBER_COUNT = 12
-  val ESTABLISH_MIN_MEMBER_COUNT = 3
+  // Airlines needed before an alliance is established rather than forming.
+  // Upstream: 3. Set with AIRLINE_ALLIANCE_MIN_MEMBERS.
+  val ESTABLISH_MIN_MEMBER_COUNT = GameConfig.allianceMinMembers
 
   val getReputationBonus: (Int => Double) = { (ranking: Int) =>
     if (ranking == 1) {

@@ -42,6 +42,12 @@ object GameConfig {
     * airline's margins; lowering it makes long routes cheap. Upstream: 70. */
   val fuelPrice: Double = double("economy.fuelPrice", 70)
 
+  /** Airlines needed before an alliance counts as established rather than
+    * merely forming - only an established alliance gets the code-sharing and
+    * the bonuses. Upstream: 3, which on a server of five people means half of
+    * everyone has to join one alliance before it does anything. */
+  val allianceMinMembers: Int = int("rules.allianceMinMembers", 2)
+
   /** Weeks a delegate is tied up after negotiating a route, before it can be
     * sent anywhere else. Upstream: 12. */
   val delegateCooldownCycles: Int = int("rules.delegateCooldownCycles", 6)
