@@ -139,11 +139,28 @@ EOF
   echo "   $name.timer"
 }
 
+# How often to look for a new version. A check that finds nothing costs one
+# `git fetch` and disturbs no one, so this can be short; the work only happens
+# when there is actually something new. Set it in game-settings.env - this
+# script does not read that file the way the others do, so it is picked out
+# here by hand.
+UPDATE_INTERVAL="${AIRLINE_UPDATE_INTERVAL_MINUTES:-}"
+if [[ -z "$UPDATE_INTERVAL" && -f "$REPO_ROOT/game-settings.env" ]]; then
+  UPDATE_INTERVAL="$(grep -m1 -E '^[[:space:]]*AIRLINE_UPDATE_INTERVAL_MINUTES=' \
+    "$REPO_ROOT/game-settings.env" | cut -d= -f2- | tr -d ' \r' || true)"
+fi
+UPDATE_INTERVAL="${UPDATE_INTERVAL:-5}"
+if ! [[ "$UPDATE_INTERVAL" =~ ^[0-9]+$ ]] || [[ "$UPDATE_INTERVAL" -lt 1 ]]; then
+  warn "AIRLINE_UPDATE_INTERVAL_MINUTES is not a whole number of minutes - using 5"
+  UPDATE_INTERVAL=5
+fi
+
 install_timer airline-update "Check for and apply Airline Club updates" \
   "$REPO_ROOT/scripts/auto-update.sh" \
-  "OnBootSec=5min
-OnUnitActiveSec=10min" \
+  "OnBootSec=2min
+OnUnitActiveSec=${UPDATE_INTERVAL}min" \
   "# Stagger slightly so an update never starts exactly on the backup."
+echo "   checking for updates every ${UPDATE_INTERVAL} minute(s)"
 
 install_timer airline-backup "Back up the Airline Club database" \
   "$REPO_ROOT/scripts/backup-db.sh" \

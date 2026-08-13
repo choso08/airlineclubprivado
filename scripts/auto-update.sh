@@ -4,12 +4,12 @@
 #   ./scripts/auto-update.sh
 #
 # Meant to be run on a timer. It is quiet and does nothing at all when the
-# repository is already up to date, so running it every ten minutes costs a
-# `git fetch` and no disruption.
+# repository is already up to date, so a check costs one `git fetch` and no
+# disruption - which is why it can run every few minutes.
 #
-# Install it (every 10 minutes) with `crontab -e`:
-#
-#   */10 * * * * cd $HOME/airline && ./scripts/auto-update.sh >> backups/auto-update.log 2>&1
+# scripts/install-services.sh installs the timer; how often it fires is
+# AIRLINE_UPDATE_INTERVAL_MINUTES in game-settings.env, 5 by default. Changing
+# that needs install-services.sh run again to rewrite the timer.
 #
 # What happens when an update IS found:
 #   1. the database is backed up

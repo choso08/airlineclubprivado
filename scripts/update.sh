@@ -182,6 +182,20 @@ else
 fi
 sudo systemctl restart airline-sim
 
+# The update timer is written by install-services.sh, which this does not run -
+# so a change to how often the game checks for updates sits in the settings
+# file doing nothing until somebody notices. Say so rather than let it be
+# quietly ignored.
+WANTED_INTERVAL="${AIRLINE_UPDATE_INTERVAL_MINUTES:-5}"
+INSTALLED_INTERVAL="$(grep -m1 -oE 'OnUnitActiveSec=[0-9]+min' \
+  /etc/systemd/system/airline-update.timer 2>/dev/null | grep -oE '[0-9]+' || true)"
+if [[ -n "$INSTALLED_INTERVAL" && "$INSTALLED_INTERVAL" != "$WANTED_INTERVAL" ]]; then
+  echo
+  echo ">> Update checks are still every ${INSTALLED_INTERVAL} minutes, but the settings"
+  echo "   file asks for ${WANTED_INTERVAL}. Rewrite the timer with:"
+  echo "     ./scripts/install-services.sh"
+fi
+
 echo ">> Done. Check both halves are healthy:"
 echo "     systemctl status airline-web airline-sim"
 echo "   If something broke, the backup from step 1 is in backups/."
