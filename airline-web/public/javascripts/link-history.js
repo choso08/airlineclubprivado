@@ -261,7 +261,14 @@ function animateHistoryFlightMarkers(framesPerAnimation) {
                     marker.isActive = false
                     //console.log("next departure " + marker.nextDepartureFrame)
                 } else {
-                    var newPosition = google.maps.geometry.spherical.interpolate(marker.from, marker.to, marker.elapsedDuration / marker.totalDuration)
+                    // Along the line as it is DRAWN, not along the great
+                    // circle - the two are different paths on a flat map, and
+                    // the aircraft on the flight map flew beside its own route
+                    // for the same reason. See interpolateAlongDrawnLine.
+                    var place = typeof interpolateAlongDrawnLine === 'function'
+                        ? interpolateAlongDrawnLine
+                        : google.maps.geometry.spherical.interpolate
+                    var newPosition = place(marker.from, marker.to, marker.elapsedDuration / marker.totalDuration)
                     marker.setPosition(newPosition)
                 }
             }
