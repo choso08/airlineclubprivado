@@ -22,8 +22,6 @@ libraryDependencies ++= Seq(
   "com.sun.mail" % "javax.mail" % "1.6.2"
 )
 
-// https://mvnrepository.com/artifact/org.elasticsearch.client/elasticsearch-rest-client
-libraryDependencies += "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.17.2"
 
 
 
