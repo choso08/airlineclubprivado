@@ -264,3 +264,46 @@ Not something to do without tests passing and a deliberate decision.
    for gameplay.
 
 Take a backup before each step: `./scripts/backup-db.sh`.
+
+
+---
+
+## Things that look broken and are not
+
+Notes from chasing symptoms that turned out to be the game working as designed.
+Worth keeping so the next person does not re-investigate them.
+
+### An empty departures board
+
+The board at an airport shows only the next **24 hours**, and route frequency
+is per **week**. A route at frequency 1 has a single fixed slot somewhere in
+the week, so most days it contributes nothing.
+
+Six routes out of Lisbon at frequencies 1,1,1,1,1,5 give ten departures a week
+- about 1.4 a day - and the slots are deterministic, computed from distance and
+airline id in `Scheduling.getLinkSchedule`. A day with none is ordinary.
+
+Check before assuming a fault:
+
+```sql
+SELECT a.name, l.frequency, l.capacity_economy, ap.iata
+FROM link l JOIN airline a ON a.id = l.airline
+JOIN airport ap ON ap.id = l.to_airport
+WHERE l.from_airport = (SELECT id FROM airport WHERE iata = 'LIS');
+```
+
+`frequency = 0` would be a real problem. Anything above that is just a quiet
+schedule.
+
+### Cycle timings on the target machine
+
+For reference, an i3-7100 with the optimisations applied:
+
+```
+cycle 53 spent 49 secs
+cycle 54 spent 55 secs
+```
+
+Better than the 2-2.5 minutes originally predicted for a 2-core machine, and
+close to the 4-core figure - which fits, since the wins were in database round
+trips rather than computation, and a slower machine was paying more for them.
