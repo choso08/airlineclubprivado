@@ -270,12 +270,24 @@
 		</div>
   		<div style="display: flex; align-items: center; flex-wrap: wrap;">
 			<span  style="padding: 0 4px;"><img class="clickable" src='@routes.Assets.versioned("images/icons/24px/equalizer.png")' onclick="toggleSettings()" title="Settings"></span>
-			<div style="display: none; display: flex; align-items: center;" id="loginDiv" class="topBarItem">
-				<input type="text" id="loginUserName" placeholder="username" tabindex=1/>
+			@* A real <form> with named fields, which is what makes the browser
+			   offer the names you have used before and lets a password manager
+			   save the login at all. Two loose <input>s with only an id - which
+			   is what these were - are invisible to both: nothing identifies
+			   them as a sign-in, so nothing is ever remembered or offered.
+
+			   It submits through login() and returns false, so the page never
+			   navigates; the form is there for the browser's benefit, and it
+			   makes Enter work in the username field as a side effect. *@
+			@* margin: 0 because a form carries a bottom margin by default and
+			   this one sits in a toolbar. *@
+			<form style="display: none; display: flex; align-items: center; margin: 0;" id="loginDiv" class="topBarItem"
+			      onsubmit="login(); return false;" autocomplete="on">
+				<input type="text" id="loginUserName" name="username" autocomplete="username" placeholder="username" tabindex=1/>
 				<a href="/forgot-id"  target="_blank" style="margin-right: 4px">
 					<img src='@routes.Assets.versioned("images/icons/question-frame.png")' title="Forgot User Name?">
 				</a>
-				<input type="password" id="loginPassword" onkeydown="passwordLogin(event)" tabindex=2 placeholder="password"/>
+				<input type="password" id="loginPassword" name="password" autocomplete="current-password" onkeydown="passwordLogin(event)" tabindex=2 placeholder="password"/>
 				<a href="/forgot-password"  target="_blank" style="margin-right: 4px">
 					<img src='@routes.Assets.versioned("images/icons/question-frame.png")' title="Forgot Password?">
 				</a>
@@ -283,7 +295,7 @@
 				<div class="mobileOnly" onclick="login()"><img src='@routes.Assets.versioned("images/icons/24px/login.png")' title="Login"></div>
 
 				<div class="button desktopOnly" onclick="" tabindex=4><a href="signup">Sign Up</a></div>
-			</div>
+			</form>
 			<div style="display: none;" id="logoutDiv" class="topBarItem">
 				<span id="currentUserName" class="label desktopOnly"></span>
 				<div class="button desktopOnly" onclick="logout()">Logout</div>
