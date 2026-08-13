@@ -521,6 +521,25 @@ function toggleMapAnimation() {
 
 var MINUTES_PER_WEEK = 7 * 24 * 60
 
+/*
+ * How fast the aircraft cross the map, as a fraction of the real thing.
+ *
+ * At one cycle to the week, a fifty minute flight crosses Europe in a couple of
+ * seconds - accurate, and impossible to click. Below 1 the aircraft leaves at
+ * exactly its scheduled time and then takes longer to arrive than the timetable
+ * says. That is a deliberate trade: the departure is the part that has to be
+ * true, since it is what the departure board promises, and stretching the
+ * crossing is what makes an aeroplane something you can point at. It also means
+ * more of them are in the air at once, which helps for the same reason.
+ *
+ * The card that opens on a click still quotes the real timetable, not this.
+ */
+function flightSpeed() {
+	var configured = parseFloat(window.MAP_FLIGHT_SPEED)
+	if (isNaN(configured) || configured <= 0) return 0.5
+	return configured
+}
+
 /** Departure times, in minutes from Sunday 00:00, exactly as the game places them. */
 function flightDepartureMinutes(link) {
 	var frequency = link.frequency
@@ -642,8 +661,9 @@ function drawFlightMarker(line, link) {
 			return  // the clock has not reported in yet
 		}
 
+		var visibleDuration = link.duration / flightSpeed()
 		$.each(markersOfThisLink, function(key, marker) {
-			var progress = flightProgress(marker.departureMinute, link.duration, weekMinute)
+			var progress = flightProgress(marker.departureMinute, visibleDuration, weekMinute)
 			if (!progress) {
 				if (marker.getMap()) marker.setMap(null)
 				return
