@@ -5579,9 +5579,13 @@
          by inverting it in the browser. *@
       @defining(configuration.getOptional[String]("map.labels").getOrElse("local") == "english") { english =>
       @if(english) {
-      window.OSM_TILE_URL_LIGHT = 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png';
-      window.OSM_TILE_URL_DARK  = 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png';
-      window.OSM_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles by <a href="https://foundation.wikimedia.org/wiki/Maps_Terms_of_Use">Wikimedia</a>';
+      @* Esri's world street map: labelled in English almost everywhere, and
+         served to third parties, which Wikimedia's international style is not -
+         theirs answers other sites with nothing, and a map with no tiles under
+         its markers is worse than one labelled in Greek. Note the y/x order. *@
+      window.OSM_TILE_URL_LIGHT = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+      window.OSM_TILE_URL_DARK  = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+      window.OSM_TILE_ATTRIBUTION = 'Tiles &copy; Esri';
       } else {
       window.OSM_TILE_URL_LIGHT = '@configuration.getOptional[String]("map.tileUrlLight").getOrElse("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png")';
       window.OSM_TILE_URL_DARK  = '@configuration.getOptional[String]("map.tileUrlDark").getOrElse("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png")';

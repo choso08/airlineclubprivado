@@ -1,7 +1,7 @@
 package controllers
 
 import com.patson.DemandGenerator
-import com.patson.data.{AllianceSource, ConsumptionHistorySource, CountrySource, LinkSource}
+import com.patson.data.{AirportSource, AllianceSource, ConsumptionHistorySource, CountrySource, LinkSource}
 import com.patson.model.Scheduling.TimeSlot
 import com.patson.model.{PassengerType, _}
 import com.patson.util.AirportCache
@@ -235,13 +235,74 @@ class SearchApplication @Inject()(cc: ControllerComponents) extends AbstractCont
     if (input.length < 3) {
       Ok(Json.obj("message" -> "Search with at least 3 characters"))
     } else {
-      val result: List[AirportSearchResult] = SearchUtil.searchAirport(input).asScala.toList
+      // Elasticsearch first, the database if it is not there.
+      //
+      // Upstream documents Elasticsearch as optional, and it is - for signing
+      // up. It is not optional for this, and without it these boxes accept
+      // what you type and answer nothing at all, for ever. Which makes every
+      // airport the map does not already show unreachable: the map draws the
+      // four thousand most powerful and one per country, so somewhere like
+      // Principe exists in the world and cannot be found by anyone.
+      //
+      // Four thousand rows is nothing for a LIKE, so the fallback is not a
+      // degraded mode - it is simply how this works here.
+      val result: List[AirportSearchResult] = {
+        val fromIndex = try {
+          SearchUtil.searchAirport(input).asScala.toList
+        } catch {
+          case _ : Throwable => List.empty
+        }
+        if (fromIndex.nonEmpty) fromIndex else searchAirportInDatabase(input)
+      }
       if (result.isEmpty) {
         Ok(Json.obj("message" -> "No match"))
       } else {
         Ok(Json.obj("entries" -> Json.toJson(result)))
       }
     }
+  }
+
+  /**
+   * Airports whose code, name or city starts with (or contains) what was typed.
+   *
+   * Ordered so that the ones a player is most likely to mean come first: an
+   * exact IATA code, then names that start with the text, then anything that
+   * contains it, and within each group the busiest airport first. Someone
+   * typing "lis" wants Lisbon before Lisburn.
+   */
+  /**
+   * Strip accents and case, so what someone types finds what is written.
+   *
+   * Sao Tome is stored with both of its accents, and nobody reaches for them at
+   * a search box - so "tome" found nothing at all, which reads as the airport
+   * not existing. Works in both directions: the accented spelling still finds
+   * it too.
+   */
+  private def fold(text : String) : String = {
+    if (text == null) return ""
+    java.text.Normalizer.normalize(text.trim, java.text.Normalizer.Form.NFD)
+      .replaceAll("\\p{M}", "")
+      .toUpperCase
+  }
+
+  private def searchAirportInDatabase(input : String) : List[AirportSearchResult] = {
+    val term = fold(input)
+    if (term.isEmpty) {
+      return List.empty
+    }
+    val matches = AirportSource.loadAirportsByCriteria(List.empty, false).filter { airport =>
+      fold(airport.iata) == term ||
+      fold(airport.name).contains(term) ||
+      fold(airport.city).contains(term)
+    }
+    matches.map { airport =>
+      val rank =
+        if (fold(airport.iata) == term) 3.0
+        else if (fold(airport.city).startsWith(term) || fold(airport.name).startsWith(term)) 2.0
+        else 1.0
+      new AirportSearchResult(airport.id, airport.iata, airport.name, airport.city,
+        airport.countryCode, airport.power, rank)
+    }.sortBy(result => (-result.getScore, -result.getPower)).take(20)
   }
 
   def searchCountry(input : String) = Action {

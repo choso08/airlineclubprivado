@@ -39,10 +39,17 @@
     return h > 0 ? h + 'h ' + (m % 60) + 'm' : m + 'm';
   }
 
-  /** Sunday 00:00 plus n minutes, as the game would show it. */
+  /**
+   * Sunday 00:00 plus n minutes, as the game would show it.
+   *
+   * Rounded first. The turnaround is a fifth of the flight duration, so the
+   * arrival of a 51 minute flight landed on 23:52.20000000000073 - the minutes
+   * are a decimal here, and printing one straight gives away the arithmetic.
+   */
   function weekTime(minute) {
     var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    var wrapped = ((minute % (7 * 24 * 60)) + 7 * 24 * 60) % (7 * 24 * 60);
+    var total = Math.round(minute);
+    var wrapped = ((total % (7 * 24 * 60)) + 7 * 24 * 60) % (7 * 24 * 60);
     var day = Math.floor(wrapped / (24 * 60));
     var hour = Math.floor((wrapped % (24 * 60)) / 60);
     var min = wrapped % 60;
@@ -133,14 +140,16 @@
       row('Aircraft', link.modelName || '-') +
       row('Departed', weekTime(openMarker.departureMinute + (progress.outbound ? 0 : link.duration + Math.min(60, link.duration * 0.2)))) +
       row('Lands', weekTime(openMarker.departureMinute + (progress.outbound ? link.duration : 2 * link.duration + Math.min(60, link.duration * 0.2)))) +
-      row('Flown', Math.round(progress.fraction * 100) + '% &middot; ' + hoursAndMinutes(leftMinutes) + ' to go') +
+      row('Flown', Math.round(progress.fraction * 100) + '% &middot; ' + hoursAndMinutes(leftMinutes)) +
       (passengers !== undefined
-        ? row('Passengers', number(passengers / frequency) + (seats ? ' of ' + number(seats / frequency) + ' seats' : ''))
+        ? row('Passengers', number(passengers / frequency) +
+              (seats ? ' / ' + number(seats / frequency) : ''))
         : '') +
       (link.revenue !== undefined ? row('Earns', money(link.revenue / frequency)) : '') +
       (costs !== undefined ? row('Costs', money(costs / frequency)) : '') +
       (link.profit !== undefined ? row('Profit', money(link.profit / frequency)) : '') +
-      row('This week', number(frequency) + ' flight(s), ' + hoursAndMinutes(link.duration) + ' each way');
+      row('Flights a week', number(frequency)) +
+      row('Each way', hoursAndMinutes(link.duration));
   }
 
   /** Open the card for an aircraft on the map. */

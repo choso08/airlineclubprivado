@@ -916,6 +916,20 @@
       'Search for Santa here': 'Procurar o Pai Natal aqui',
       'Woohoo! You have found Santa!': 'Boa! Encontraste o Pai Natal!',
 
+      // ------------------------------------- the card on a flight in the air
+      'Route': 'Rota',
+      'Aircraft': 'Avião',
+      'Departed': 'Partiu',
+      'Lands': 'Aterra',
+      'Flown': 'Voado',
+      'Earns': 'Rende',
+      'Costs': 'Custa',
+      'Flights a week': 'Voos por semana',
+      'Each way': 'Cada sentido',
+      'On the ground': 'Em terra',
+      'Next departure': 'Próxima partida',
+      'Status': 'Estado',
+
       // ------------------------------------------- added by this instance
       'search aircraft': 'procurar avião',
       'search airport': 'procurar aeroporto',

@@ -602,8 +602,8 @@ function drawFlightMarker(line, link) {
 		// A plain object rather than google.maps.Size: the OpenStreetMap shim
 		// reads .width and .height and does not define that class, and the real
 		// Google API accepts either.
-		scaledSize: { width: 20, height: 20 },
-		anchor: new google.maps.Point(10, 10),
+		scaledSize: { width: 28, height: 28 },
+		anchor: new google.maps.Point(14, 14),
 	}
 
 	var departures = flightDepartureMinutes(link)
