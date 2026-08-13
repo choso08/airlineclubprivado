@@ -731,12 +731,13 @@ function setAirlineColor(color) {
 }
 
 function showUploadLogo() {
-	if (activeAirline.reputation >= 40) {
+	// The threshold is a setting, not a constant - see rules.brandingMinReputation.
+	if (activeAirline.reputation >= (window.BRANDING_MIN_REPUTATION || 0)) {
 		updateLogoUpload()
 		$('#uploadLogoModal .uploadForbidden').hide()
 		$('#uploadLogoModal .uploadPanel').show()
 	} else {
-		$('#uploadLogoModal .uploadForbidden .warning').text('You may only upload airline banner at Reputation 40 or above')
+		$('#uploadLogoModal .uploadForbidden .warning').text('You may only upload airline banner at Reputation ' + (window.BRANDING_MIN_REPUTATION || 0) + ' or above')
 		$('#uploadLogoModal .uploadForbidden').show()
 		$('#uploadLogoModal .uploadPanel').hide()
 	}
@@ -778,12 +779,13 @@ function updateLiveryInfo() {
 }
 
 function showUploadLivery() {
-	if (activeAirline.reputation >= 40) {
+	// The threshold is a setting, not a constant - see rules.brandingMinReputation.
+	if (activeAirline.reputation >= (window.BRANDING_MIN_REPUTATION || 0)) {
 		updateLiveryUpload()
 		$('#uploadLiveryModal .uploadForbidden').hide()
 		$('#uploadLiveryModal .uploadPanel').show()
 	} else {
-		$('#uploadLiveryModal .uploadForbidden .warning').text('You may only upload airline livery at Reputation 40 or above')
+		$('#uploadLiveryModal .uploadForbidden .warning').text('You may only upload airline livery at Reputation ' + (window.BRANDING_MIN_REPUTATION || 0) + ' or above')
 		$('#uploadLiveryModal .uploadForbidden').show()
 		$('#uploadLiveryModal .uploadPanel').hide()
 	}

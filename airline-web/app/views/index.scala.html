@@ -129,6 +129,10 @@
 	  @* Language a player who has never picked one gets. Their own choice is
 	     kept in a cookie and wins over this. *@
 	  window.AIRLINE_LANGUAGE = '@configuration.getOptional[String]("ui.language").getOrElse("en")';
+
+	  @* Reputation needed to upload a logo or livery. Kept in step with the
+	     server's own check so the button and the upload agree. *@
+	  window.BRANDING_MIN_REPUTATION = @configuration.getOptional[Int]("rules.brandingMinReputation").getOrElse(0);
 	</script>
 	@* Must load after the panels' own scripts so its observer is watching by
 	   the time they start building anything. *@

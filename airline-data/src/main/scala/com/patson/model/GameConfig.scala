@@ -42,6 +42,12 @@ object GameConfig {
     * airline's margins; lowering it makes long routes cheap. Upstream: 70. */
   val fuelPrice: Double = double("economy.fuelPrice", 70)
 
+  /** Reputation needed before an airline may upload its own logo or livery.
+    * Upstream requires 40, which is a brake on a public server where anyone
+    * can register and start posting images. Among friends it only means nobody
+    * gets to decorate their airline for the first several hours. */
+  val brandingMinReputation: Int = int("rules.brandingMinReputation", 0)
+
   /** Days an airline must wait between name changes. Upstream: 30, which is a
     * rule for a public server where a name is an identity other players are
     * owed some consistency in. Among friends it is just an obstacle, so it

@@ -920,7 +920,7 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
  }
 
   def uploadLogo(airlineId : Int) = AuthenticatedAirline(airlineId) { request =>
-    if (request.user.getReputation() < 40) {
+    if (request.user.getReputation() < com.patson.model.GameConfig.brandingMinReputation) {
       Ok(Json.obj("error" -> JsString("Cannot upload img at current reputation"))) //have to send ok as the jquery plugin's error cannot read the response
     } else {
       request.body.asMultipartFormData.map { data =>
@@ -943,7 +943,7 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
   }
 
   def uploadLivery(airlineId : Int) = AuthenticatedAirline(airlineId) { request =>
-    if (request.user.getReputation() < 40) {
+    if (request.user.getReputation() < com.patson.model.GameConfig.brandingMinReputation) {
       Ok(Json.obj("error" -> JsString("Cannot upload img at current reputation"))) //have to send ok as the jquery plugin's error cannot read the response
     } else {
       request.body.asMultipartFormData.map { data =>
