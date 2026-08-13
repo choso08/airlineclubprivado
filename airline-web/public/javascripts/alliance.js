@@ -53,34 +53,59 @@ function loadCurrentAirlineMemberDetails(loadedAlliancesById) {
 	
 	$('#currentAirlineAllianceHistory').empty()
 	loadCurrentAirlineAlliance(function(allianceDetails) {
-		if (allianceDetails.allianceId) {
-    		var alliance = loadedAlliancesById[allianceDetails.allianceId]
-    		$('#currentAirlineMemberDetails .allianceName').text(alliance.name)
-    		$('#currentAirlineMemberDetails .allianceRole').text(allianceDetails.allianceRole)
-    		if (alliance.ranking) {
-	    		var rankingImg = getRankingImg(alliance.ranking)
-	    		$('#currentAirlineMemberDetails .allianceRanking').html(rankingImg)
-    		} else {
-    			$('#currentAirlineMemberDetails .allianceRanking').text('-')
-    		}
-    		
-    		if (alliance.status == 'Forming') {
-				$("#currentAirlineMemberDetails .allianceStatus").text(alliance.status + " - need " + (window.ALLIANCE_MIN_MEMBERS || 2) + " approved members")
+		var $details = $('#currentAirlineMemberDetails')
+		var alliance = allianceDetails.allianceId ? loadedAlliancesById[allianceDetails.allianceId] : undefined
+
+		if (!allianceDetails.allianceId) {
+			// In no alliance at all. The only thing worth showing here is the way
+			// in, and upstream hid it behind a gear icon with nothing to say what
+			// it does or why it might not be there.
+			$details.find('.allianceName').text('-')
+			$details.find('.allianceRole').text('-')
+			$details.find('.allianceRanking').text('-')
+			if (activeAirline.headquarterAirport) {
+				$details.find('.allianceStatus').text('Not in an alliance')
+				$('#toggleFormAllianceButton').show()
 			} else {
-				$("#currentAirlineMemberDetails .allianceStatus").text(alliance.status)
+				$details.find('.allianceStatus').text('Build a headquarters first')
+				$('#toggleFormAllianceButton').hide()
 			}
-    		$('#toggleFormAllianceButton').hide()
-    	} else {
-    		$('#currentAirlineMemberDetails .allianceName').text('-')
-    		$('#currentAirlineMemberDetails .allianceRole').text('-')
-    		$('#currentAirlineMemberDetails .allianceRanking').text('-')
-    		$('#currentAirlineMemberDetails .allianceStatus').text('-')
-    		if (activeAirline.headquarterAirport) {
-    			$('#toggleFormAllianceButton').show()
-    		} else {
-    			$('#toggleFormAllianceButton').hide()
-    		}
-    	}
+		} else if (!alliance) {
+			// The membership row outlived the alliance - dissolved by whoever led
+			// it, or cleared out by hand. Upstream showed a blank panel and no way
+			// out; leaving is what unsticks it, so say so.
+			$details.find('.allianceName').text(allianceDetails.allianceName || '-')
+			$details.find('.allianceRole').text(allianceDetails.allianceRole || '-')
+			$details.find('.allianceRanking').text('-')
+			$details.find('.allianceStatus').text('This alliance no longer exists - leave it to start again')
+			$('#toggleFormAllianceButton').hide()
+		} else {
+			$details.find('.allianceName').text(alliance.name)
+			$details.find('.allianceRole').text(allianceDetails.allianceRole)
+			if (alliance.ranking) {
+				$details.find('.allianceRanking').html(getRankingImg(alliance.ranking))
+			} else {
+				$details.find('.allianceRanking').text('-')
+			}
+
+			// Three different situations shared one word, "Forming", and none of
+			// them said what the player should do next. Waiting on an application
+			// that nobody can accept is the one that wasted the most time: an
+			// alliance with no leader can never let anyone in.
+			if (allianceDetails.allianceRole == 'Applicant') {
+				if (alliance.leader) {
+					$details.find('.allianceStatus').text('Applied - waiting for ' + alliance.leader.name)
+				} else {
+					$details.find('.allianceStatus').text('Applied - but this alliance has no leader to accept you')
+				}
+			} else if (alliance.status == 'Forming') {
+				$details.find('.allianceStatus').text('Forming - needs ' + (window.ALLIANCE_MIN_MEMBERS || 2) + ' approved members')
+			} else {
+				$details.find('.allianceStatus').text(alliance.status)
+			}
+			$('#toggleFormAllianceButton').hide()
+		}
+
 
     	if (allianceDetails.stats) {
         	$('#currentAirlineMemberDetails .stats .totalPax').text(toLinkClassValueString(allianceDetails.stats.pax))
@@ -250,11 +275,21 @@ function updateAllianceTable(sortProperty, sortOrder) {
 //		if (airline.countryCode) {
 //			countryFlagImg = getCountryFlagImg(airline.countryCode)
 //		}
+		// An alliance whose leader has gone still sits in this list for ever,
+		// looking exactly like a real one - and applying to it does nothing,
+		// because there is nobody left who can accept an application. Saying
+		// so is the difference between a dead row and a wasted week.
+		var abandoned = !alliance.leader && !alliance.memberCount
+		if (abandoned) {
+			row.css('opacity', '0.55')
+		}
 		row.append("<div class='cell'>" + alliance.name + "</div>")
 		if (alliance.leader) {
 			row.append("<div class='cell'>" + getAirlineSpan(alliance.leader.id, alliance.leader.name) + "</div>")
+		} else if (abandoned) {
+			row.append("<div class='cell'>Abandoned</div>")
 		} else {
-			row.append("<div class='cell'>-</div>")
+			row.append("<div class='cell'>No leader</div>")
 		}
 		row.append("<div class='cell' align='right'>" + alliance.memberCount + "</div>")
 		if (alliance.championPoints) {

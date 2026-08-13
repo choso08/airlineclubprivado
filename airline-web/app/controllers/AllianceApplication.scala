@@ -49,7 +49,20 @@ class AllianceApplication @Inject()(cc: ControllerComponents) extends AbstractCo
       }),
       "isAdmin" -> JsBoolean(AllianceRole.isAdmin(allianceMember.role)),
       "allianceId" -> JsNumber(allianceMember.allianceId),
-      "allianceName" -> JsString(AllianceCache.getAlliance(allianceMember.allianceId).get.name)))
+      // Upstream ends this line with .get, and a member whose alliance the
+      // cache cannot produce - one just formed, one just dissolved, one whose
+      // row was removed by hand - therefore took the whole alliance page down
+      // with it: the serializer threw, the request 500'd, and every player saw
+      // an empty screen rather than the one bad row.
+      "allianceName" -> JsString(allianceNameOf(allianceMember.allianceId))))
+  }
+
+  private def allianceNameOf(allianceId : Int) : String = {
+    try {
+      AllianceCache.getAlliance(allianceId).map(_.name).getOrElse("(alliance no longer exists)")
+    } catch {
+      case _ : Throwable => "(alliance no longer exists)"
+    }
   }
   
   
@@ -205,6 +218,16 @@ class AllianceApplication @Inject()(cc: ControllerComponents) extends AbstractCo
       erroredForm => Ok(Json.obj("rejection" -> JsString(erroredForm.error("allianceName").get.message))), { formAllianceInput =>
         //make sure the current airline is not in any alliance
         AllianceSource.loadAllianceMemberByAirline(request.user) match {
+          case Some(stale) if AllianceCache.getAlliance(stale.allianceId).isEmpty =>
+            // A membership row pointing at an alliance that is gone. Upstream
+            // has no way out of this: forming is refused because you are "in
+            // an alliance", leaving crashes on the alliance it cannot find,
+            // and the panel shows nothing to click. The row is the wreckage of
+            // a deleted alliance, so clear it and carry on rather than leaving
+            // somebody locked out of a whole part of the game.
+            AllianceSource.deleteAllianceMember(airlineId)
+            AirlineCache.invalidateAirline(airlineId)
+            BadRequest("Your old alliance no longer exists - that has been cleared up, please try again")
           case None =>
             val allianceName = formAllianceInput.allianceName
             val currentCycle = CycleSource.loadCycle()
@@ -487,6 +510,13 @@ class AllianceApplication @Inject()(cc: ControllerComponents) extends AbstractCo
   def removeFromAlliance(airlineId : Int, targetAirlineId : Int) = AuthenticatedAirline(airlineId) { implicit request =>
      AllianceSource.loadAllianceMemberByAirline(request.user) match {
        case None => BadRequest("Current airline " + request.user + " cannot remove airline id " + targetAirlineId + " from alliance as current airline does not belong to any alliance")
+       case Some(currentAirlineAllianceMember) if AllianceCache.getAlliance(currentAirlineAllianceMember.allianceId, false).isEmpty =>
+         // Leaving an alliance that is already gone. There is nothing to leave,
+         // but the row saying you are in it is real and has to go, or you stay
+         // locked out of alliances for good - upstream crashed here instead.
+         AllianceSource.deleteAllianceMember(airlineId)
+         AirlineCache.invalidateAirline(airlineId)
+         Ok(Json.obj("removed" -> "alliance"))
        case Some(currentAirlineAllianceMember) =>
          val alliance = AllianceCache.getAlliance(currentAirlineAllianceMember.allianceId, false).get
          if (airlineId == targetAirlineId) { //removing itself, ok!
@@ -522,6 +552,8 @@ class AllianceApplication @Inject()(cc: ControllerComponents) extends AbstractCo
             //check if current airline is leader and the target airline has applied to this alliance
            if (!AllianceRole.isAdmin(currentAirlineAllianceMember.role)) {
              BadRequest("Current airline " + request.user + " cannot accept airline id "+ targetAirlineId + " from alliance as current airline is not leader")
+           } else if (AllianceCache.getAlliance(currentAirlineAllianceMember.allianceId, false).isEmpty) {
+             BadRequest("That alliance no longer exists")
            } else {
              val alliance = AllianceCache.getAlliance(currentAirlineAllianceMember.allianceId, false).get
              AirlineCache.getAirline(targetAirlineId, true) match {
@@ -555,6 +587,8 @@ class AllianceApplication @Inject()(cc: ControllerComponents) extends AbstractCo
     val currentCycle = CycleSource.loadCycle()
     AllianceSource.loadAllianceMemberByAirline(request.user) match {
       case None => BadRequest("Current airline " + request.user + " cannot promote airline id " + targetAirlineId + " to alliance as current airline does not belong to any alliance")
+      case Some(currentMember) if AllianceCache.getAlliance(currentMember.allianceId, false).isEmpty =>
+        BadRequest("That alliance no longer exists")
       case Some(currentMember) =>
         val alliance = AllianceCache.getAlliance(currentMember.allianceId, false).get
         AirlineCache.getAirline(targetAirlineId) match {
@@ -589,6 +623,8 @@ class AllianceApplication @Inject()(cc: ControllerComponents) extends AbstractCo
     val currentCycle = CycleSource.loadCycle()
     AllianceSource.loadAllianceMemberByAirline(request.user) match {
       case None => BadRequest("Current airline " + request.user + " cannot demote airline id " + targetAirlineId + " to alliance as current airline does not belong to any alliance")
+      case Some(currentMember) if AllianceCache.getAlliance(currentMember.allianceId, false).isEmpty =>
+        BadRequest("That alliance no longer exists")
       case Some(currentMember) =>
         val alliance = AllianceCache.getAlliance(currentMember.allianceId, false).get
         AirlineCache.getAirline(targetAirlineId) match {
@@ -653,7 +689,7 @@ class AllianceApplication @Inject()(cc: ControllerComponents) extends AbstractCo
      AllianceSource.loadAllianceMemberByAirline(airline) match {
        case Some(allianceMember) =>
          if (allianceMember.allianceId != alliance.id) {
-           return Some("Airline is already a member of another alliance " + AllianceCache.getAlliance(allianceMember.allianceId).get.name)
+           return Some("Airline is already a member of another alliance " + allianceNameOf(allianceMember.allianceId))
          }
        case None =>
 

@@ -20,10 +20,13 @@ DB_PORT="${HOST##*:}"
 CLIENT="$(command -v mariadb || command -v mysql)"
 [[ -n "$CLIENT" ]] || { echo "ERROR: no mysql/mariadb client found." >&2; exit 1; }
 
+# common.sh turns on "exit on error", so a query that fails would otherwise
+# kill this script where it stands - no output, no explanation, and the check
+# below for an unreadable database would never get the chance to run.
 db() {
   "$CLIENT" --host="$DB_HOST" --port="$DB_PORT" \
-    --user="${AIRLINE_DB_USER:-sa}" --password="${AIRLINE_DB_PASSWORD:-admin}" \
-    --skip-column-names --batch -e "$1" "$SCHEMA" 2>/dev/null
+    --user="${AIRLINE_DB_USER:-sa}" --password="${AIRLINE_DB_PASSWORD-admin}" \
+    --skip-column-names --batch -e "$1" "$SCHEMA" 2>/dev/null || true
 }
 
 ALLIANCES="$(db 'SELECT COUNT(*) FROM alliance;')"
@@ -59,7 +62,7 @@ echo ">> Backing up first"
 # duration so the tables can go in any order without complaint.
 echo ">> Clearing alliance data"
 "$CLIENT" --host="$DB_HOST" --port="$DB_PORT" \
-  --user="${AIRLINE_DB_USER:-sa}" --password="${AIRLINE_DB_PASSWORD:-admin}" \
+  --user="${AIRLINE_DB_USER:-sa}" --password="${AIRLINE_DB_PASSWORD-admin}" \
   "$SCHEMA" <<'SQL'
 SET FOREIGN_KEY_CHECKS = 0;
 
