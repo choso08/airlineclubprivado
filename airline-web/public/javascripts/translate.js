@@ -705,7 +705,6 @@
       'Clue': 'Pista',
       'Selection': 'Seleção',
       'Severity': 'Gravidade',
-      'Status': 'Estado',
       'Status:': 'Estado:',
       'Name': 'Nome',
       'Name:': 'Nome:',

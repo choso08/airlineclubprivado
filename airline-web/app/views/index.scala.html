@@ -133,6 +133,7 @@
 	  @* Reputation needed to upload a logo or livery. Kept in step with the
 	     server's own check so the button and the upload agree. *@
 	  window.BRANDING_MIN_REPUTATION = @configuration.getOptional[Int]("rules.brandingMinReputation").getOrElse(0);
+	  window.ALLIANCE_MIN_MEMBERS = @configuration.getOptional[Int]("rules.allianceMinMembers").getOrElse(2);
 	</script>
 	@* Must load after the panels' own scripts so its observer is watching by
 	   the time they start building anything. *@

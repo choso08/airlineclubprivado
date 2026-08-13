@@ -65,7 +65,7 @@ function loadCurrentAirlineMemberDetails(loadedAlliancesById) {
     		}
     		
     		if (alliance.status == 'Forming') {
-				$("#currentAirlineMemberDetails .allianceStatus").text(alliance.status + " - need 3 approved members")
+				$("#currentAirlineMemberDetails .allianceStatus").text(alliance.status + " - need " + (window.ALLIANCE_MIN_MEMBERS || 2) + " approved members")
 			} else {
 				$("#currentAirlineMemberDetails .allianceStatus").text(alliance.status)
 			}
@@ -312,7 +312,7 @@ function updateAllianceBasicsDetails(allianceId) {
 
 	$("#allianceDetails .allianceName").text(alliance.name)
 	if (alliance.status == 'Forming') {
-		$("#allianceDetails .allianceStatus").text(alliance.status + " - need 3 approved members")
+		$("#allianceDetails .allianceStatus").text(alliance.status + " - need " + (window.ALLIANCE_MIN_MEMBERS || 2) + " approved members")
 	} else {
 		$("#allianceDetails .allianceStatus").text(alliance.status)
 	}
@@ -624,15 +624,20 @@ function formAlliance(allianceName) {
 	    dataType: 'json',
 	    success: function(newAlliance) {
 	    	if (!newAlliance.rejection) {
+	    		// These three belonged here and were in the other branch, where
+	    		// they ran only when the server had REFUSED to create the
+	    		// alliance. So on success the page was never told the alliance
+	    		// existed: it redrew itself from what it already believed and
+	    		// nothing appeared to happen, until a reload read the truth back
+	    		// off the server.
+	    		activeAirline.allianceId = newAlliance.id
+	    		activeAirline.allianceName = newAlliance.name
+	    		updateChatTabs()
 	    		showAllianceCanvas()
 	    	} else {
 	    		$('#formAllianceWarning').text(newAlliance.rejection)
 	    		$('#formAllianceWarning').show()
-	    		activeAirline.allianceId = newAlliance.id
-	    		activeAirline.allianceName = newAlliance.name
-	    		updateChatTabs()
 	    	}
-	    	
 	    },
         error: function(jqXHR, textStatus, errorThrown) {
             console.log(JSON.stringify(jqXHR));

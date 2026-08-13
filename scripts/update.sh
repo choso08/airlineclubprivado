@@ -68,7 +68,31 @@ PREVIOUS_COMMIT="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo '')"
 
 if [[ "$PULL" == "1" ]]; then
   echo ">> [2/5] Fetching changes"
+
+  # game-settings.env is tracked AND yours to edit, and git will not pull over
+  # a file you have changed. That is how the automatic updater came to fail
+  # silently every ten minutes: the settings file changes in most releases, and
+  # one edited line here was enough to stop everything.
+  #
+  # So your version is set aside, the file is put back to what was shipped, the
+  # pull runs, and your choices are put back on top afterwards - compared
+  # against what was shipped BEFORE, so a value you never touched follows the
+  # release and one you did stays yours.
+  SETTINGS="$REPO_ROOT/game-settings.env"
+  SAVED=0
+  if [[ -f "$SETTINGS" ]] && ! git -C "$REPO_ROOT" diff --quiet -- game-settings.env 2>/dev/null; then
+    cp "$SETTINGS" "$SETTINGS.yours"
+    git -C "$REPO_ROOT" show HEAD:game-settings.env > "$SETTINGS.base" 2>/dev/null || true
+    git -C "$REPO_ROOT" checkout -- game-settings.env
+    SAVED=1
+  fi
+
   git -C "$REPO_ROOT" pull --ff-only
+
+  if [[ "$SAVED" == "1" ]]; then
+    "$REPO_ROOT/scripts/merge-settings.sh" "$SETTINGS" "$SETTINGS.yours" "$SETTINGS.base" || true
+    rm -f "$SETTINGS.yours" "$SETTINGS.base"
+  fi
 else
   echo ">> [2/5] Skipping pull"
 fi

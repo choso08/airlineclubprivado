@@ -201,6 +201,13 @@ function loadUser(isLogin) {
 			  if (isLogin) {
 			  	  showFloatMessage("Successfully logged in")
 				  showAnnoucement()
+			  } else {
+			      // Sessions survive a restart now, so almost nobody arrives
+			      // through the login form any more - and the panel used to
+			      // open only for those who did, which quietly meant never.
+			      // Show it when the version has changed instead, which is
+			      // when there is actually something to read.
+			      showAnnouncementIfNew()
 			  }
               refreshWallpaper()
     		  refreshLoginBar()
@@ -702,6 +709,28 @@ function switchMap() {
             mapCanvas.fadeIn(200)
         })
     }
+}
+
+/**
+ * The panel, but only when this build is one the player has not seen.
+ *
+ * A changelog that appears on every visit is a changelog nobody reads. This
+ * one appears when the version it describes has changed, and then not again.
+ */
+function showAnnouncementIfNew() {
+    $.ajax({
+        type: 'GET', url: '/version', dataType: 'json',
+        success: function(info) {
+            var version = info && info.version
+            if (!version || version === 'unknown') return
+            var seen = null
+            try { seen = window.localStorage.getItem('seenVersion') } catch (e) { /* private mode */ }
+            if (seen === version) return
+            try { window.localStorage.setItem('seenVersion', version) } catch (e) { /* ignore */ }
+            showAnnoucement()
+        },
+        error: function() { /* no version file - say nothing */ }
+    })
 }
 
 function showAnnoucement() {
