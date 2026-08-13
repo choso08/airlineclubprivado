@@ -1,0 +1,6 @@
+{
+  "version": "b39.562af35",
+  "commit": "562af35",
+  "date": "2026-08-13 00:44",
+  "changes": ["Keep players logged in across restarts, and refresh every screen on a cycle","Record the symptoms that turned out not to be faults","Light/dark maps, an alliance reset, our own announcements, 10 minute cycles"]
+}

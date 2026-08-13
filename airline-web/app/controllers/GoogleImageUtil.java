@@ -338,9 +338,31 @@ public class GoogleImageUtil {
 	}
 
 
+	/**
+	 * Which service supplies the pictures.
+	 *
+	 * "wikipedia" needs no key, no account and no billing, which is why it is
+	 * the default here. "google" is upstream's behaviour and needs
+	 * google.apiKey on a billing-enabled Cloud project. "none" turns pictures
+	 * off entirely and leaves the game's placeholder in place.
+	 */
+	private static String imageProvider() {
+		com.typesafe.config.Config config = com.typesafe.config.ConfigFactory.load();
+		return config.hasPath("images.provider") ? config.getString("images.provider") : "wikipedia";
+	}
+
 	public static UrlResult loadCityImageUrl(String cityName, Double latitude, Double longitude) throws OverLimitException, NoLongerValidException {
 		if (cityName == null) {
 			return null;
+		}
+		String provider = imageProvider();
+		if ("none".equals(provider)) {
+			return null;
+		}
+		if ("wikipedia".equals(provider)) {
+			java.net.URL url = WikimediaImageUtil.getCityImageUrl(cityName, latitude, longitude);
+			// A Wikipedia image URL does not expire, so no max age.
+			return url == null ? null : new UrlResult(url, null);
 		}
 		return loadImageUrl(Collections.singletonList(cityName), latitude, longitude, "(regions)");
 	}
@@ -348,6 +370,14 @@ public class GoogleImageUtil {
 	public static UrlResult loadAirportImageUrl(String airportName, Double latitude, Double longitude) throws OverLimitException, NoLongerValidException {
 		if (airportName == null) {
 			return null;
+		}
+		String provider = imageProvider();
+		if ("none".equals(provider)) {
+			return null;
+		}
+		if ("wikipedia".equals(provider)) {
+			java.net.URL url = WikimediaImageUtil.getAirportImageUrl(airportName, latitude, longitude);
+			return url == null ? null : new UrlResult(url, null);
 		}
 		return loadImageUrl(Collections.singletonList(airportName), latitude, longitude, null);
 	}

@@ -34,6 +34,24 @@ class InstanceStatusApplication @Inject()(cc: ControllerComponents) extends Abst
   private[this] val restartFlag = Paths.get(
     sys.env.getOrElse("AIRLINE_RESTART_FLAG", "/tmp/airline-restart-at"))
 
+  // Written by scripts/write-version.sh during an update: which build is
+  // running and what the last update brought. Read once at startup, since it
+  // cannot change without a restart.
+  private[this] val versionJson : play.api.libs.json.JsValue = {
+    val candidates = List(Paths.get("conf/version.json"), Paths.get("airline-web/conf/version.json"))
+    candidates.find(Files.exists(_)) match {
+      case Some(path) =>
+        Try(Json.parse(new String(Files.readAllBytes(path), "UTF-8")))
+          .getOrElse(Json.obj("version" -> "unknown", "changes" -> Json.arr()))
+      case None => Json.obj("version" -> "unknown", "changes" -> Json.arr())
+    }
+  }
+
+  /** What is running, and what the last update changed. */
+  def version = Action {
+    Ok(versionJson).withHeaders(CACHE_CONTROL -> "no-store")
+  }
+
   def status = Action {
     val now = System.currentTimeMillis()
 
@@ -50,7 +68,8 @@ class InstanceStatusApplication @Inject()(cc: ControllerComponents) extends Abst
     Ok(Json.obj(
       "startedAt" -> startedAt,
       "restartAt" -> restartAt,
-      "serverNow" -> now
+      "serverNow" -> now,
+      "version" -> ((versionJson \ "version").asOpt[String].getOrElse("unknown") : String)
     )).withHeaders(
       // Must never be cached: a stale answer defeats the whole point.
       CACHE_CONTROL -> "no-store, no-cache, must-revalidate",

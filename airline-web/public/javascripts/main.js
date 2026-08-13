@@ -660,6 +660,30 @@ function switchMap() {
 }
 
 function showAnnoucement() {
+    // Version and changelog, written by scripts/write-version.sh at update
+    // time and served from /version. Failure here must not stop the panel
+    // from opening - it is informational.
+    $.ajax({
+        type: 'GET', url: '/version', dataType: 'json',
+        success: function(info) {
+            if (info.version && info.version !== 'unknown') {
+                $('#versionLine').text('Version ' + info.version + (info.date ? '  -  ' + info.date : ''))
+            }
+            var changes = info.changes || []
+            $('#changelogList').empty()
+            if (changes.length > 0) {
+                $('#changelogHeading').show()
+                changes.forEach(function(change) {
+                    $('#changelogList').append(
+                        $('<li class="label" style="padding: 5px;"></li>').text('- ' + change))
+                })
+            } else {
+                $('#changelogHeading').hide()
+            }
+        },
+        error: function() { /* no version file - leave the panel as it is */ }
+    })
+
 	// Get the modal
 	var modal = $('#announcementModal')
 	// Get the <span> element that closes the modal

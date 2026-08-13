@@ -60,12 +60,18 @@ trap 'rm -f "$RESTART_FLAG"' EXIT
 echo ">> [1/5] Backing up the database first"
 "$REPO_ROOT/scripts/backup-db.sh"
 
+# Remember where we were, so the changelog can say what this update brings.
+PREVIOUS_COMMIT="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo '')"
+
 if [[ "$PULL" == "1" ]]; then
   echo ">> [2/5] Fetching changes"
   git -C "$REPO_ROOT" pull --ff-only
 else
   echo ">> [2/5] Skipping pull"
 fi
+
+# Written before building so it is baked into what gets deployed.
+"$REPO_ROOT/scripts/write-version.sh" "$PREVIOUS_COMMIT" || true
 
 # Build while the old version is still serving. Nothing is stopped yet, so a
 # compile error here is free.
