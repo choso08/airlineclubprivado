@@ -1129,7 +1129,9 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
     Ok(Json.toJson(AirlineCache.getAirline(airlineId).get.previousNames))
   }
 
-  val RENAME_COOLDOWN = Duration(30, DAYS)
+  // Upstream made this a flat 30 days. Set it with AIRLINE_RENAME_COOLDOWN_DAYS;
+  // 0, the default here, means rename as often as you like.
+  val RENAME_COOLDOWN = Duration(com.patson.model.GameConfig.renameCooldownDays, DAYS)
   def getRenameRejection(airline : Airline, newName : String) : Option[String] = {
     UserSource.loadUserByAirlineId(airline.id) match {
       case Some(user) =>

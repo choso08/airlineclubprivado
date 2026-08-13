@@ -41,4 +41,10 @@ object GameConfig {
   /** Fuel price the market drifts around, per unit. Raising it squeezes every
     * airline's margins; lowering it makes long routes cheap. Upstream: 70. */
   val fuelPrice: Double = double("economy.fuelPrice", 70)
+
+  /** Days an airline must wait between name changes. Upstream: 30, which is a
+    * rule for a public server where a name is an identity other players are
+    * owed some consistency in. Among friends it is just an obstacle, so it
+    * defaults to none here. 0 removes the wait entirely. */
+  val renameCooldownDays: Int = int("rules.renameCooldownDays", 0)
 }
