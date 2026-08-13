@@ -391,7 +391,10 @@ class LinkApplication @Inject()(cc: ControllerComponents) extends AbstractContro
         if (existingLink.isEmpty) {
           LinkSource.saveLink(incomingLink) match {
             case Some(link) => {
-              val cost = Computation.getLinkCreationCost(incomingLink.from, incomingLink.to)
+              // With rules.buyRoutes the difficulty is charged rather than
+              // negotiated - see NegotiationUtil.buyOutFee.
+              val cost = Computation.getLinkCreationCost(incomingLink.from, incomingLink.to) +
+                NegotiationUtil.buyOutFee(request.user, incomingLink, existingLink)
               AirlineSource.adjustAirlineBalance(request.user.id, cost * -1)
               AirlineSource.saveCashFlowItem(AirlineCashFlowItem(request.user.id, CashFlowType.CREATE_LINK, cost * -1))
 

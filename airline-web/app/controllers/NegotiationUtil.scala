@@ -15,6 +15,17 @@ import scala.util.Random
 
 
 object NegotiationUtil {
+  /** What buying this route costs beyond the usual creation fee. Zero unless
+    * rules.buyRoutes is on, in which case it is the difficulty, priced. */
+  def buyOutFee(airline : Airline, newLink : Link, existingLinkOption : Option[Link]) : Long = {
+    if (!GameConfig.buyRoutes) {
+      return 0
+    }
+    val (fromRequirements, toRequirements) = getNegotiationRequirements(newLink, existingLinkOption, airline, LinkSource.loadFlightLinksByAirlineId(airline.id))
+    val difficulty = fromRequirements.map(_.value).sum + toRequirements.map(_.value).sum
+    (difficulty * GameConfig.negotiationFeePerPoint).toLong
+  }
+
   val NEW_LINK_BASE_COST = 100
   val MAX_ASSIGNED_DELEGATE = 10
   val FREE_LINK_THRESHOLD = 5 //for newbie
@@ -415,6 +426,19 @@ object NegotiationUtil {
       FlightType.getCategory(newLink.flightType) != FlightCategory.INTERCONTINENTAL
     ) {
       return NegotiationUtil.NO_NEGOTIATION_REQUIRED.copy(remarks = Some(s"Free for first $FREE_LINK_THRESHOLD routes of freq <= $FREE_LINK_FREQUENCY_THRESHOLD (< $FREE_LINK_DIFFICULTY_THRESHOLD difficulty)"))
+    }
+
+    if (GameConfig.buyRoutes) {
+      // Bought rather than negotiated: the difficulty is still worked out, and
+      // still shown, but it is a price now instead of a wait. No delegates are
+      // asked for, so nothing here can be refused or has to be tried again.
+      val fee = (finalRequirementValue * GameConfig.negotiationFeePerPoint).toLong
+      return NegotiationUtil.NO_NEGOTIATION_REQUIRED.copy(
+        fromAirportRequirements = fromAirportRequirements,
+        toAirportRequirements = toAirportRequirements,
+        fromAirportDiscounts = fromAirportDiscounts,
+        toAirportDiscounts = toAirportDiscounts,
+        remarks = Some(f"Difficulty $finalRequirementValue%.2f - costs $$${fee}%,d on top of the usual fee, and no delegates"))
     }
 
     val info = NegotiationInfo(fromAirportRequirements, toAirportRequirements, fromAirportDiscounts, toAirportDiscounts, totalFromDiscount, totalToDiscount, finalRequirementValue, computeOdds(finalRequirementValue, Math.min(MAX_ASSIGNED_DELEGATE, airline.getDelegateInfo().availableCount)))

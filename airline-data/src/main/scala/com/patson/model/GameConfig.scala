@@ -109,6 +109,21 @@ object GameConfig {
     * speed. An aircraft cruising at exactly 700 km/h is unaffected. */
   val proportionalClimb: Boolean = boolean("rules.proportionalClimb", false)
 
+  /** Whether a route is bought outright instead of negotiated.
+    *
+    * Upstream sends delegates to negotiate, rolls for success, ties them up
+    * for weeks and bars the route for weeks more if it fails. That is a lot of
+    * waiting for five friends, and the waiting is the part nobody enjoys.
+    *
+    * True removes the negotiation entirely: no delegates, no dice, no cooling
+    * off. The difficulty becomes a price instead - the route costs its usual
+    * creation cost plus negotiationFeePerPoint for each point of it, so a hard
+    * route is still a hard route, in money rather than in weeks. */
+  val buyRoutes: Boolean = boolean("rules.buyRoutes", false)
+
+  /** What one point of negotiation difficulty costs, when routes are bought. */
+  val negotiationFeePerPoint: Long = long("rules.negotiationFeePerPoint", 2000000L)
+
   /** Whether applying to an alliance joins it outright.
     *
     * Upstream makes every application wait for a leader to approve it, which
