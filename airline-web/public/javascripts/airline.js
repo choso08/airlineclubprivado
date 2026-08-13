@@ -496,117 +496,174 @@ function toggleMapAnimation() {
 }
 
 
+/*
+ * The aircraft moving across the map.
+ *
+ * These used to run on a clock of their own: one game minute every 100
+ * milliseconds, whatever the game itself was doing. A week of flying therefore
+ * took about seventeen real minutes regardless of how long a week actually
+ * lasted here, so the dots drifted away from the game's own clock and a flight
+ * left whenever the animation felt like it rather than when it was due.
+ *
+ * They now follow the game clock in the header. Two things fall out of that:
+ *
+ *   - a flight leaves at the hour it is scheduled to leave, and lands
+ *     link.duration minutes later, so what the departure board says and what
+ *     the map shows are the same flight.
+ *   - speed is no longer a number anyone has to choose. One cycle is one week
+ *     of flying, so a longer cycle simply means slower aircraft. Lengthen
+ *     AIRLINE_CYCLE_SECONDS and everything slows down together.
+ *
+ * The schedule is worked out the same way the game works it out - see
+ * com.patson.model.Scheduling - so the times agree rather than merely looking
+ * plausible.
+ */
+
+var MINUTES_PER_WEEK = 7 * 24 * 60
+
+/** Departure times, in minutes from Sunday 00:00, exactly as the game places them. */
+function flightDepartureMinutes(link) {
+	var frequency = link.frequency
+	if (!frequency || frequency <= 0) return []
+
+	// A major airport dispatches around the clock; a smaller one only between
+	// 06:00 and 23:00. Airport.MAJOR_AIRPORT_LOWER_THRESHOLD is 5.
+	var major = (link.fromAirportSize || 0) >= 5
+	var fromHour = major ? 0 : 6
+	var hours = major ? 24 : 17
+	var perDay = hours * 12                 // five minute slots
+	var slots = perDay * 7
+
+	var offset = (link.distance + link.airlineId) % slots
+	var interval = Math.floor(slots / frequency)
+
+	var departures = []
+	for (var i = 0; i < frequency; i++) {
+		var slot = (offset + i * interval) % slots
+		var day = Math.floor(slot / perDay)
+		var hour = fromHour + Math.floor((slot % perDay) / 12)
+		var minute = (slot % 12) * 5
+		departures.push(day * 24 * 60 + hour * 60 + minute)
+	}
+	return departures
+}
+
+/**
+ * Where a flight is now, as a fraction of its journey, or null if it is not
+ * in the air. Positive means outbound, negative means on the way back.
+ */
+function flightProgress(departureMinute, durationMinutes, weekMinute) {
+	// Elapsed since this departure, wrapping across the end of the week - a
+	// flight that leaves on Saturday evening lands on Sunday morning.
+	var elapsed = weekMinute - departureMinute
+	if (elapsed < 0) elapsed += MINUTES_PER_WEEK
+
+	if (elapsed < durationMinutes) {
+		return { outbound: true, fraction: elapsed / durationMinutes }
+	}
+	// The return leg, after a turnaround on the ground. Upstream drew the
+	// aircraft coming back too, and without it a route looks like a one-way
+	// service with aeroplanes piling up at the far end.
+	var turnaround = Math.min(60, durationMinutes * 0.2)
+	var backStart = durationMinutes + turnaround
+	if (elapsed >= backStart && elapsed < backStart + durationMinutes) {
+		return { outbound: false, fraction: (elapsed - backStart) / durationMinutes }
+	}
+	return null
+}
+
 //Use the DOM setInterval() function to change the offset of the symbol
 //at fixed intervals.
 function drawFlightMarker(line, link) {
 	var linkId = link.id
-	
+
 	//clear the old entry first
 	var oldMarkerEntry = flightMarkers[link.id]
 	if (oldMarkerEntry) {
 		clearMarkerEntry(oldMarkerEntry)
 	}
-	
-	if (currentAnimationStatus && link.assignedAirplanes && link.assignedAirplanes.length > 0) {
-		var from = line.getPath().getAt(0)
-		var to = line.getPath().getAt(1)
-		var image = {
-	        url: "assets/images/markers/dot.png",
-	        origin: new google.maps.Point(0, 0),
-	        anchor: new google.maps.Point(6, 6),
-	    };
 
-
-
-		var frequency = link.frequency
-//		var airplaneCount = link.assignedAirplanes.length
-//		var frequencyByAirplane = {}
-//		$.each(link.assignedAirplanes, function(key, airplane) {
-//			frequencyByAirplane[key] = Math.floor(frequency / airplaneCount)
-//		})
-//		for (i = 0; i < frequency % airplaneCount; i++) { //assign the remainder
-//			frequencyByAirplane[i] = frequencyByAirplane[i] + 1
-//		}
-        var animationInterval = 100
-        var minsPerInterval = 1
-        var minutesPerWeek = 60 * 24 * 7
-        var maxTripsPerMarker = (60 * 24 * 7) / (link.duration * 2) //how many round trips can a marker make in a week, assuming a marker go back and forth right the way
-        var markersRequired = Math.ceil(frequency / maxTripsPerMarker)
-        var totalIntervalsPerWeek = minutesPerWeek / minsPerInterval //min in a week, assume each interval is 1 mins
-
-		var markersOfThisLink = []
-		for (i = 0; i < markersRequired; i ++) {
-			var marker = new google.maps.Marker({
-			    position: from,
-			    icon : image, 
-			    totalDuration : link.duration * 2, //round trip
-			    elapsedDuration : 0,
-			    nextDepartureFrame : Math.floor((i + 0.1) * totalIntervalsPerWeek / frequency) % totalIntervalsPerWeek, //i + 0.1 so they wont all depart at the same time
-				departureInterval : Math.floor(totalIntervalsPerWeek / markersRequired),
-				status : "forward",
-			    isActive: false,
-			    clickable: false,
-			});
-			
-			//flightMarkers.push(marker)
-			markersOfThisLink.push(marker)
-		}
-		
-		flightMarkers[linkId] = {} //initialize
-		flightMarkers[linkId].markers = markersOfThisLink
-		
-		var count = 0;
-		var animation = window.setInterval(function() {
-			$.each(markersOfThisLink, function(key, marker) { 
-				if (count == marker.nextDepartureFrame) {
-					if (christmasMarker) {
-						marker.icon = {
-						        url: randomFlightMarker(),
-						        origin: new google.maps.Point(0, 0),
-						        anchor: new google.maps.Point(6, 6),
-						    };
-					}
-					marker.status = "forward"
-					marker.isActive = true
-					marker.elapsedDuration = 0
-					marker.setPosition(from)
-					marker.setMap(map)
-				} else if (marker.isActive) {
-					marker.elapsedDuration += minsPerInterval
-					
-					if (marker.elapsedDuration >= marker.totalDuration) { //finished a round trip
-						//marker.setMap(null)
-						fadeOutMarker(marker, animationInterval)
-						marker.isActive = false
-						marker.nextDepartureFrame = (marker.nextDepartureFrame + marker.departureInterval) % totalIntervalsPerWeek
-						//console.log("next departure " + marker.nextDepartureFrame)
-					} else {
-					    if (marker.status === "forward") {
-					         if (marker.elapsedDuration / marker.totalDuration >= 0.45) { //finished forward, now go into turnaround
-                                marker.status = "turnaround"
-					         } else {
-					            var newPosition = google.maps.geometry.spherical.interpolate(from, to, marker.elapsedDuration / marker.totalDuration / 0.45)
-                                marker.setPosition(newPosition)
-                             }
-                        }
-                        if (marker.status === "turnaround") {
-                             if (marker.elapsedDuration / marker.totalDuration >= 0.55) { //finished turnaround, now go into backward
-                                marker.status = "backward"
-                             }
-                        }
-                        if (marker.status === "backward") {
-                            var newPosition = google.maps.geometry.spherical.interpolate(to, from, (marker.elapsedDuration / marker.totalDuration - 0.55) / 0.45)
-                            marker.setPosition(newPosition)
-                        }
-
-					}
-				}
-			})
-			count = (count + 1) % totalIntervalsPerWeek;
-		}, animationInterval)
-		
-		flightMarkers[linkId].animation = animation;
+	if (!currentAnimationStatus || !link.assignedAirplanes || link.assignedAirplanes.length === 0) {
+		return
 	}
+	if (!link.duration || link.duration <= 0) {
+		return
+	}
+
+	var from = line.getPath().getAt(0)
+	var to = line.getPath().getAt(1)
+	var image = {
+		url: "assets/images/markers/dot.png",
+		origin: new google.maps.Point(0, 0),
+		anchor: new google.maps.Point(6, 6),
+	}
+
+	var departures = flightDepartureMinutes(link)
+	if (departures.length === 0) {
+		return
+	}
+
+	// One marker per departure. A route flying twice a week has two aircraft
+	// on the map at the times it actually flies, and nothing in between -
+	// which is the honest picture, and cheaper than the old pool of markers
+	// shuttling back and forth continuously.
+	var markersOfThisLink = []
+	for (var i = 0; i < departures.length; i++) {
+		var marker = new google.maps.Marker({
+			position: from,
+			icon: image,
+			departureMinute: departures[i],
+			// Clickable so a player can ask what this particular aeroplane is
+			// carrying and earning; see showFlightPopup().
+			clickable: true
+		})
+		marker.setMap(null)
+		markersOfThisLink.push(marker)
+	}
+
+	flightMarkers[linkId] = {}
+	flightMarkers[linkId].markers = markersOfThisLink
+
+	// Twenty frames a second is smooth without being wasteful; the game can
+	// have thousands of these on screen.
+	var animationInterval = 50
+
+	var animation = window.setInterval(function() {
+		var weekMinute = currentGameWeekMinute()
+		if (weekMinute === null) {
+			return  // the clock has not reported in yet
+		}
+
+		$.each(markersOfThisLink, function(key, marker) {
+			var progress = flightProgress(marker.departureMinute, link.duration, weekMinute)
+			if (!progress) {
+				if (marker.getMap()) marker.setMap(null)
+				return
+			}
+			if (christmasMarker && !marker.wearingChristmas) {
+				marker.wearingChristmas = true
+				marker.icon = {
+					url: randomFlightMarker(),
+					origin: new google.maps.Point(0, 0),
+					anchor: new google.maps.Point(6, 6),
+				}
+			}
+			var start = progress.outbound ? from : to
+			var end = progress.outbound ? to : from
+			marker.setPosition(google.maps.geometry.spherical.interpolate(start, end, progress.fraction))
+			marker.flightInfo = { link: link, progress: progress }
+			if (!marker.getMap()) marker.setMap(map)
+		})
+	}, animationInterval)
+
+	// One handler per marker, set once rather than on every frame.
+	$.each(markersOfThisLink, function(key, marker) {
+		google.maps.event.addListener(marker, 'click', function() {
+			showFlightPopup(link, marker)
+		})
+	})
+
+	flightMarkers[linkId].animation = animation;
 }
 
 

@@ -250,6 +250,10 @@ package object controllers {
       "fromLongitude" -> JsNumber(link.from.longitude),
       "toLatitude" -> JsNumber(link.to.latitude),
       "toLongitude" -> JsNumber(link.to.longitude),
+      // Needed to work out the departure times: a major airport can dispatch
+      // around the clock, a smaller one only between 06:00 and 23:00, and the
+      // map's animation has to place its flights the same way the game does.
+      "fromAirportSize" -> JsNumber(link.from.size),
       "flightCode" -> JsString(LinkUtil.getFlightCode(link.airline, link.flightNumber))
       ))
 

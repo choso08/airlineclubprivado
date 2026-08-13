@@ -514,6 +514,37 @@ var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 var currentTickTimer
 var tickTimerCreator
 
+/*
+ * The in-game clock, readable from anywhere.
+ *
+ * updateTime() already works this out to print the date in the header, but it
+ * kept the pieces to itself. The flight animation on the map needs the same
+ * clock - a flight has to leave at its scheduled hour and land duration
+ * minutes later, and "its scheduled hour" means nothing without the clock the
+ * rest of the game is showing.
+ *
+ * One week of game time passes per cycle, so this also decides how fast the
+ * aircraft cross the map: a slower game is a slower flight, with no separate
+ * animation speed to keep in step.
+ */
+var gameClockAnchorWall = null   // real time when we last knew the game time
+var gameClockAnchorGame = null   // game time at that moment
+var gameClockMultiplier = null   // game milliseconds per real millisecond
+
+/** Current in-game time in milliseconds, or null before the first tick. */
+function currentGameTime() {
+    if (gameClockAnchorWall === null) return null
+    return gameClockAnchorGame + (new Date().getTime() - gameClockAnchorWall) * gameClockMultiplier
+}
+
+/** Minutes since the start of the in-game week: 0 is Sunday 00:00. */
+function currentGameWeekMinute() {
+    var now = currentGameTime()
+    if (now === null) return null
+    var date = new Date(now)
+    return date.getDay() * 24 * 60 + date.getHours() * 60 + date.getMinutes()
+}
+
 function updateTime(cycle, fraction, cycleDurationEstimation) {
 	$(".currentTime").attr("title", "Current Cycle: " + cycle)
 	//The in-game date is just "cycle 0 = the epoch", so a fresh world starts in
@@ -529,6 +560,8 @@ function updateTime(cycle, fraction, cycleDurationEstimation) {
 	}
 
 	var wallClockStart = new Date()
+	gameClockAnchorWall = wallClockStart.getTime()
+	gameClockAnchorGame = gameTimeStart
 
 	//how much wall clock duration should be multiplied as game time duration
 	//
@@ -541,6 +574,7 @@ function updateTime(cycle, fraction, cycleDurationEstimation) {
 	var timeMultiplier = cycleDurationEstimation > 0 ?
 	    totalmillisecPerWeek / cycleDurationEstimation :
 		totalmillisecPerWeek / configuredCycleMillis
+	gameClockMultiplier = timeMultiplier
 
 
 	if (currentTickTimer) {

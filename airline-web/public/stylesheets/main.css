@@ -1145,3 +1145,54 @@ iframe.clip {
     box-shadow: inset 0 0 2px white, 0 0 4px rgba(0, 0, 0, 0.6);
 }
 
+
+/* The card that opens when an aircraft on the map is clicked.
+   See javascripts/flight-popup.js. Sits above the map, which Leaflet keeps at
+   z-index 0 here, and below the game's own menus. */
+.flight-popup {
+	position: fixed;
+	left: 12px;
+	bottom: 12px;
+	z-index: 9;
+	width: 300px;
+	max-width: 90vw;
+	padding: 10px 12px 12px 12px;
+	border: 1px solid var(--border-color, #4a5568);
+	border-radius: 6px;
+	background: var(--main-panel-color, rgba(20, 26, 44, 0.95));
+	color: var(--text-color, #e2e8f0);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	font-size: 13px;
+}
+.flight-popup-title {
+	font-size: 15px;
+	font-weight: bold;
+	margin-bottom: 6px;
+	padding-right: 16px;
+}
+.flight-popup-image {
+	display: block;
+	width: 100%;
+	margin-bottom: 6px;
+}
+.flight-popup-row {
+	display: flex;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 2px 0;
+	border-bottom: 1px solid rgba(128, 128, 128, 0.18);
+}
+.flight-popup-row span:last-child {
+	text-align: right;
+	white-space: nowrap;
+}
+.flight-popup-close {
+	position: absolute;
+	top: 6px;
+	right: 10px;
+	cursor: pointer;
+	font-size: 18px;
+	line-height: 1;
+	opacity: 0.7;
+}
+.flight-popup-close:hover { opacity: 1; }

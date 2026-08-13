@@ -8,7 +8,13 @@ function loadDepartures(airportId) {
 	//$('#rankingCanvas .table').hide() //hide all tables until they are loaded
 	$('.departures').children('div.table-row').remove()
 	$('#weather').hide()
-	var currentTime = new Date()
+	// The in-game clock, not the wall clock. Upstream used the real time of
+	// day, which meant the board and the aircraft on the map were working from
+	// two different weeks: a flight could be shown as departing at 02:35 while
+	// the aeroplane for it was somewhere else entirely. The clock in the header
+	// is the one the game runs on, so it is the one the board answers to.
+	var gameNow = (typeof currentGameTime === 'function') ? currentGameTime() : null
+	var currentTime = (gameNow !== null) ? new Date(gameNow) : new Date()
 	currentMinute =  currentTime.getMinutes()
 	currentHour = currentTime.getHours()
 	currentDay = currentTime.getDay()
