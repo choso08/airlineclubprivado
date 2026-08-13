@@ -55,8 +55,13 @@ object PendingActionUtil {
         alliance => {
           val isAdminOption = alliance.members.find(_.airline.id == airline.id).map(thisAirlineMember => AllianceRole.isAdmin(thisAirlineMember.role))
           if (isAdminOption.getOrElse(false)) {
-            if (alliance.members.find(_.role == AllianceRole.APPLICANT).isDefined) {
-              actions.append(PendingAction(airline, PendingActionCategory.ALLIANCE_PENDING_APPLICATION))
+            // Who is waiting, not merely that somebody is. The mark on the tab
+            // said nothing about how many or who, so it read as decoration and
+            // people left applications sitting for weeks.
+            val applicants = alliance.members.filter(_.role == AllianceRole.APPLICANT).map(_.airline.name)
+            if (applicants.nonEmpty) {
+              actions.append(PendingAction(airline, PendingActionCategory.ALLIANCE_PENDING_APPLICATION,
+                Map("count" -> applicants.size.toString, "airlines" -> applicants.mkString(", "))))
             }
           }
         }

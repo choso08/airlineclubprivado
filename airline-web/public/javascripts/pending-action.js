@@ -26,7 +26,8 @@ function handlePendingActions(pendingActions) {
         } else if (category === 'ALLIANCE_PENDING_APPLICATION') {
             var $pendingActionDiv = $('<div style="position: absolute; right: -5px; bottom: -5px; height: 20px; width: 20px;" class="pendingAction"></div>').appendTo($('.left-tab .tab-icon[data-link="alliance"]'))
             var $icon = $('<img src="assets/images/icons/exclamation.png">')
-            $icon.attr('title', "Pending Application")
+            var waiting = pendingAction.params ? pendingAction.params['airlines'] : undefined
+            $icon.attr('title', waiting ? ('Waiting to join your alliance: ' + waiting) : 'Pending Application')
             $pendingActionDiv.append($icon)
         }
     })

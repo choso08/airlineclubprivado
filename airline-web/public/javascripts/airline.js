@@ -1939,6 +1939,10 @@ function updateLinksTable(sortProperty, sortOrder) {
 	
 	$.each(loadedLinks, function(index, link) {
 		var row = $("<div class='table-row clickable' onclick='selectLinkFromTable($(this), " + link.id + ")'></div>")
+		// Kept on the row so the filter box above the table can ask real
+		// questions of it - "which of these lose money" - rather than trying to
+		// read a number back out of "$1,234".
+		row.data('link', link)
 		
 		row.append("<div class='cell'>" + getCountryFlagImg(link.fromCountryCode) + getAirportText(link.fromAirportCity, link.fromAirportCode) + "</div>")
 		row.append("<div class='cell'>" + getCountryFlagImg(link.toCountryCode) + getAirportText(link.toAirportCity, link.toAirportCode) + "</div>")

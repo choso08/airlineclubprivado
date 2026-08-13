@@ -28,6 +28,9 @@ object GameConfig {
   private def double(path: String, fallback: Double): Double =
     if (config.hasPath(path)) config.getDouble(path) else fallback
 
+  private def boolean(path: String, fallback: Boolean): Boolean =
+    if (config.hasPath(path)) config.getBoolean(path) else fallback
+
   /** Yearly interest the bank starts at. The simulation then drifts it up and
     * down over time, within bounds derived from this. Upstream: 0.12 (12%). */
   val loanInterestRate: Double = double("economy.loanInterestRate", 0.12)
@@ -69,4 +72,20 @@ object GameConfig {
     * owed some consistency in. Among friends it is just an obstacle, so it
     * defaults to none here. 0 removes the wait entirely. */
   val renameCooldownDays: Int = int("rules.renameCooldownDays", 0)
+
+  /** Weeks before the same route may be negotiated again.
+    *
+    * Upstream: 6. At five minute cycles that is half an hour of real waiting
+    * before you may touch a route you have just negotiated - which mostly
+    * punishes experimenting, the thing a private game is for. */
+  val negotiationCooldownCycles: Int = int("rules.negotiationCooldownCycles", 2)
+
+  /** Whether applying to an alliance joins it outright.
+    *
+    * Upstream makes every application wait for a leader to approve it, which
+    * is a rule for a public server full of strangers. Among friends it means
+    * somebody has to be logged in and looking at the right panel at the right
+    * moment, and if the alliance has lost its leader nobody can ever approve
+    * anything - so applications sit there for ever with nothing to say why. */
+  val allianceAutoAccept: Boolean = boolean("rules.allianceAutoAccept", false)
 }

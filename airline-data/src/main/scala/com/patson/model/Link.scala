@@ -187,7 +187,11 @@ case class Link(from : Airport, to : Airport, airline: Airline, price : LinkClas
 object Link {
   val MAX_QUALITY = 100
   val HIGH_FREQUENCY_THRESHOLD = 14
-  val LINK_NEGOTIATION_COOL_DOWN = 6
+  // Weeks before the same route may be negotiated again after a negotiation.
+  // Upstream: 6 - half an hour of real waiting at five minute cycles, on a
+  // route you may only have wanted to adjust. Set with
+  // AIRLINE_NEGOTIATION_COOLDOWN_CYCLES.
+  val LINK_NEGOTIATION_COOL_DOWN = GameConfig.negotiationCooldownCycles
   def fromId(id : Int) : Link = {
     Link(from = Airport.fromId(0), to = Airport.fromId(0), Airline.fromId(0), price = LinkClassValues.getInstance(), distance = 0, capacity = LinkClassValues.getInstance(), rawQuality = 0, duration = 0, frequency = 0, flightType = FlightType.SHORT_HAUL_DOMESTIC, id = id)
   }

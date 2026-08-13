@@ -498,10 +498,18 @@ class AllianceApplication @Inject()(cc: ControllerComponents) extends AbstractCo
             case Some(rejection) => BadRequest(rejection)
             case None => //ok
               val currentCycle = CycleSource.loadCycle()
-              val newMember = AllianceMember(allianceId = alliance.id, airline = request.user, role = APPLICANT, joinedCycle = currentCycle)
+              // With rules.allianceAutoAccept, applying joins. Waiting for
+              // approval is a rule for a server full of strangers; among
+              // friends it needs somebody logged in and looking at the right
+              // panel, and an alliance that has lost its leader can never
+              // approve anybody at all.
+              val role = if (GameConfig.allianceAutoAccept) MEMBER else APPLICANT
+              val newMember = AllianceMember(allianceId = alliance.id, airline = request.user, role = role, joinedCycle = currentCycle)
               AllianceSource.saveAllianceMember(newMember)
-              val history = AllianceHistory(allianceName = alliance.name, airline = request.user, event = APPLY_ALLIANCE, cycle = currentCycle)
+              val event = if (role == MEMBER) JOIN_ALLIANCE else APPLY_ALLIANCE
+              val history = AllianceHistory(allianceName = alliance.name, airline = request.user, event = event, cycle = currentCycle)
               AllianceSource.saveAllianceHistory(history)
+              SearchService.alliancesChanged()
               Ok(Json.toJson(newMember))
         }
     }
