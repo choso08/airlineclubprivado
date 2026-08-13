@@ -5,9 +5,9 @@
       html, body { height: 100%; margin: 0; padding: 0; }
       #map { height: 100%; }
     </style>
-    <link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("css-templates/treviso/css/style.css")">
-    <link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/main.css")">
-    <script src="@routes.Assets.versioned("javascripts/jquery-2.1.4.js")"></script>
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("css-templates/treviso/css/style.css")?v=@controllers.BuildStamp.value">
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/main.css")?v=@controllers.BuildStamp.value">
+    <script src="@routes.Assets.versioned("javascripts/jquery-2.1.4.js")?v=@controllers.BuildStamp.value"></script>
   </head>
   <body>
   	<div id="topBar" data-scroll="false" class="menubar">
@@ -49,10 +49,10 @@
 	    </div> 
 	    <div style="clear:both"></div>
     </div>
-    <script src="@routes.Assets.versioned("javascripts/test-airport.js")"></script>
-    <script src="@routes.Assets.versioned("javascripts/airplane.js")"></script>
-    <script src="@routes.Assets.versioned("javascripts/airline.js")"></script>
-    <script src="@routes.Assets.versioned("javascripts/websocket.js")"></script>
+    <script src="@routes.Assets.versioned("javascripts/test-airport.js")?v=@controllers.BuildStamp.value"></script>
+    <script src="@routes.Assets.versioned("javascripts/airplane.js")?v=@controllers.BuildStamp.value"></script>
+    <script src="@routes.Assets.versioned("javascripts/airline.js")?v=@controllers.BuildStamp.value"></script>
+    <script src="@routes.Assets.versioned("javascripts/websocket.js")?v=@controllers.BuildStamp.value"></script>
     <script async defer
 src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB5XQhzy2XrM95AyfW8f5BeWJiqr-LGXxU&callback=initMap">
 </script> 

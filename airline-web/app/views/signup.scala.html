@@ -9,12 +9,12 @@
       html, body { height: 100%; margin: 0; padding: 0; }
       #map { height: 100%; }
     </style>
-	<link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("css-templates/treviso/css/style.css")">
-	<link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/main.css")">
-	<link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/new-style.css")">
-	<link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/mobile.css")">
-	<script src="@routes.Assets.versioned("javascripts/libs/jquery-2.1.4.js")"></script>
-    <script src="@routes.Assets.versioned("javascripts/libs/jquery.cookie.js")"></script>
+	<link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("css-templates/treviso/css/style.css")?v=@controllers.BuildStamp.value">
+	<link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/main.css")?v=@controllers.BuildStamp.value">
+	<link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/new-style.css")?v=@controllers.BuildStamp.value">
+	<link rel="stylesheet" type="text/css" href="@routes.Assets.versioned("stylesheets/mobile.css")?v=@controllers.BuildStamp.value">
+	<script src="@routes.Assets.versioned("javascripts/libs/jquery-2.1.4.js")?v=@controllers.BuildStamp.value"></script>
+    <script src="@routes.Assets.versioned("javascripts/libs/jquery.cookie.js")?v=@controllers.BuildStamp.value"></script>
 	@if(recaptchaEnabled) {
 		<script src='https://www.google.com/recaptcha/api.js?render=@recaptchaSiteKey'></script>
 	}
@@ -24,7 +24,7 @@
 		window.RECAPTCHA_ENABLED = @recaptchaEnabled;
 		window.RECAPTCHA_SITE_KEY = '@recaptchaSiteKey';
 	</script>
-	<script src="@routes.Assets.versioned("javascripts/signup.js")"></script>
+	<script src="@routes.Assets.versioned("javascripts/signup.js")?v=@controllers.BuildStamp.value"></script>
 	@* FullStory session recording removed: it streamed player sessions to the
 	   upstream airline-club.com account, which is wrong for a private instance. *@
 </head>

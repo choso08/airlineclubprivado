@@ -14,28 +14,28 @@
 	  <style type="text/css">
       html, body { height: 100%; margin: 0; padding: 0; }
     </style>
-    <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("css-templates/treviso/css/style.css")'>
-    <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/main.css")'>
-    <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/departures.css")'>
-    <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/tooltip.css")'>
-      <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/country.css")'>
-	<link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/chat.css")'>
-      <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/search.css")'>
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/campaign.css")'>
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/profile.css")'>
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/switch.css")'>
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/select.css")'>
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/about.css")'>
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/prompt.css")'>
-	<link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("javascripts/jemoji/jemoji.css")'>
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("javascripts/emojify/emojify.min.css")'>
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("javascripts/splitting/splitting.css")'>
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("javascripts/splitting/splitting-cells.css")'>
+    <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("css-templates/treviso/css/style.css")?v=@controllers.BuildStamp.value'>
+    <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/main.css")?v=@controllers.BuildStamp.value'>
+    <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/departures.css")?v=@controllers.BuildStamp.value'>
+    <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/tooltip.css")?v=@controllers.BuildStamp.value'>
+      <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/country.css")?v=@controllers.BuildStamp.value'>
+	<link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/chat.css")?v=@controllers.BuildStamp.value'>
+      <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/search.css")?v=@controllers.BuildStamp.value'>
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/campaign.css")?v=@controllers.BuildStamp.value'>
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/profile.css")?v=@controllers.BuildStamp.value'>
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/switch.css")?v=@controllers.BuildStamp.value'>
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/select.css")?v=@controllers.BuildStamp.value'>
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/about.css")?v=@controllers.BuildStamp.value'>
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/prompt.css")?v=@controllers.BuildStamp.value'>
+	<link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("javascripts/jemoji/jemoji.css")?v=@controllers.BuildStamp.value'>
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("javascripts/emojify/emojify.min.css")?v=@controllers.BuildStamp.value'>
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("javascripts/splitting/splitting.css")?v=@controllers.BuildStamp.value'>
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("javascripts/splitting/splitting-cells.css")?v=@controllers.BuildStamp.value'>
 	  <link rel="stylesheet" type="text/css" href='/assets/stylesheets/classic.css' id="uiTheme">
-	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/mobile.css")'> <!-- this has to be last so it overrides the CSS if mobile-->
+	  <link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/mobile.css")?v=@controllers.BuildStamp.value'> <!-- this has to be last so it overrides the CSS if mobile-->
 	  @* Optional: squarer corners throughout. Left OFF so the interface keeps
 	     the original look. Uncomment the line below to try it. *@
-	  @*<link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/square-ui.css")'>*@
+	  @*<link rel="stylesheet" type="text/css" href='@routes.Assets.versioned("stylesheets/square-ui.css")?v=@controllers.BuildStamp.value'>*@
 
 
     
@@ -47,70 +47,70 @@
 	   a filtered network or a captive portal otherwise leaves the whole game
 	   dead, since every screen depends on jQuery. The local copy is a slightly
 	   older 2.1.4, used only when the CDN has already failed. *@
-	<script>window.jQuery || document.write('<script src="@routes.Assets.versioned("javascripts/libs/jquery-2.1.4.js")"><\/script>')</script>
+	<script>window.jQuery || document.write('<script src="@routes.Assets.versioned("javascripts/libs/jquery-2.1.4.js")?v=@controllers.BuildStamp.value"><\/script>')</script>
 
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
 			  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
 			  crossorigin="anonymous"></script>
-	<script>(window.jQuery && window.jQuery.ui) || document.write('<script src="@routes.Assets.versioned("javascripts/libs/jquery-ui.min.js")"><\/script>')</script>
+	<script>(window.jQuery && window.jQuery.ui) || document.write('<script src="@routes.Assets.versioned("javascripts/libs/jquery-ui.min.js")?v=@controllers.BuildStamp.value"><\/script>')</script>
 <!--    <script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>-->
-    <script src='@routes.Assets.versioned("javascripts/libs/jquery.cookie.js")'></script>
+    <script src='@routes.Assets.versioned("javascripts/libs/jquery.cookie.js")?v=@controllers.BuildStamp.value'></script>
 
-    <script src='@routes.Assets.versioned("javascripts/libs/reconnecting-websocket.min.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/jemoji/jemoji.js")' defer></script>
-	<script src='@routes.Assets.versioned("javascripts/emojify/emojify.js")' defer></script>
-    <script src='@routes.Assets.versioned("javascripts/splitting/splitting.min.js")'></script>
+    <script src='@routes.Assets.versioned("javascripts/libs/reconnecting-websocket.min.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/jemoji/jemoji.js")?v=@controllers.BuildStamp.value' defer></script>
+	<script src='@routes.Assets.versioned("javascripts/emojify/emojify.js")?v=@controllers.BuildStamp.value' defer></script>
+    <script src='@routes.Assets.versioned("javascripts/splitting/splitting.min.js")?v=@controllers.BuildStamp.value'></script>
 
     <script type="text/javascript" src='@routes.Assets.versioned("fusioncharts/fusioncharts.js")' defer></script>
     <script type="text/javascript" src='@routes.Assets.versioned("fusioncharts/fusioncharts.widgets.js")' defer></script>
 	<script type="text/javascript" src='@routes.Assets.versioned("fusioncharts/themes/fusioncharts.theme.zune.js")' defer></script>
 	<script type="text/javascript" src='@routes.Assets.versioned("fusioncharts/fusioncharts-jquery-plugin.js")' defer></script>
-	<script src='@routes.Assets.versioned("javascripts/plot-fusioncharts.js")' defer></script>
+	<script src='@routes.Assets.versioned("javascripts/plot-fusioncharts.js")?v=@controllers.BuildStamp.value' defer></script>
 	
 	<script type="text/javascript" src='@routes.Assets.versioned("progress-bar/progress-bar.js")' defer></script>
 	  <link rel="stylesheet" href='@routes.Assets.versioned("progress-bar/progress-bar.css")' type="text/css" />
 	
 	<script type="text/javascript" src='@routes.Assets.versioned("jquery-upload-file/jquery.uploadfile.min.js")' defer></script>
 	<link rel="stylesheet" href='@routes.Assets.versioned("jquery-upload-file/uploadfile.css")' type="text/css" />
-	<script src='@routes.Assets.versioned("javascripts/lazysizes/lazysizes.min.js")' async></script>
+	<script src='@routes.Assets.versioned("javascripts/lazysizes/lazysizes.min.js")?v=@controllers.BuildStamp.value' async></script>
 
-	<script src='@routes.Assets.versioned("javascripts/main.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/airport.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/airport-asset.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/airplane.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/model-configuration.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/airline.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/link-history.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/delegate.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/country.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/office.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/tiles.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/ranking.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/bank.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/oil.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/rivals.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/alliance.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/log.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/event.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/search.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/facility.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/departures.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/websocket.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/map-button.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/gadgets.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/chat.js")' defer></script>
-	<script src='@routes.Assets.versioned("javascripts/christmas.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/confetti.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/admin.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/about.js")'></script>
+	<script src='@routes.Assets.versioned("javascripts/main.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/airport.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/airport-asset.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/airplane.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/model-configuration.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/airline.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/link-history.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/delegate.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/country.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/office.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/tiles.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/ranking.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/bank.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/oil.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/rivals.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/alliance.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/log.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/event.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/search.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/facility.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/departures.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/websocket.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/map-button.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/gadgets.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/chat.js")?v=@controllers.BuildStamp.value' defer></script>
+	<script src='@routes.Assets.versioned("javascripts/christmas.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/confetti.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/admin.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/about.js")?v=@controllers.BuildStamp.value'></script>
 @* deck.gl's overlay binds specifically to the Google map, so it is only
    loaded for that provider. On OpenStreetMap the heatmap screen is inert. *@
 @if(configuration.getOptional[String]("map.provider").getOrElse("osm") == "google") {
 	<script src='https://unpkg.com/deck.gl@@8.9.22/dist.min.js'></script>
 	<script src='https://unpkg.com/@@deck.gl/google-maps@@8.9.22/dist.min.js'></script>
 }
-	<script src='@routes.Assets.versioned("javascripts/heatmap.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/auto-refresh.js")'></script>
+	<script src='@routes.Assets.versioned("javascripts/heatmap.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/auto-refresh.js")?v=@controllers.BuildStamp.value'></script>
 	<script>
 	  @* Read by main.js for the in-game clock: how fast it should run before
 	     the websocket reports a measured cycle length, and which year the
@@ -140,21 +140,21 @@
 	</script>
 	@* Must load after the panels' own scripts so its observer is watching by
 	   the time they start building anything. *@
-	<script src='@routes.Assets.versioned("javascripts/translate.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/select-search.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/flight-popup.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/list-filter.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/weekly-digest.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/campaign.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/profile.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/settings.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/prompt.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/pending-action.js")'></script>
-    <script src='@routes.Assets.versioned("javascripts/map-style.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/color-scheme.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/ui-theme.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/color.js")'></script>
-	<script src='@routes.Assets.versioned("javascripts/mobile.js")' defer></script>
+	<script src='@routes.Assets.versioned("javascripts/translate.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/select-search.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/flight-popup.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/list-filter.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/weekly-digest.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/campaign.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/profile.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/settings.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/prompt.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/pending-action.js")?v=@controllers.BuildStamp.value'></script>
+    <script src='@routes.Assets.versioned("javascripts/map-style.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/color-scheme.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/ui-theme.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/color.js")?v=@controllers.BuildStamp.value'></script>
+	<script src='@routes.Assets.versioned("javascripts/mobile.js")?v=@controllers.BuildStamp.value' defer></script>
     @* FullStory session recording removed. It streamed every player's session
        - clicks, page contents and all - to the upstream author's analytics
        account, keyed to his organisation id. That is not something a private
@@ -5577,7 +5577,7 @@
 		<source src='@routes.Assets.versioned("music/joy-to-the-world.mp3")' type="audio/mp3" />
 	</audio>
 
-    <script src="@routes.Assets.versioned("javascripts/chat-popup.js")"></script>
+    <script src="@routes.Assets.versioned("javascripts/chat-popup.js")?v=@controllers.BuildStamp.value"></script>
 
 @* Map provider. "osm" needs no API key, no billing account and no Google
    project; "google" is upstream's behaviour and needs google.mapKey set.
@@ -5586,9 +5586,9 @@
     <script src='https://maps.googleapis.com/maps/api/js?v=3.43&key=@configuration.get[String]("google.mapKey")&libraries=geometry,drawing&callback=initMap'>
 	</script>
 } else {
-    <link rel="stylesheet" href='@routes.Assets.versioned("javascripts/libs/leaflet/leaflet.css")'>
-    <link rel="stylesheet" href='@routes.Assets.versioned("javascripts/libs/leaflet-fixes.css")'>
-    <script src='@routes.Assets.versioned("javascripts/libs/leaflet/leaflet.js")'></script>
+    <link rel="stylesheet" href='@routes.Assets.versioned("javascripts/libs/leaflet/leaflet.css")?v=@controllers.BuildStamp.value'>
+    <link rel="stylesheet" href='@routes.Assets.versioned("javascripts/libs/leaflet-fixes.css")?v=@controllers.BuildStamp.value'>
+    <script src='@routes.Assets.versioned("javascripts/libs/leaflet/leaflet.js")?v=@controllers.BuildStamp.value'></script>
     <script>
       // Tile sources. Light and dark are a matched pair so the two themes look
       // like the same map in two palettes; set map.tileUrl to override both.
@@ -5616,7 +5616,7 @@
       // Which theme a player who has never touched the switch starts on.
       window.OSM_DEFAULT_THEME = '@configuration.getOptional[String]("map.theme").getOrElse("dark")';
     </script>
-    <script src='@routes.Assets.versioned("javascripts/libs/google-maps-shim.js")'></script>
+    <script src='@routes.Assets.versioned("javascripts/libs/google-maps-shim.js")?v=@controllers.BuildStamp.value'></script>
 }
 <!-- 	<script src="https://apis.google.com/js/platform.js"></script> -->
   <script src='/assets/firework/fscreen.js'></script>
