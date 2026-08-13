@@ -5542,8 +5542,13 @@
     <link rel="stylesheet" href='@routes.Assets.versioned("javascripts/libs/leaflet-fixes.css")'>
     <script src='@routes.Assets.versioned("javascripts/libs/leaflet/leaflet.js")'></script>
     <script>
-      // Override these to use a different tile server.
-      window.OSM_TILE_URL = '@configuration.getOptional[String]("map.tileUrl").getOrElse("https://tile.openstreetmap.org/{z}/{x}/{y}.png")';
+      // Tile sources. Light and dark are a matched pair so the two themes look
+      // like the same map in two palettes; set map.tileUrl to override both.
+      window.OSM_TILE_URL_LIGHT = '@configuration.getOptional[String]("map.tileUrlLight").getOrElse("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png")';
+      window.OSM_TILE_URL_DARK  = '@configuration.getOptional[String]("map.tileUrlDark").getOrElse("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png")';
+      @configuration.getOptional[String]("map.tileUrl").map { url =>
+      window.OSM_TILE_URL = '@url';
+      }.getOrElse(play.twirl.api.Html(""))
     </script>
     <script src='@routes.Assets.versioned("javascripts/libs/google-maps-shim.js")'></script>
 }

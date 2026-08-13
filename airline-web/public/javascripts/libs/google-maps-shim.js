@@ -271,10 +271,36 @@
 
   // --------------------------------------------------------------------- Map
 
-  var TILE_URL = (global.OSM_TILE_URL ||
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png');
+  // Google styled its map from JavaScript, so the game flips between light and
+  // dark by handing setOptions a style array. With tiles the look comes from
+  // the server instead, so the two themes are two tile sources and switching
+  // means swapping the layer.
+  //
+  // CARTO's basemaps are used because they offer a matched light/dark pair -
+  // the same cartography in two palettes - and need no API key. Plain
+  // OpenStreetMap has no dark equivalent, so mixing them would make the two
+  // themes look like different maps.
+  var TILE_URL_LIGHT = (global.OSM_TILE_URL_LIGHT ||
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
+  var TILE_URL_DARK = (global.OSM_TILE_URL_DARK ||
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+
+  // An explicit OSM_TILE_URL overrides both, for anyone pointing at their own
+  // tile server - they then get the same tiles in both themes.
+  var TILE_URL_OVERRIDE = global.OSM_TILE_URL || null;
+
   var TILE_ATTRIBUTION = (global.OSM_TILE_ATTRIBUTION ||
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors');
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>');
+
+  // The game keeps its choice in a global (and a cookie) from map-style.js.
+  function currentTheme() {
+    return (global.currentStyles === 'light') ? 'light' : 'dark';
+  }
+
+  function tileUrlFor(theme) {
+    if (TILE_URL_OVERRIDE) return TILE_URL_OVERRIDE;
+    return theme === 'light' ? TILE_URL_LIGHT : TILE_URL_DARK;
+  }
 
   function Map(element, opts) {
     opts = opts || {};
@@ -292,10 +318,10 @@
       worldCopyJump: true
     });
 
-    L.tileLayer(TILE_URL, {
+    this._theme = currentTheme();
+    this._tileLayer = L.tileLayer(tileUrlFor(this._theme), {
       attribution: TILE_ATTRIBUTION,
       maxZoom: 19,
-      // OpenStreetMap's tile policy asks for identification. Be a good citizen.
       crossOrigin: true
     }).addTo(this._leaflet);
 
@@ -361,6 +387,24 @@
     if (!o) return;
     if (o.center) this.setCenter(o.center);
     if (o.zoom != null) this.setZoom(o.zoom);
+    // toggleMapLight() flips the game's theme and then calls
+    // setOptions({styles: ...}). The array itself is Google-specific and means
+    // nothing here, but its arrival is the signal to re-read the theme.
+    if (o.styles !== undefined) this.applyTheme(currentTheme());
+  };
+
+  /** Swap the tile layer when the light/dark setting changes. */
+  Map.prototype.applyTheme = function (theme) {
+    if (theme === this._theme) return;
+    this._theme = theme;
+    if (this._tileLayer) this._leaflet.removeLayer(this._tileLayer);
+    this._tileLayer = L.tileLayer(tileUrlFor(theme), {
+      attribution: TILE_ATTRIBUTION,
+      maxZoom: 19,
+      crossOrigin: true
+    }).addTo(this._leaflet);
+    // Keep it under the markers and routes.
+    if (this._tileLayer.bringToBack) this._tileLayer.bringToBack();
   };
   Map.prototype.addListener = function (ev, fn) { return bindListener(this, ev, fn, false); };
   Map.prototype.setMapTypeId = function () { /* no map types here */ };
