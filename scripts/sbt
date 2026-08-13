@@ -10,6 +10,10 @@
 #                           forced as the only resolver list. Use this on hosts
 #                           whose egress policy blocks repo.scala-sbt.org /
 #                           repo.typesafe.com; see conf/sbt-repositories.
+#   AIRLINE_SBT_JVM_OPTS    Extra JVM flags, space separated. They go to the
+#                           sbt JVM, which is the same JVM `run` uses, so this
+#                           is how a program started through sbt gets its
+#                           -D settings.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,6 +29,11 @@ if [[ -n "${AIRLINE_SBT_REPOS_FILE:-}" ]]; then
     -Dsbt.repository.config="$AIRLINE_SBT_REPOS_FILE"
     -Dsbt.override.build.repos=true
   )
+fi
+
+if [[ -n "${AIRLINE_SBT_JVM_OPTS:-}" ]]; then
+  read -r -a EXTRA_JVM_ARGS <<< "$AIRLINE_SBT_JVM_OPTS"
+  JVM_ARGS+=("${EXTRA_JVM_ARGS[@]}")
 fi
 
 exec java "${JVM_ARGS[@]}" -jar "$REPO_ROOT/sbt-launch.jar" "$@"

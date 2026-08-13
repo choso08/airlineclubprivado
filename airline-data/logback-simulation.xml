@@ -1,0 +1,25 @@
+<configuration>
+  <!--
+    Logging for the background simulation.
+
+    This file lives here and NOT under src/main/resources on purpose. Anything
+    in src/main/resources is packaged into the published airline-data jar, and
+    a logback.xml in there would sit on the web half's classpath next to
+    airline-web/conf/logback.xml with no rule about which one wins.
+
+    scripts/run-simulation.sh points the JVM at this path explicitly.
+  -->
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss} %-5level %logger{24} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- c3p0 recites its entire configuration every time it opens a pool. -->
+  <logger name="com.mchange" level="WARN"/>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+</configuration>
