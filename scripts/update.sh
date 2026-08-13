@@ -117,24 +117,33 @@ if ! have_service airline-sim; then
   manual_restart_note "simulation" "run-simulation.sh"
   exit 1
 fi
-if true; then
-  # Wait for a cycle boundary so we do not kill one halfway through. Cycles
-  # take 1-3 minutes, so give it generous headroom before going anyway.
-  LAST="$(journalctl -u airline-sim -n 200 --no-pager 2>/dev/null | grep -c 'spent .* secs' || echo 0)"
-  echo "   waiting up to 5 minutes for a cycle to complete..."
-  for _ in $(seq 1 60); do
-    NOW="$(journalctl -u airline-sim -n 200 --no-pager 2>/dev/null | grep -c 'spent .* secs' || echo 0)"
-    if [[ "$NOW" -gt "$LAST" ]]; then
-      echo "   cycle finished - restarting now"
-      break
-    fi
-    sleep 5
-  done
-  sudo systemctl restart airline-sim
-else
-  echo "   No systemd - restart ./scripts/run-simulation.sh by hand,"
-  echo "   ideally just after a 'cycle N spent X secs' line appears."
-fi
+# Wait for a cycle boundary so we do not kill one halfway through.
+#
+# How long to wait has to come from the cycle length, not from a fixed number.
+# A flat five minutes was fine at the default pace and quietly wrong the moment
+# anyone slowed the game down: with ten minute cycles the wait would expire
+# before the cycle ended, every time, and the restart it was meant to avoid
+# would happen anyway - having first made you wait five minutes for it.
+#
+# Two full cycles plus a minute. One would be enough if we always arrived at
+# the start of one; we do not, so the worst case is nearly a whole cycle of
+# waiting before the one we are watching for even begins.
+CYCLE_SECONDS="${AIRLINE_CYCLE_SECONDS:-1800}"
+WAIT_SECONDS=$(( CYCLE_SECONDS * 2 + 60 ))
+POLLS=$(( WAIT_SECONDS / 5 ))
+
+LAST="$(journalctl -u airline-sim -n 200 --no-pager 2>/dev/null | grep -c 'spent .* secs' || echo 0)"
+printf '   cycles are %ds, so waiting up to %d minutes for one to complete...\n' \
+  "$CYCLE_SECONDS" "$(( WAIT_SECONDS / 60 ))"
+for _ in $(seq 1 "$POLLS"); do
+  NOW="$(journalctl -u airline-sim -n 200 --no-pager 2>/dev/null | grep -c 'spent .* secs' || echo 0)"
+  if [[ "$NOW" -gt "$LAST" ]]; then
+    echo "   cycle finished - restarting now"
+    break
+  fi
+  sleep 5
+done
+sudo systemctl restart airline-sim
 
 echo
 echo ">> Done. Check both halves are healthy:"

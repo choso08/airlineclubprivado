@@ -112,6 +112,11 @@ Description=$desc
 
 [Service]
 Type=oneshot
+# An update waits for the running simulation cycle to end before restarting
+# it, so at a slow pace this legitimately runs for half an hour. oneshot has
+# no start timeout by default; saying so out loud means nobody has to go and
+# check that when the game is set to long cycles.
+TimeoutStartSec=infinity
 User=$RUN_USER
 WorkingDirectory=$REPO_ROOT
 ExecStart=$exec

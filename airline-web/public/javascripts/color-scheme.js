@@ -26,6 +26,14 @@ function switchTheme() {
 
     localStorage.setItem('theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
+
+    // Bring the map with it. Upstream left the two apart, so choosing dark
+    // gave you a dark game and a bright white map until you found the small
+    // switch on the map itself. Guarded because this file also loads on pages
+    // that have no map at all.
+    if (typeof syncMapThemeWithGame === 'function') {
+        syncMapThemeWithGame()
+    }
 }
 
 $( document ).ready(function() {

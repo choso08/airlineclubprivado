@@ -11,17 +11,69 @@ var pathOpacityByStyle = {
     }
 }
 
-function initStyles() {
-	console.log("onload cookie" + $.cookie('currentMapStyles'))
-	if ($.cookie('currentMapStyles')) {
-		currentStyles = $.cookie('currentMapStyles')
-	} else {
-		// First visit: take the server's map.theme setting. Upstream always
-		// started dark, which is still the default, but a host who prefers
-		// light maps should not have to tell every player to click the switch.
-		currentStyles = (window.OSM_DEFAULT_THEME === 'light') ? 'light' : 'dark'
-		$.cookie('currentMapStyles', currentStyles);
+/*
+ * The map's light/dark and the game's light/dark used to be two unrelated
+ * settings: one under Settings, one behind a small switch on the map itself.
+ * Choosing dark therefore gave you a dark game with a bright white map until
+ * you found the second control - which nobody should have to.
+ *
+ * So the map follows the game's colour theme. map.theme can pin it instead,
+ * for anyone who genuinely wants a light map against a dark game.
+ */
+
+/** "light" or "dark" if the host pinned the map's theme, otherwise null. */
+function mapThemePin() {
+	var pin = window.OSM_DEFAULT_THEME
+	return (pin === 'light' || pin === 'dark') ? pin : null
+}
+
+/** The game's own colour theme, as color-scheme.js keeps it. */
+function gameColorTheme() {
+	try {
+		return (localStorage.getItem('theme') === 'light') ? 'light' : 'dark'
+	} catch (e) {
+		// Private browsing can refuse localStorage entirely.
+		return 'dark'
 	}
+}
+
+/** Put the map on a theme, and redraw the routes in that palette. */
+function applyMapTheme(theme) {
+	if (currentStyles === theme) {
+		return
+	}
+	currentStyles = theme
+	$.cookie('currentMapStyles', currentStyles)
+
+	if (typeof map === 'undefined' || !map) {
+		return  // not built yet; it will pick this up when it is
+	}
+	map.setOptions({styles: getMapStyles()})
+	// Redrawing the routes in the new palette is a nicety; the theme has
+	// already changed by this point. It throws on the sign-in page, where
+	// there is no airline to draw routes for, and an uncaught error there
+	// looks to a player as though the switch is broken.
+	try {
+		refreshLinks(false)
+	} catch (e) {
+		console.log('map theme changed, routes not redrawn: ' + e.message)
+	}
+}
+
+/** Called by switchTheme() whenever the player changes the game's theme. */
+function syncMapThemeWithGame() {
+	if (mapThemePin()) {
+		return
+	}
+	applyMapTheme(gameColorTheme())
+}
+
+function initStyles() {
+	// The game's theme wins over whatever the map was last left on, so that
+	// the one control under Settings is believable. A pinned map.theme is the
+	// host saying otherwise, and that wins over both.
+	currentStyles = mapThemePin() || gameColorTheme()
+	$.cookie('currentMapStyles', currentStyles);
 	console.log("onload " + currentStyles)
 
 	console.log("onload cookie" + $.cookie('currentMapTypes'))
@@ -48,24 +100,29 @@ function getMapTypes() {
 	return currentTypes
 }
 
+/*
+ * The switch on the map. With the map following the game, this moves both -
+ * two controls for one setting, rather than two settings that disagree. When
+ * the host has pinned the map's theme it moves the map alone, since that is
+ * what pinning it was for.
+ */
 function toggleMapLight() {
-	if (currentStyles == 'dark') {
-		currentStyles = 'light'
-	} else {
-		currentStyles = 'dark'
+	var next = (currentStyles == 'dark') ? 'light' : 'dark'
+
+	if (mapThemePin()) {
+		applyMapTheme(next)
+		return
 	}
-	$.cookie('currentMapStyles', currentStyles);
-	console.log($.cookie('currentMapStyles'))
-	
-	map.setOptions({styles: getMapStyles()});
-	// Redrawing the routes in the new palette is a nicety; the theme has
-	// already changed by this point. It throws on the sign-in page, where
-	// there is no airline to draw routes for, and an uncaught error there
-	// looks to a player as though the switch is broken.
-	try {
-		refreshLinks(false)
-	} catch (e) {
-		console.log('map theme changed, routes not redrawn: ' + e.message)
+
+	// Go through the game's own control so the radio buttons under Settings,
+	// localStorage and the page's data-theme all stay in step - the map is
+	// then brought along by switchTheme().
+	$('#switchDark').prop('checked', next === 'dark')
+	$('#switchLight').prop('checked', next === 'light')
+	if (typeof switchTheme === 'function') {
+		switchTheme()
+	} else {
+		applyMapTheme(next)
 	}
 }
 

@@ -292,13 +292,20 @@
   var TILE_ATTRIBUTION = (global.OSM_TILE_ATTRIBUTION ||
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>');
 
-  // The game keeps its choice in a global (and a cookie) from map-style.js.
-  // Before a player has ever used the switch that global is not set yet, and
-  // then the server's map.theme decides.
+  // map-style.js works the theme out and leaves it in a global. If the map is
+  // built before that runs, fall back to the same two sources it uses: a
+  // pinned map.theme, then the game's own colour theme.
   function currentTheme() {
     if (global.currentStyles === 'light') return 'light';
     if (global.currentStyles === 'dark') return 'dark';
-    return (global.OSM_DEFAULT_THEME === 'light') ? 'light' : 'dark';
+    if (global.OSM_DEFAULT_THEME === 'light' || global.OSM_DEFAULT_THEME === 'dark') {
+      return global.OSM_DEFAULT_THEME;
+    }
+    try {
+      return (global.localStorage.getItem('theme') === 'light') ? 'light' : 'dark';
+    } catch (e) {
+      return 'dark';
+    }
   }
 
   function tileUrlFor(theme) {
