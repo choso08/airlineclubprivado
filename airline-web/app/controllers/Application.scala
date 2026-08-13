@@ -423,7 +423,15 @@ class Application @Inject()(cc: ControllerComponents, val configuration: play.ap
   }
   
   def getWeatherError(weather : Weather, random : Random) : (Boolean, Boolean, Boolean) = {
-    
+    // No forecast means no weather-driven delays. WeatherUtil returns null
+    // whenever the lookup fails - no key, no network, a rate-limited key - and
+    // reading a wind speed off that took the whole departure board down with a
+    // null pointer. Flights delayed by nothing at all is the right answer here:
+    // the route's own cancellation and delay counts still apply below.
+    if (weather == null) {
+      return (false, false, false)
+    }
+
     val errorChance : Double = //chance for Major delay/cancellation
     if (weather.getWindSpeed() >= 30) { //hurricane
       1; //all cancelled or major delay

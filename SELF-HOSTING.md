@@ -362,6 +362,10 @@ behind each other and the game drifts.
 | `AIRLINE_RECAPTCHA_ENABLED` | `false` | Anti-bot check on signup |
 | `AIRLINE_WEB_PORT` | `9000` | Port the site listens on |
 | `AIRLINE_BACKUP_KEEP` | `14` | Nightly backups retained |
+| `AIRLINE_LANGUAGE` | `en` | Interface language for a player who has not chosen one (`en`, `pt`) |
+| `AIRLINE_RENAME_COOLDOWN_DAYS` | `0` | Wait between airline renames; upstream enforces 30 |
+| `AIRLINE_MAP_THEME` | `dark` | Which map theme a new player opens on |
+| `AIRLINE_WEATHER_API_KEY` | upstream's | OpenWeatherMap key, or `off` |
 
 ---
 
@@ -416,6 +420,8 @@ Kept deliberately small, so upstream changes stay easy to merge.
 6. **`SearchUtil.java`** — Elasticsearch failures are no longer fatal. See
    below; this is the difference between "search is disabled" and "no one can
    create an account".
+7. **`WeatherUtil.java` and `Application.getWeatherError`** — a failed weather
+   lookup no longer takes the departure board with it. See below.
 
 Added, not modified: `docker-compose.yml`, `.env.example`, `scripts/`,
 `deploy/systemd/`, `conf/sbt-repositories`, `.gitattributes`, `.gitignore`,
@@ -437,6 +443,32 @@ retries, and is told the username is already taken.
 Both that initialiser and `addAirline` now catch `Exception` and log a
 warning. Verified: with no Elasticsearch running at all, signup returns 303
 and login succeeds.
+
+### The weather could take the departure board down
+
+`/airports/:id/departures/...` asks for the airport's weather *before* it
+builds the list of flights, and two things made a failed lookup fatal:
+
+- `WeatherUtil`'s Guava `LoadingCache` refuses to store `null`, so "no
+  forecast" arrived as `InvalidCacheLoadException` — a `RuntimeException`,
+  while `getWeather` caught only `ExecutionException`. The failure went
+  straight through.
+- `getWeatherError` then read `weather.getWindSpeed()` with no null check, so
+  even a clean `null` produced a `NullPointerException` for any airport whose
+  flights had consumption data.
+
+Either way the request answered HTTP 500 and the board came up **completely
+empty** — every day, every airline, no message saying why. Which is easy to
+mistake for "my routes are not flying".
+
+The lookup fails more readily than it looks: the OpenWeatherMap key is
+hardcoded in upstream's source, so it is public, shared by every copy of the
+game, and rate-limited accordingly.
+
+`getWeather` now returns `null` on any failure, the cache holds an `Optional`
+so a failure is remembered rather than retried on every request, and
+`getWeatherError` treats a missing forecast as no weather delays. The key is
+configurable (`AIRLINE_WEATHER_API_KEY`, or `off` to skip the lookup).
 
 ---
 
