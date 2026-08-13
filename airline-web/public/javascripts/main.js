@@ -452,22 +452,33 @@ function refreshPanels(airlineId) {
 	    async: false,
 	    success: function(airline) {
 	    	activeAirline = airline
-	    	refreshTopBar(airline)
-	    	if ($("#worldMapCanvas").is(":visible")) {
-	    		refreshLinks()
-	    	}
-	    	if ($("#linkDetails").is(":visible") || $("#linkDetails").hasClass("active")) {
-	    		refreshLinkDetails(selectedLink)
-	    	}
-	    	if ($("#linksCanvas").is(":visible")) {
-	    		loadLinksTable()
-	    	}
 
-	    	// The four above are the screens upstream bothered to refresh. On a
-	    	// private server people sit on the others for a whole cycle and see
-	    	// nothing change, which reads as the game being stuck. Refresh
-	    	// whichever of the rest is actually on screen.
-	    	refreshVisibleCanvas()
+	    	// Each of these is refreshed on its own. They used to run one after
+	    	// another in a single block, so anything that threw - a map redraw,
+	    	// a panel with unexpected data - silently cancelled every refresh
+	    	// after it. The symptom is the game appearing to stop updating when
+	    	// a cycle passes, with no error anywhere a player would look.
+	    	var steps = [
+	    		function() { refreshTopBar(airline) },
+	    		function() { if ($("#worldMapCanvas").is(":visible")) refreshLinks() },
+	    		function() {
+	    			if ($("#linkDetails").is(":visible") || $("#linkDetails").hasClass("active")) {
+	    				refreshLinkDetails(selectedLink)
+	    			}
+	    		},
+	    		function() { if ($("#linksCanvas").is(":visible")) loadLinksTable() },
+	    		// The four above are the screens upstream bothered to refresh. On
+	    		// a private server people sit on the others for a whole cycle and
+	    		// see nothing change, which reads as the game being stuck.
+	    		function() { refreshVisibleCanvas() }
+	    	]
+	    	steps.forEach(function(step) {
+	    		try {
+	    			step()
+	    		} catch (e) {
+	    			console.log("refresh step failed, continuing: " + e.message)
+	    		}
+	    	})
 	    },
 	    error: function(jqXHR, textStatus, errorThrown) {
 	            console.log(JSON.stringify(jqXHR));

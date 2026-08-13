@@ -656,12 +656,19 @@ function drawFlightMarker(line, link) {
 		})
 	}, animationInterval)
 
-	// One handler per marker, set once rather than on every frame.
-	$.each(markersOfThisLink, function(key, marker) {
-		google.maps.event.addListener(marker, 'click', function() {
-			showFlightPopup(link, marker)
+	// One handler per marker, set once rather than on every frame. Guarded
+	// because this runs inside the cycle refresh: a map provider without
+	// marker events would otherwise take the whole refresh down with it, and
+	// the visible symptom would be the game appearing to stop updating.
+	try {
+		$.each(markersOfThisLink, function(key, marker) {
+			google.maps.event.addListener(marker, 'click', function() {
+				if (typeof showFlightPopup === 'function') showFlightPopup(link, marker)
+			})
 		})
-	})
+	} catch (e) {
+		console.log("flight markers are not clickable here: " + e.message)
+	}
 
 	flightMarkers[linkId].animation = animation;
 }
