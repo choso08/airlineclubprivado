@@ -701,6 +701,27 @@
       'Negative Comment': 'Comentário negativo',
       'Add Self Note': 'Adicionar nota pessoal',
       'Search History': 'Histórico de procuras',
+      // The filter boxes above the long lists, and the week in review.
+      'Filter aircraft': 'Filtrar aviões',
+      'Filter routes': 'Filtrar rotas',
+      'Losing money': 'A perder dinheiro',
+      'nothing matches': 'nada encontrado',
+      'Last week': 'Semana passada',
+      'Force week': 'Forçar semana',
+      'Backup': 'Cópia de segurança',
+      'Backup started': 'Cópia iniciada',
+      'Airlines by profit': 'Companhias por lucro',
+      'Most profitable routes': 'Rotas mais rentáveis',
+      'Nothing happened': 'Não aconteceu nada',
+      'Nothing flew': 'Não voou nada',
+      'No figures for this week yet': 'Ainda não há números desta semana',
+      // The alliance panel, where the wording had to say what to do next.
+      'Abandoned': 'Abandonada',
+      'No leader': 'Sem líder',
+      'Not in an alliance': 'Sem aliança',
+      'Build a headquarters first': 'Cria primeiro uma sede',
+      'This alliance no longer exists - leave it to start again': 'Esta aliança já não existe - sai dela para recomeçar',
+      'Applied - but this alliance has no leader to accept you': 'Candidatura enviada - mas esta aliança não tem líder para te aceitar',
       // What the search boxes answer when they have nothing to show. These
       // come down from the server as text, not as a panel, which is why they
       // are here rather than in a template.

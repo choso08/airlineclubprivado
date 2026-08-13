@@ -188,6 +188,50 @@ class AdminApplication @Inject()(cc: ControllerComponents) extends AbstractContr
     }
   }
 
+  /**
+   * Take a database backup now.
+   *
+   * Off unless admin.backupScript names a script, and the name comes from
+   * configuration only - nothing a request says reaches the command line. That
+   * matters more here than the convenience does: this machine has other things
+   * on it, and a web server that will run whatever it is asked to is the way
+   * one break-in becomes all of them.
+   *
+   * It starts the backup and says so rather than waiting for it. A dump of a
+   * played-in world takes long enough that the browser would give up first,
+   * and the answer would be a timeout for a backup that in fact worked.
+   */
+  def backupNow() = Authenticated { implicit request =>
+    if (!request.user.isAdmin) {
+      println(s"Non admin ${request.user} tried to start a backup!!")
+      Forbidden("Not an admin user")
+    } else {
+      val config = com.typesafe.config.ConfigFactory.load()
+      val script = if (config.hasPath("admin.backupScript")) config.getString("admin.backupScript").trim else ""
+      if (script.isEmpty) {
+        BadRequest(Json.obj("started" -> false, "message" -> "Backups from the page are not enabled - set AIRLINE_BACKUP_SCRIPT"))
+      } else if (!new java.io.File(script).canExecute) {
+        BadRequest(Json.obj("started" -> false, "message" -> s"$script is not there, or is not executable"))
+      } else {
+        val thread = new Thread(new Runnable {
+          override def run(): Unit = {
+            try {
+              val process = new ProcessBuilder(script).redirectErrorStream(true).start()
+              val output = new String(process.getInputStream.readAllBytes(), "UTF-8")
+              val code = process.waitFor()
+              println(s"Backup finished with status $code:\n$output")
+            } catch {
+              case e : Throwable => println(s"Backup failed to run: ${e.getMessage}")
+            }
+          }
+        })
+        thread.setDaemon(true)
+        thread.start()
+        Ok(Json.obj("started" -> true))
+      }
+    }
+  }
+
   def getUserIps(userId : Int) = Authenticated { implicit request =>
     if (request.user.isAdmin) {
       val cutoff = Calendar.getInstance()

@@ -378,3 +378,38 @@ function forceCycle() {
         }
     });
 }
+
+/*
+ * Take a backup now.
+ *
+ * The server starts it and answers immediately - a dump of a played-in world
+ * takes longer than a browser will wait, and a timeout on a backup that in
+ * fact worked is worse than no button at all. It is off unless
+ * AIRLINE_BACKUP_SCRIPT is set, and the server says so rather than failing
+ * quietly.
+ */
+function backupNow() {
+    var $button = $('.backupNowButton')
+    var previous = $button.text()
+    $button.text('Starting...')
+
+    $.ajax({
+        type: 'PUT',
+        url: "/admin/backup",
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        success: function() {
+            $button.text('Backup started')
+            setTimeout(function() { $button.text(previous) }, 8000)
+        },
+        error: function(jqXHR) {
+            var message = 'Backup failed'
+            try {
+                message = JSON.parse(jqXHR.responseText).message || message
+            } catch (e) { }
+            $button.text(previous)
+            console.log(message)
+            alert(message)
+        }
+    });
+}

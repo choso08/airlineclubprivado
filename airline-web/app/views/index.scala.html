@@ -144,6 +144,7 @@
 	<script src='@routes.Assets.versioned("javascripts/select-search.js")'></script>
 	<script src='@routes.Assets.versioned("javascripts/flight-popup.js")'></script>
 	<script src='@routes.Assets.versioned("javascripts/list-filter.js")'></script>
+	<script src='@routes.Assets.versioned("javascripts/weekly-digest.js")'></script>
     <script src='@routes.Assets.versioned("javascripts/campaign.js")'></script>
 	<script src='@routes.Assets.versioned("javascripts/profile.js")'></script>
     <script src='@routes.Assets.versioned("javascripts/settings.js")'></script>
@@ -232,7 +233,7 @@
 	<div style="width: 100%; display: none;" class="extendedTopBarDetails">
 		<div>
 			<span class="currentTime" class="label" style="margin: 0px 10px"></span>
-			<span style="margin: 0px 10px" title="An estimation of how long until next cycle/week"><img src='@routes.Assets.versioned("images/icons/clock-moon-phase.png")' style="vertical-align: middle;"><span class="nextTickEstimation label" style="font-weight: bold;">-</span></span><span class="adminActions" style="display: none; margin: 0px 10px;"><a class="forceCycleButton" onclick="forceCycle()" title="Run the next week now instead of waiting">Force week</a></span>
+			<span style="margin: 0px 10px" title="An estimation of how long until next cycle/week"><img src='@routes.Assets.versioned("images/icons/clock-moon-phase.png")' style="vertical-align: middle;"><span class="nextTickEstimation label" style="font-weight: bold;">-</span></span><span class="adminActions" style="display: none; margin: 0px 10px;"><a class="forceCycleButton" onclick="forceCycle()" title="Run the next week now instead of waiting">Force week</a>&nbsp;<a class="backupNowButton" onclick="backupNow()" title="Take a database backup now">Backup</a></span><span style="margin: 0px 10px;"><a onclick="showWeeklyDigest()" title="What happened in the week that just finished">Last week</a></span>
 		</div>
 		<div>
 			<span style="margin: 0px 10px">Reputation: <span class="reputation label"></span> <span class="reputationLevel label"></span></span>
@@ -243,7 +244,7 @@
   			<span class="topBarDetails" style="display: none;">
 				<span style="display: flex; flex-align: center;">
 					<span class="currentTime label" style="margin: 0px 10px"></span>
-					<span style="margin: 0px 10px" title="An estimation of how long until next cycle/week"><img src='@routes.Assets.versioned("images/icons/clock-moon-phase.png")' style="vertical-align: middle;"><span class="nextTickEstimation label" style="font-weight: bold;">-</span></span><span class="adminActions" style="display: none; margin: 0px 10px;"><a class="forceCycleButton" onclick="forceCycle()" title="Run the next week now instead of waiting">Force week</a></span>
+					<span style="margin: 0px 10px" title="An estimation of how long until next cycle/week"><img src='@routes.Assets.versioned("images/icons/clock-moon-phase.png")' style="vertical-align: middle;"><span class="nextTickEstimation label" style="font-weight: bold;">-</span></span><span class="adminActions" style="display: none; margin: 0px 10px;"><a class="forceCycleButton" onclick="forceCycle()" title="Run the next week now instead of waiting">Force week</a>&nbsp;<a class="backupNowButton" onclick="backupNow()" title="Take a database backup now">Backup</a></span><span style="margin: 0px 10px;"><a onclick="showWeeklyDigest()" title="What happened in the week that just finished">Last week</a></span>
 					<span style="margin: 0px 10px" title="Airline Balance">$<span class="balance label"></span></span>
 					<span class="currentAirline label" style="margin: 0; font-weight: bold"></span>
 					<span style="display: inline-block; margin-left: 5px;">
