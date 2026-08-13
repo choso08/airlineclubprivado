@@ -125,7 +125,15 @@
 	     upstream author's, and browsers with tracking protection block them,
 	     leaving an error panel mid-dialog. *@
 	  window.NEGOTIATION_CLIPS_ENABLED = @configuration.getOptional[Boolean]("game.negotiationClips").getOrElse(false);
+
+	  @* Language a player who has never picked one gets. Their own choice is
+	     kept in a cookie and wins over this. *@
+	  window.AIRLINE_LANGUAGE = '@configuration.getOptional[String]("ui.language").getOrElse("en")';
 	</script>
+	@* Must load after the panels' own scripts so its observer is watching by
+	   the time they start building anything. *@
+	<script src='@routes.Assets.versioned("javascripts/translate.js")'></script>
+	<script src='@routes.Assets.versioned("javascripts/select-search.js")'></script>
     <script src='@routes.Assets.versioned("javascripts/campaign.js")'></script>
 	<script src='@routes.Assets.versioned("javascripts/profile.js")'></script>
     <script src='@routes.Assets.versioned("javascripts/settings.js")'></script>
@@ -5428,6 +5436,17 @@
 			  </div>
 			  <div class="table-row">
 				  <div class="cell">
+					  <h5>Language</h5>
+				  </div>
+				  <div class="cell" style="vertical-align:middle; text-align:center;">
+					<select class="select-css" id="languageSelect" onchange="setGameLanguage($(this).val());" style="margin: auto;" data-no-translate>
+					  <option value="en">English</option>
+					  <option value="pt">Português</option>
+					</select>
+				  </div>
+			  </div>
+			  <div class="table-row">
+				  <div class="cell">
 					  <h5>Default Wallpaper</h5>
 				  </div>
 				  <div class="cell" style="vertical-align:middle; text-align:center;">
@@ -5549,6 +5568,8 @@
       @configuration.getOptional[String]("map.tileUrl").map { url =>
       window.OSM_TILE_URL = '@url';
       }.getOrElse(play.twirl.api.Html(""))
+      // Which theme a player who has never touched the switch starts on.
+      window.OSM_DEFAULT_THEME = '@configuration.getOptional[String]("map.theme").getOrElse("dark")';
     </script>
     <script src='@routes.Assets.versioned("javascripts/libs/google-maps-shim.js")'></script>
 }
