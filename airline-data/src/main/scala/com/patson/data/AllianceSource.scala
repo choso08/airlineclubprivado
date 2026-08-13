@@ -89,7 +89,7 @@ object AllianceSource {
   private def loadAllianceMembersByAllianceId(allianceId : Int, fullLoad : Boolean = false) : List[AllianceMember] = {
     val connection = Meta.getConnection()
     try {
-        val preparedStatement = connection.prepareStatement(BASE_ALLIANCE_MEMBER_QUERY + " WHERE alliance = ? ")
+        val preparedStatement = connection.prepareStatement(BASE_ALLIANCE_MEMBER_QUERY + " WHERE alliance = ? ", java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
         
         preparedStatement.setObject(1, allianceId)
         
@@ -206,7 +206,7 @@ object AllianceSource {
   private def loadAllianceHistoryByQueryString(queryString : String, parameters : List[Any], fullLoad : Boolean = false) : List[AllianceHistory]= {
     val connection = Meta.getConnection()
     try {
-        val preparedStatement = connection.prepareStatement(queryString)
+        val preparedStatement = connection.prepareStatement(queryString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
         
         for (i <- 0 until parameters.size) {
           preparedStatement.setObject(i + 1, parameters(i))

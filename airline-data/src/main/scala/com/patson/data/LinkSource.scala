@@ -65,7 +65,7 @@ object LinkSource {
     val connection = Meta.getConnection()
     
     try {  
-      val preparedStatement = connection.prepareStatement(queryString)
+      val preparedStatement = connection.prepareStatement(queryString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
       
       for (i <- 0 until parameters.size) {
         preparedStatement.setObject(i + 1, parameters(i))
@@ -240,7 +240,7 @@ object LinkSource {
       }
       
       queryString.append("?)")
-      val linkAssignmentStatement = connection.prepareStatement(queryString.toString)
+      val linkAssignmentStatement = connection.prepareStatement(queryString.toString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
       for (i <- 0 until linkIds.size) {
         linkAssignmentStatement.setInt(i + 1, linkIds(i))
       }
@@ -901,7 +901,7 @@ object LinkSource {
       val latestCycle = if (latestCycleResultSet.next()) { latestCycleResultSet.getInt(1) } else 0
       latestCycleStatement.close()
       
-      val preparedStatement = connection.prepareStatement(queryString)
+      val preparedStatement = connection.prepareStatement(queryString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
       
       preparedStatement.setInt(1, latestCycle - cycleCount)
       for (i <- 0 until parameters.size) {

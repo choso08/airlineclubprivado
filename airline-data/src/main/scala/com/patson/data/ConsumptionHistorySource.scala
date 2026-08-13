@@ -200,7 +200,7 @@ object ConsumptionHistorySource {
     val connection = Meta.getConnection()
     try {
       val queryString = new StringBuilder("SELECT * FROM " + PASSENGER_HISTORY_TABLE + " where (home_airport = ? AND destination_airport = ?)")
-      val preparedStatement = connection.prepareStatement(queryString.toString())
+      val preparedStatement = connection.prepareStatement(queryString.toString(), java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
 
       preparedStatement.setInt(1, fromAirportId)
       preparedStatement.setInt(2, toAirportId)
@@ -283,7 +283,7 @@ object ConsumptionHistorySource {
               }
               queryString.append("?)")
 
-              val relatedRouteStatement = connection.prepareStatement(queryString.toString())
+              val relatedRouteStatement = connection.prepareStatement(queryString.toString(), java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
 
               for (i <- 0 until relatedRouteIds.size) {
                 relatedRouteStatement.setInt(i + 1, relatedRouteIds(i))

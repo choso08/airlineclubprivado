@@ -397,7 +397,7 @@ object AirlineSource {
       try {
         
         
-        val preparedStatement = connection.prepareStatement(queryString)
+        val preparedStatement = connection.prepareStatement(queryString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
         
         for (i <- 0 until parameters.size) {
           preparedStatement.setObject(i + 1, parameters(i))

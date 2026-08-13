@@ -78,7 +78,7 @@ object LogSource {
   
   private def loadLogsByQueryString(queryString : String, parameters : List[Any], fullLoad : Boolean = false) : List[Log] = {
     val connection = Meta.getConnection()
-    val preparedStatement = connection.prepareStatement(queryString)
+    val preparedStatement = connection.prepareStatement(queryString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
 
     try {
       for (i <- 0 until parameters.size) {
