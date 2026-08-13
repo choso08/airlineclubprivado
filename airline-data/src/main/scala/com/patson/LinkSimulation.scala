@@ -40,13 +40,14 @@ object LinkSimulation {
 
   def linkSimulation(cycle: Int, srcAirports : List[Airport]) : (List[LinkConsumptionDetails], scala.collection.immutable.Map[Lounge, LoungeConsumptionDetails], immutable.Map[(PassengerGroup, Airport, Route), Int]) = {
     println("Loading all links")
-    val links = LinkSource.loadAllLinks(LinkSource.FULL_LOAD)
+    val links = CycleProfiler.phase(".. load links") { LinkSource.loadAllLinks(LinkSource.FULL_LOAD) }
     val flightLinks = links.filter(_.transportType == TransportType.FLIGHT).map(_.asInstanceOf[Link])
     println("Finished loading all links")
 
     val airports = srcAirports.filter(airport => airport.iata != "" && airport.power > 0)
 
-    val demand : immutable.List[(PassengerGroup, Airport, Int)] = DemandGenerator.computeDemand(cycle, airports)
+    val demand : immutable.List[(PassengerGroup, Airport, Int)] =
+      CycleProfiler.phase(".. demand") { DemandGenerator.computeDemand(cycle, airports) }
     println("DONE with demand total demand: " + demand.foldLeft(0) {
       case(holder, (_, _, demandValue)) =>
         holder + demandValue
@@ -54,20 +55,26 @@ object LinkSimulation {
 
     simulateLinkError(flightLinks)
     
-    val PassengerConsumptionResult(consumptionResult: scala.collection.immutable.Map[(PassengerGroup, Airport, Route), Int], missedPassengerResult : immutable.Map[(PassengerGroup, Airport), Int])= PassengerSimulation.passengerConsume(demand, links)
+    // Two thirds of a cycle is this one call. Split out so that the next
+    // person to ask "why does a week take a minute" gets an answer rather
+    // than a single unhelpfully large number.
+    val PassengerConsumptionResult(consumptionResult: scala.collection.immutable.Map[(PassengerGroup, Airport, Route), Int], missedPassengerResult : immutable.Map[(PassengerGroup, Airport), Int]) =
+      CycleProfiler.phase(".. routing passengers") { PassengerSimulation.passengerConsume(demand, links) }
     
     //generate statistic 
     println("Generating flight stats")
-    val linkStatistics = generateFlightStatistics(consumptionResult, cycle)
+    val linkStatistics = CycleProfiler.phase(".. flight stats") { generateFlightStatistics(consumptionResult, cycle) }
     println("Saving generated stats to DB")
-    LinkStatisticsSource.deleteLinkStatisticsBeforeCycle(cycle - 5)
-    LinkStatisticsSource.saveLinkStatistics(linkStatistics)
+    CycleProfiler.phase(".. save stats") {
+      LinkStatisticsSource.deleteLinkStatisticsBeforeCycle(cycle - 5)
+      LinkStatisticsSource.saveLinkStatistics(linkStatistics)
+    }
 
     //generate country market share
     println("Generating country market share")
-    val countryMarketShares = generateCountryMarketShares(consumptionResult)
+    val countryMarketShares = CycleProfiler.phase(".. market share") { generateCountryMarketShares(consumptionResult) }
     println("Saving country market share to DB")
-    CountrySource.saveMarketShares(countryMarketShares)
+    CycleProfiler.phase(".. save market share") { CountrySource.saveMarketShares(countryMarketShares) }
 
     //generate Olympics stats
     EventSource.loadEvents().filter(_.isActive(cycle)).foreach { event =>

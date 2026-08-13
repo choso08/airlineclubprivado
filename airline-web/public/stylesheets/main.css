@@ -1157,11 +1157,17 @@ iframe.clip {
 	width: 300px;
 	max-width: 90vw;
 	padding: 10px 12px 12px 12px;
-	border: 1px solid var(--border-color, #4a5568);
+	/* Dressed from the same variables as every other panel, so it follows the
+	   game's light and dark. It used to name two variables this theme does not
+	   define - --main-panel-color and --border-color - and fell back to the
+	   dark values it was written against, which left one navy blue card on a
+	   white page the moment anybody chose the light theme. */
+	border: 1px solid rgba(128, 128, 128, 0.45);
 	border-radius: 6px;
-	background: var(--main-panel-color, rgba(20, 26, 44, 0.95));
-	color: var(--text-color, #e2e8f0);
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	background-color: var(--table-even-row-background-color);
+	background-image: var(--section-background-image);
+	color: var(--text-color);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 	font-size: 13px;
 }
 .flight-popup-title {
