@@ -58,8 +58,12 @@ fi
 # .lnk files Windows leaves behind when you drag a shortcut to the Desktop.
 #
 # .env and game-settings.env are excluded too - those are meant to differ.
+# version.json is written by every update and is no longer tracked, but a
+# checkout made before that change still has it in the index - and one such
+# file is enough to stop the updater for good, which is exactly what happened.
 DIRTY="$(git status --porcelain --untracked-files=no \
-           -- . ':(exclude).env' ':(exclude)game-settings.env' 2>/dev/null)"
+           -- . ':(exclude).env' ':(exclude)game-settings.env' \
+                ':(exclude)airline-web/conf/version.json' 2>/dev/null)"
 if [[ -n "$DIRTY" ]]; then
   echo "$(date '+%F %T') auto-update: tracked files edited locally, not touching them:" >&2
   echo "$DIRTY" | head -5 >&2

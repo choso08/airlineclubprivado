@@ -34,3 +34,9 @@ backups/
 # Windows shortcuts. Dragging a .bat to the Desktop leaves a .lnk behind in
 # the folder, which used to trip the auto-updater's dirty-tree check.
 *.lnk
+
+# Written by scripts/write-version.sh on every update: which build is running.
+# It must NOT be tracked. It was, and that deadlocked the updater on its own
+# first success - the update rewrote the file, the next check saw a tracked
+# file edited on the server, and refused to touch anything ever again.
+airline-web/conf/version.json
