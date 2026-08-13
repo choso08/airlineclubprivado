@@ -4,6 +4,7 @@
 #   ./scripts/update.sh              fetch, build, restart what changed
 #   ./scripts/update.sh --no-pull    build and restart local changes only
 #   ./scripts/update.sh --web-only   only rebuild and restart the web site
+#   ./scripts/update.sh --now        do not wait for a cycle to finish
 #
 # How the downtime works out:
 #
@@ -24,10 +25,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 PULL=1
 WEB_ONLY=0
+SKIP_WAIT=0
 for arg in "$@"; do
   case "$arg" in
     --no-pull)  PULL=0 ;;
     --web-only) WEB_ONLY=1 ;;
+    --now)      SKIP_WAIT=1 ;;
     *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
 done
@@ -112,40 +115,49 @@ if [[ "$WEB_ONLY" == "1" ]]; then
   exit 0
 fi
 
-echo ">> [5/5] Restarting the simulation, waiting for the current cycle to end"
+echo ">> [5/5] Restarting the simulation"
 if ! have_service airline-sim; then
   manual_restart_note "simulation" "run-simulation.sh"
   exit 1
 fi
-# Wait for a cycle boundary so we do not kill one halfway through.
-#
-# How long to wait has to come from the cycle length, not from a fixed number.
-# A flat five minutes was fine at the default pace and quietly wrong the moment
-# anyone slowed the game down: with ten minute cycles the wait would expire
-# before the cycle ended, every time, and the restart it was meant to avoid
-# would happen anyway - having first made you wait five minutes for it.
-#
-# Two full cycles plus a minute. One would be enough if we always arrived at
-# the start of one; we do not, so the worst case is nearly a whole cycle of
-# waiting before the one we are watching for even begins.
-CYCLE_SECONDS="${AIRLINE_CYCLE_SECONDS:-1800}"
-WAIT_SECONDS=$(( CYCLE_SECONDS * 2 + 60 ))
-POLLS=$(( WAIT_SECONDS / 5 ))
 
-LAST="$(journalctl -u airline-sim -n 200 --no-pager 2>/dev/null | grep -c 'spent .* secs' || echo 0)"
-printf '   cycles are %ds, so waiting up to %d minutes for one to complete...\n' \
-  "$CYCLE_SECONDS" "$(( WAIT_SECONDS / 60 ))"
-for _ in $(seq 1 "$POLLS"); do
-  NOW="$(journalctl -u airline-sim -n 200 --no-pager 2>/dev/null | grep -c 'spent .* secs' || echo 0)"
-  if [[ "$NOW" -gt "$LAST" ]]; then
-    echo "   cycle finished - restarting now"
-    break
-  fi
-  sleep 5
-done
+# Killing the simulation part way through a cycle can leave that cycle half
+# applied, so we do not do it. But the previous version of this waited for the
+# NEXT cycle to finish, which had it backwards: a cycle takes under a minute to
+# compute and then the simulation sits idle until the next one is due. At ten
+# minute cycles it is idle roughly nine tenths of the time, so the honest
+# answer is almost always "restart it now" - and instead you were made to wait
+# for a boundary that had just gone past.
+#
+# So look at what it is doing rather than at the clock. The log says
+# "cycle N starting!" when one begins and "cycle N spent X secs" when it ends,
+# so whichever came last tells us whether anything is in flight.
+sim_is_busy() {
+  local last
+  last="$(journalctl -u airline-sim -n 300 --no-pager 2>/dev/null \
+          | grep -oE 'cycle [0-9]+ starting!|cycle [0-9]+ spent [0-9]+ secs' | tail -1)"
+  [[ "$last" == *starting!* ]]
+}
+
+if [[ "$SKIP_WAIT" == "1" ]]; then
+  echo "   --now given: restarting without waiting"
+elif ! sim_is_busy; then
+  echo "   no cycle in progress - restarting straight away"
+else
+  # A cycle IS running. Wait for this one only; it is a matter of seconds.
+  # The allowance is generous because a slow machine mid-cycle is not a fault.
+  echo "   a cycle is in progress - waiting for it to finish (usually under a minute)"
+  DEADLINE=$(( SECONDS + 600 ))
+  while sim_is_busy; do
+    if [[ "$SECONDS" -gt "$DEADLINE" ]]; then
+      echo "   still going after 10 minutes - restarting anyway"
+      break
+    fi
+    sleep 5
+  done
+fi
 sudo systemctl restart airline-sim
 
-echo
 echo ">> Done. Check both halves are healthy:"
 echo "     systemctl status airline-web airline-sim"
 echo "   If something broke, the backup from step 1 is in backups/."
