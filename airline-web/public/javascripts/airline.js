@@ -3129,9 +3129,15 @@ function negotiationAnimation(savedLink, callback, callbackParam) {
             animationUrl += "?autoplay=1"
         }
         $('#negotiationAnimation .clip').attr('src', animationUrl)
+        $('#negotiationAnimation .clipContainer').show()
         $('#negotiationAnimation .clip').show()
     } else {
+        // The whole container, not just the video. Hiding only the iframe left
+        // its black box and the Autoplay checkbox behind, which reads as
+        // something that failed to load - worse than no panel at all.
         $('#negotiationAnimation .clip').attr('src', '').hide()
+        $('#negotiationAnimation .clipContainer').hide()
+        $('#negotiationAnimation .animationLabel').empty()
     }
 
 

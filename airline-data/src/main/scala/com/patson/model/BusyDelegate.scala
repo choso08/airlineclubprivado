@@ -82,7 +82,10 @@ case class LinkNegotiationDelegateTask(startCycle : Int, fromAirport : Airport, 
 }
 
 object LinkNegotiationDelegateTask {
-  val COOL_DOWN = 12
+  // Weeks a delegate stays busy after negotiating a route. Upstream: 12, which
+  // at five minute cycles is an hour of real time per delegate per route.
+  // Set with AIRLINE_DELEGATE_COOLDOWN_CYCLES.
+  val COOL_DOWN = GameConfig.delegateCooldownCycles
 }
 
 object DelegateTaskType extends Enumeration {
