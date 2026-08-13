@@ -17,7 +17,12 @@ libraryDependencies ++= Seq(
   "org.apache.pekko" %% "pekko-remote" % "1.0.3",
   "org.apache.pekko" %% "pekko-testkit" % "1.0.3",
   "org.apache.pekko" %% "pekko-cluster" % "1.0.3",
-  "com.typesafe.play"          %%  "play-json" % "2.7.4",
+  // The web half runs org.playframework play-json 3.0.4 and this one asked for
+  // com.typesafe.play 2.7.4. Both put their classes in play.api.libs.json, so
+  // the two halves were compiled against different libraries occupying the
+  // same package and only one of them was on the classpath at run time. Same
+  // one on both sides now.
+  "org.playframework" %% "play-json" % "3.0.4",
   "com.mchange" % "c3p0" % "0.9.5.5",
   // 22.0 is from 2017, and the web half already runs 32.1.3 - so the two
   // halves were compiled against different Guavas and only one of them was on
