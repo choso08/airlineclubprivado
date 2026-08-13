@@ -80,6 +80,23 @@ object GameConfig {
     * punishes experimenting, the thing a private game is for. */
   val negotiationCooldownCycles: Int = int("rules.negotiationCooldownCycles", 2)
 
+  /** The largest discount an aircraft model gets for being unpopular.
+    *
+    * Upstream: 70, and it is a rule written for a server with thousands of
+    * players. The discount grows as the number of that model flying in the
+    * world falls short of a threshold - 300 for a small aircraft, 1000 for a
+    * medium one. Five friends will never own three hundred of anything, so
+    * every model in the game sits permanently at very nearly the maximum, and
+    * aircraft cost a fraction of their list price.
+    *
+    * That also wrecks the income statement, because the game books an aircraft
+    * at its list price and counts the discount as a capital gain: buying one
+    * plane at 77% off reads as tens of millions of profit in a week the
+    * airline actually spent money.
+    *
+    * 0 turns the mechanism off entirely. */
+  val maxModelDiscountPercent: Int = int("rules.maxModelDiscountPercent", 70)
+
   /** Whether applying to an alliance joins it outright.
     *
     * Upstream makes every application wait for a leader to approve it, which

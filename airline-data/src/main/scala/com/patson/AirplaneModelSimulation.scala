@@ -51,7 +51,10 @@ object AirplaneModelSimulation {
     discounts.toList
   }
 
-  val MAX_PRICE_DISCOUNT_PERCENTAGE = 70
+  // How far the price of an unloved model can fall. Upstream's 70 assumes a
+  // world big enough for the thresholds below to mean something - see
+  // GameConfig.maxModelDiscountPercent.
+  val MAX_PRICE_DISCOUNT_PERCENTAGE = com.patson.model.GameConfig.maxModelDiscountPercent
   val CONSTRUCTION_TIME_DISCOUNT = 0.5 //half the construction time
 
   val getModelLowDemandDiscountThreshold = (model: Model) => { //smaller model has higher threshold. as the volume is supposed to be higher
