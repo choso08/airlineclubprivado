@@ -1,0 +1,204 @@
+<!--
+	O guia para quem nunca jogou isto.
+
+	Escrito para ser lido de uma ponta à outra por alguém que abriu o jogo pela
+	primeira vez e não sabe o que é um "load factor". Sem termos técnicos sem
+	explicação, sem pressupor nada, e por ordem de utilidade: primeiro o que
+	fazer nos primeiros dez minutos, depois porque é que funciona.
+
+	É HTML simples de propósito - edita à vontade, é só texto.
+-->
+<div class="guide-body">
+
+	<h3>O que é este jogo</h3>
+	<p>
+		Tens uma companhia aérea. Compras aviões, escolhes que cidades ligar, e
+		vendes bilhetes. Se o dinheiro dos bilhetes for maior do que o custo de
+		voar, ganhas. Se não, perdes.
+	</p>
+	<p>
+		Uma <b>semana</b> do jogo passa a cada poucos minutos reais. No fim de
+		cada semana os passageiros voam, o dinheiro entra, as contas saem, e
+		vês o resultado. Não tens de estar sempre a olhar: as coisas acontecem
+		sozinhas.
+	</p>
+
+	<h3>Os primeiros dez minutos</h3>
+	<ol>
+		<li>
+			<b>Escolhe a tua cidade.</b> É a tua sede, e vais voar quase sempre
+			de lá. Escolhe uma cidade grande e de onde muita gente queira sair.
+			Uma capital é sempre boa escolha.
+		</li>
+		<li>
+			<b>Compra um avião.</b> No <b>Mercado</b>, escolhe um pequeno para
+			começar. Repara em duas coisas: quantas pessoas leva
+			(<i>capacidade</i>) e até onde consegue ir (<i>alcance</i>).
+		</li>
+		<li>
+			<b>Cria uma rota.</b> No mapa, clica na tua cidade e depois noutra
+			perto. O jogo mostra-te quantas pessoas querem fazer essa viagem por
+			semana — é o número que interessa.
+		</li>
+		<li>
+			<b>Põe o avião na rota</b> e aceita o preço que o jogo sugere.
+		</li>
+		<li>
+			<b>Espera uma semana.</b> Volta e vê quanto deu.
+		</li>
+	</ol>
+
+	<h3>Como se ganha dinheiro</h3>
+	<p>
+		Cada lugar vendido dá dinheiro. Cada voo gasta: combustível, tripulação,
+		taxas do aeroporto, manutenção do avião. O que sobra é o lucro.
+	</p>
+	<p>
+		Duas contas simples valem mais do que qualquer estratégia:
+	</p>
+	<ul>
+		<li>
+			<b>Avião cheio é bom, avião vazio é caro.</b> Um voo com metade dos
+			lugares vendidos custa quase o mesmo que um cheio.
+		</li>
+		<li>
+			<b>Voar pouco também custa.</b> Um avião parado continua a perder
+			valor e a custar manutenção. Mais vale voá-lo.
+		</li>
+	</ul>
+
+	<h3>Escolher uma rota que dá dinheiro</h3>
+	<p>Antes de criar uma rota, o jogo diz-te três coisas. Lê as três:</p>
+	<ul>
+		<li>
+			<b>Procura</b> — quantas pessoas querem essa viagem por semana. Se
+			disser 200 e o teu avião levar 700 por semana, vais voar vazio.
+		</li>
+		<li>
+			<b>Distância</b> — tem de caber no alcance do avião. Se não couber,
+			o jogo não te deixa.
+		</li>
+		<li>
+			<b>Concorrência</b> — se outra companhia já lá voa, tens de dividir
+			os passageiros com ela.
+		</li>
+	</ul>
+	<p>
+		<b>Regra prática:</b> começa com rotas curtas a partir da tua sede, para
+		cidades grandes. São baratas de operar e quase sempre têm gente.
+	</p>
+
+	<h3>Escolher um avião</h3>
+	<p>Só três números interessam ao princípio:</p>
+	<ul>
+		<li><b>Capacidade</b> — quantas pessoas leva de cada vez.</li>
+		<li><b>Alcance</b> — a distância máxima que faz.</li>
+		<li><b>Pista necessária</b> — aeroportos pequenos têm pistas curtas e
+			aviões grandes não lá aterram.</li>
+	</ul>
+	<p>
+		Um avião maior não é melhor. É melhor <i>se</i> houver gente para o
+		encher. Com 300 passageiros por semana, um avião de 70 lugares a voar
+		quatro vezes ganha mais do que um de 300 a voar uma.
+	</p>
+
+	<h3>O preço do bilhete</h3>
+	<p>
+		Podes mexer no preço. O que acontece é o que esperas:
+	</p>
+	<ul>
+		<li><b>Preço alto</b> — ganhas mais por pessoa, mas vem menos gente.</li>
+		<li><b>Preço baixo</b> — enches o avião, mas ganhas pouco em cada um.</li>
+	</ul>
+	<p>
+		O preço que o jogo sugere costuma estar certo. Se o teu avião vai meio
+		vazio, baixa um pouco. Se vai sempre cheio e sobra gente, sobe.
+	</p>
+
+	<h3>Os números que vais ver</h3>
+	<table class="table data" style="width: 100%;">
+		<tr><td style="width: 22%;"><b>PAX</b></td>
+			<td>Passageiros. Quantas pessoas voaram mesmo.</td></tr>
+		<tr><td><b>TO</b> ou <b>LF</b></td>
+			<td>Taxa de ocupação. 100% é avião cheio. Abaixo de 60% costuma
+				querer dizer preço alto a mais, ou voos a mais.</td></tr>
+		<tr><td><b>FS</b> ou <b>SF</b></td>
+			<td>Satisfação. Quanto os passageiros gostaram. Sobe com serviço a
+				bordo e aviões novos.</td></tr>
+		<tr><td><b>Y / J / F</b></td>
+			<td>As três classes: turística, executiva e primeira. Y é a normal,
+				e é de onde vem quase todo o dinheiro no início.</td></tr>
+		<tr><td><b>Frequência</b></td>
+			<td>Quantas vezes por semana esse voo acontece.</td></tr>
+		<tr><td><b>Reputação</b></td>
+			<td>O nome da tua companhia. Sobe devagar, com passageiros
+				satisfeitos, e abre-te portas mais tarde.</td></tr>
+	</table>
+
+	<h3>Erros que toda a gente faz no início</h3>
+	<ul>
+		<li>
+			<b>Rota longa de mais, cedo de mais.</b> Voos longos precisam de
+			aviões caros e enchem-se devagar. Fica perto no princípio.
+		</li>
+		<li>
+			<b>Avião grande de mais.</b> Se a rota tem 200 passageiros por
+			semana, um avião de 300 lugares vai voar quase vazio, e cada voo
+			custa na mesma.
+		</li>
+		<li>
+			<b>Muitos aviões ao mesmo tempo.</b> Cada um custa manutenção todas
+			as semanas, esteja a voar ou não. Compra um, vê se dá lucro, e só
+			depois compra outro.
+		</li>
+		<li>
+			<b>Preço muito alto.</b> É a razão número um de aviões vazios. Se a
+			taxa de ocupação estiver baixa, o preço é o primeiro sítio a olhar.
+		</li>
+		<li>
+			<b>Esquecer as bases.</b> Cada base tem um custo semanal. Não abras
+			bases que não estás a usar.
+		</li>
+	</ul>
+
+	<h3>O que fazer em cada semana</h3>
+	<p>Uma rotina de dois minutos, que chega para jogar bem:</p>
+	<ol>
+		<li>Abre as <b>Rotas</b> e ordena por <b>Lucro</b>.</li>
+		<li>As que estão a perder dinheiro: baixa o preço, ou tira-lhes um voo,
+			ou fecha-as.</li>
+		<li>As que estão cheias e a dar lucro: acrescenta um voo, ou um avião.</li>
+		<li>Vê o <b>dinheiro</b> no topo. Se está a subir, vais bem.</li>
+		<li>Se sobrar dinheiro, abre uma rota nova a partir da tua sede.</li>
+	</ol>
+
+	<h3>Quando as coisas correm mal</h3>
+	<ul>
+		<li>
+			<b>Estou a perder dinheiro todas as semanas.</b> Abre as rotas,
+			ordena por lucro, e fecha as duas piores. É quase sempre uma ou duas
+			rotas que estão a puxar tudo para baixo.
+		</li>
+		<li>
+			<b>Ninguém voa comigo.</b> Preço. Baixa 20% e espera uma semana.
+		</li>
+		<li>
+			<b>Não tenho dinheiro para nada.</b> Vende um avião parado, ou pede
+			um empréstimo no <b>Banco</b> — mas só se souberes o que vais fazer
+			com ele.
+		</li>
+	</ul>
+
+	<h3>Quando já souberes isto tudo</h3>
+	<p>
+		Só então vale a pena olhar para: qualidade do serviço, lounges,
+		alianças, delegados e negociações, campanhas de publicidade, e
+		especializar aeroportos. Nada disso te salva uma rota mal escolhida —
+		mas tudo isso multiplica uma rota bem escolhida.
+	</p>
+
+	<p class="remarks" style="margin-top: 16px;">
+		Se ficares preso, o mais rápido é perguntar a quem já joga. Ninguém
+		aprendeu isto sozinho.
+	</p>
+</div>

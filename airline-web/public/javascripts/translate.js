@@ -707,6 +707,7 @@
       'Losing money': 'A perder dinheiro',
       'nothing matches': 'nada encontrado',
       'Last week': 'Semana passada',
+      'Guide': 'Guia',
       'Force week': 'Forçar semana',
       'Backup': 'Cópia de segurança',
       'Backup started': 'Cópia iniciada',
