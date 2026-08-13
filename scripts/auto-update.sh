@@ -28,9 +28,23 @@ fi
 
 cd "$REPO_ROOT"
 
+# Every run leaves a line here, whatever it decided. The journal has this too,
+# but it is the first place anyone looks and it survives being asked about
+# weeks later: "it stopped updating" needs an answer, and silence is not one.
+STATUS_FILE="$REPO_ROOT/backups/auto-update.status"
+record() {
+  mkdir -p "$REPO_ROOT/backups" 2>/dev/null || true
+  echo "$(date '+%F %T') $*" >> "$STATUS_FILE" 2>/dev/null || true
+  # Keep the last few hundred lines; this runs every few minutes for months.
+  if [[ -f "$STATUS_FILE" ]]; then
+    tail -500 "$STATUS_FILE" > "$STATUS_FILE.trimmed" 2>/dev/null &&       mv "$STATUS_FILE.trimmed" "$STATUS_FILE" 2>/dev/null || true
+  fi
+}
+
 BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
 if [[ -z "$BRANCH" || "$BRANCH" == "HEAD" ]]; then
   echo "$(date '+%F %T') auto-update: not on a branch, skipping" >&2
+  record "refused - not on a branch"
   exit 1
 fi
 
@@ -50,11 +64,13 @@ if [[ -n "$DIRTY" ]]; then
   echo "$(date '+%F %T') auto-update: tracked files edited locally, not touching them:" >&2
   echo "$DIRTY" | head -5 >&2
   echo "  Revert them, or commit them, and the updater will resume." >&2
+  record "refused - tracked files edited here: $(echo "$DIRTY" | head -3 | tr '\n' ' ')"
   exit 1
 fi
 
 if ! git fetch --quiet origin "$BRANCH" 2>/dev/null; then
   echo "$(date '+%F %T') auto-update: could not reach the remote, will retry next time" >&2
+  record "could not reach the remote"
   exit 0    # a network blip is not a failure worth alerting on
 fi
 
@@ -62,6 +78,7 @@ LOCAL="$(git rev-parse HEAD)"
 REMOTE="$(git rev-parse "origin/$BRANCH")"
 
 if [[ "$LOCAL" == "$REMOTE" ]]; then
+  record "up to date at $(git rev-parse --short HEAD)"
   exit 0    # already current - the common case, stay silent
 fi
 
@@ -69,6 +86,7 @@ fi
 # happened and a human should look.
 if ! git merge-base --is-ancestor "$LOCAL" "$REMOTE"; then
   echo "$(date '+%F %T') auto-update: local and remote have diverged, needs a human" >&2
+  record "refused - the checkout has diverged from the remote"
   exit 1
 fi
 
@@ -76,6 +94,16 @@ COUNT="$(git rev-list --count "$LOCAL..$REMOTE")"
 echo "$(date '+%F %T') auto-update: $COUNT new commit(s), updating"
 git log --oneline "$LOCAL..$REMOTE" | sed 's/^/    /'
 
-"$REPO_ROOT/scripts/update.sh"
+record "installing $COUNT commit(s)"
 
-echo "$(date '+%F %T') auto-update: done, now at $(git rev-parse --short HEAD)"
+# The update itself can fail - a compile error, a full disk, a database that
+# will not answer - and that is exactly the case where nothing was ever said.
+if "$REPO_ROOT/scripts/update.sh"; then
+  echo "$(date '+%F %T') auto-update: done, now at $(git rev-parse --short HEAD)"
+  record "updated to $(git rev-parse --short HEAD)"
+else
+  STATUS=$?
+  echo "$(date '+%F %T') auto-update: the update FAILED (exit $STATUS)" >&2
+  record "FAILED during the update (exit $STATUS) - see: journalctl -u airline-update -n 50"
+  exit "$STATUS"
+fi
