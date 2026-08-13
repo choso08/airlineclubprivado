@@ -462,12 +462,48 @@ function refreshPanels(airlineId) {
 	    	if ($("#linksCanvas").is(":visible")) {
 	    		loadLinksTable()
 	    	}
+
+	    	// The four above are the screens upstream bothered to refresh. On a
+	    	// private server people sit on the others for a whole cycle and see
+	    	// nothing change, which reads as the game being stuck. Refresh
+	    	// whichever of the rest is actually on screen.
+	    	refreshVisibleCanvas()
 	    },
 	    error: function(jqXHR, textStatus, errorThrown) {
 	            console.log(JSON.stringify(jqXHR));
 	            console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
 	    }
 	});
+}
+
+/**
+ * Re-run the loader for whatever screen the player is looking at.
+ *
+ * Called after every completed cycle. Each entry is a visible-canvas check and
+ * the function that fills it; anything not listed simply is not refreshed,
+ * which is the old behaviour rather than a new failure. Guarded individually
+ * so one missing function cannot stop the others.
+ */
+function refreshVisibleCanvas() {
+    var screens = [
+        ["#airlineCanvas",      function() { if (typeof showAirlineCanvas === 'function') showAirlineCanvas() }],
+        ["#airplaneCanvas",     function() { if (typeof loadAirplaneList === 'function') loadAirplaneList() }],
+        ["#airportCanvas",      function() { if (typeof loadAirportDetails === 'function' && typeof activeAirport !== 'undefined' && activeAirport) loadAirportDetails(activeAirport.id) }],
+        ["#departuresCanvas",   function() { if (typeof loadDepartures === 'function') loadDepartures($('#airportPopupId').val()) }],
+        ["#rankingCanvas",      function() { if (typeof loadRankings === 'function') loadRankings() }],
+        ["#allianceCanvas",     function() { if (typeof loadAllianceDetails === 'function') loadAllianceDetails() }],
+        ["#officeCanvas",       function() { if (typeof showOfficeCanvas === 'function') showOfficeCanvas() }],
+        ["#oilCanvas",          function() { if (typeof loadOilCanvas === 'function') loadOilCanvas() }],
+        ["#logCanvas",          function() { if (typeof loadAllLogs === 'function') loadAllLogs() }]
+    ]
+
+    screens.forEach(function(entry) {
+        try {
+            if ($(entry[0]).is(":visible")) entry[1]()
+        } catch (e) {
+            console.warn("could not refresh " + entry[0] + ": " + e.message)
+        }
+    })
 }
 
 var totalmillisecPerWeek = 7 * 24 * 60 * 60 * 1000
