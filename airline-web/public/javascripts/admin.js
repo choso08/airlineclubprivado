@@ -339,3 +339,42 @@ function sendBroadcastMessage() {
     	    }
     	});
 }
+
+/*
+ * Run the next week now.
+ *
+ * Waiting out a cycle is the right pace for a server people check on daily and
+ * the wrong one for an evening with friends, where the interesting part is
+ * what happens next. This only asks - the simulation is a separate process and
+ * decides for itself - so the button says so and then leaves the page to find
+ * out the usual way, when the cycle finishes and the game announces it.
+ */
+function forceCycle() {
+    var $button = $('.forceCycleButton')
+    if ($button.data('asked')) {
+        return
+    }
+    $button.data('asked', true)
+    var previous = $button.text()
+    $button.text('Asked...')
+
+    $.ajax({
+        type: 'PUT',
+        url: "/admin/force-cycle",
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        success: function() {
+            // A cycle takes the best part of a minute, and asking twice in
+            // that time would only queue up a second week nobody wanted.
+            setTimeout(function() {
+                $button.data('asked', false)
+                $button.text(previous)
+            }, 60000)
+        },
+        error: function(jqXHR) {
+            $button.data('asked', false)
+            $button.text(previous)
+            console.log("Could not force a cycle: " + JSON.stringify(jqXHR))
+        }
+    });
+}

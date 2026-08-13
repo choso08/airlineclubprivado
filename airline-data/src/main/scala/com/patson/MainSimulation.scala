@@ -39,9 +39,40 @@ object MainSimulation extends App {
   
   mainFlow
   
+  // A file whose appearance runs a cycle at once, without waiting out the rest
+  // of the interval. The web site cannot simply ask for one - it is a separate
+  // process, and reaching into this one would mean opening a door that stays
+  // open. A file both halves agree on is the smallest thing that works, and
+  // the only thing that can use it is something already running on this
+  // machine as this user.
+  val FORCE_CYCLE_FILE : String = {
+    val config = com.typesafe.config.ConfigFactory.load()
+    if (config.hasPath("simulation.forceCycleFile")) config.getString("simulation.forceCycleFile")
+    else "/tmp/airline-force-cycle"
+  }
+
   def mainFlow() = {
     val actor = actorSystem.actorOf(Props[MainSimulationActor])
     actorSystem.scheduler.schedule(Duration.Zero, Duration(CYCLE_DURATION, TimeUnit.SECONDS), actor, Start)
+
+    // Checked often enough to feel immediate and cheaply enough not to matter:
+    // one stat() every two seconds. The file is deleted before the cycle is
+    // asked for, so a cycle that runs long cannot queue up a second one behind
+    // itself - the request is consumed whether or not anybody is watching.
+    val forceCycleFile = new java.io.File(FORCE_CYCLE_FILE)
+    println(s"Force a cycle by creating $FORCE_CYCLE_FILE")
+    actorSystem.scheduler.schedule(Duration(5, TimeUnit.SECONDS), Duration(2, TimeUnit.SECONDS)) {
+      try {
+        if (forceCycleFile.exists()) {
+          forceCycleFile.delete()
+          println("Cycle forced by request")
+          actor ! Start
+        }
+      } catch {
+        case e : Throwable => println("Could not check for a forced cycle: " + e.getMessage)
+      }
+    }
+
     Await.result(actorSystem.whenTerminated, Duration.Inf)
   }
 

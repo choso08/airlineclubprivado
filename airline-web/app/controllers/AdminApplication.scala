@@ -155,6 +155,39 @@ class AdminApplication @Inject()(cc: ControllerComponents) extends AbstractContr
 //  def unbanUserIp(userId : Int) = {
 //    IpSource.deleteBannedIps(userId)
 //  }
+  /**
+   * Run a cycle now rather than waiting out the rest of the interval.
+   *
+   * The simulation is a separate process, so this does not run anything - it
+   * creates the file the simulation watches for, and that process decides. The
+   * alternative would have been a way for the web site to reach into the
+   * simulation and tell it what to do, which is a door that stays open once it
+   * is cut, on a machine that has other things on it.
+   */
+  def forceCycle() = Authenticated { implicit request =>
+    if (!request.user.isAdmin) {
+      println(s"Non admin ${request.user} tried to force a cycle!!")
+      Forbidden("Not an admin user")
+    } else {
+      val config = com.typesafe.config.ConfigFactory.load()
+      val path =
+        if (config.hasPath("simulation.forceCycleFile")) config.getString("simulation.forceCycleFile")
+        else "/tmp/airline-force-cycle"
+      try {
+        val file = new java.io.File(path)
+        file.createNewFile()
+        // Nothing here waits for the cycle: it takes the best part of a minute
+        // and the page finds out the usual way, when the simulation announces
+        // it finished.
+        Ok(Json.obj("requested" -> true, "file" -> path))
+      } catch {
+        case e : Throwable =>
+          println(s"Could not ask for a cycle: ${e.getMessage}")
+          InternalServerError(Json.obj("requested" -> false, "message" -> e.getMessage))
+      }
+    }
+  }
+
   def getUserIps(userId : Int) = Authenticated { implicit request =>
     if (request.user.isAdmin) {
       val cutoff = Calendar.getInstance()
