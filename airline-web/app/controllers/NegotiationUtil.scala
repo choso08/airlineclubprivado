@@ -441,12 +441,15 @@ object NegotiationUtil {
           // Saying so beats an awkward "costs $0", which reads like a fault.
           f"Difficulty $finalRequirementValue%.2f - no negotiation, no delegates, nothing extra to pay"
         }
-      return NegotiationUtil.NO_NEGOTIATION_REQUIRED.copy(
-        fromAirportRequirements = fromAirportRequirements,
-        toAirportRequirements = toAirportRequirements,
-        fromAirportDiscounts = fromAirportDiscounts,
-        toAirportDiscounts = toAirportDiscounts,
-        remarks = Some(remark))
+      // Nothing but the remark. The dialog decides whether to draw the
+      // negotiation panel by whether there are requirements to meet, so
+      // sending them while asking for no delegates drew the panel anyway -
+      // with a difficulty of 0.00, a success rate of NaN% and a Negotiate
+      // button for a negotiation that no longer exists.
+      //
+      // It also means this is reversible by the setting alone: turn buying
+      // off and the requirements come back, and the panel with them.
+      return NegotiationUtil.NO_NEGOTIATION_REQUIRED.copy(remarks = Some(remark))
     }
 
     val info = NegotiationInfo(fromAirportRequirements, toAirportRequirements, fromAirportDiscounts, toAirportDiscounts, totalFromDiscount, totalToDiscount, finalRequirementValue, computeOdds(finalRequirementValue, Math.min(MAX_ASSIGNED_DELEGATE, airline.getDelegateInfo().availableCount)))
