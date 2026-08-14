@@ -37,7 +37,7 @@ object LinkStatisticsSource {
       val preparedStatement = connection.prepareStatement(queryString)
       
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._2)
       }
       
       val resultSet = preparedStatement.executeQuery()
@@ -149,7 +149,7 @@ object LinkStatisticsSource {
       
       val preparedStatement = connection.prepareStatement(queryString)
       
-      preparedStatement.setObject(1, cutoffCycle)
+      ResultSetUtil.bind(preparedStatement, 1, cutoffCycle)
       val deletedCount = preparedStatement.executeUpdate()
       
       preparedStatement.close()

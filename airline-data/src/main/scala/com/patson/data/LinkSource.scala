@@ -68,7 +68,7 @@ object LinkSource {
       val preparedStatement = connection.prepareStatement(queryString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
       
       for (i <- 0 until parameters.size) {
-        preparedStatement.setObject(i + 1, parameters(i))
+        ResultSetUtil.bind(preparedStatement, i + 1, parameters(i))
       }
       
       val resultSet = preparedStatement.executeQuery()
@@ -684,7 +684,7 @@ object LinkSource {
       val preparedStatement = connection.prepareStatement(queryString)
       
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._2)
       }
 
       val deletedCount = preparedStatement.executeUpdate()
@@ -905,7 +905,7 @@ object LinkSource {
       
       preparedStatement.setInt(1, latestCycle - cycleCount)
       for (i <- 0 until parameters.size) {
-        preparedStatement.setObject(i + 2, parameters(i))
+        ResultSetUtil.bind(preparedStatement, i + 2, parameters(i))
       }
       
       val resultSet = preparedStatement.executeQuery()

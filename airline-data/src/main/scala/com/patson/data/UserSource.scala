@@ -85,7 +85,7 @@ object UserSource {
       val preparedStatement = connection.prepareStatement(queryString)
 
       for (i <- 0 until parameters.size) {
-        preparedStatement.setObject(i + 1, parameters(i))
+        ResultSetUtil.bind(preparedStatement, i + 1, parameters(i))
       }
 
 

@@ -57,7 +57,7 @@ object TutorialSource {
       
       val preparedStatement = connection.prepareStatement(queryString)
       
-      preparedStatement.setObject(1, airlineId)
+      ResultSetUtil.bind(preparedStatement, 1, airlineId)
       val deletedCount = preparedStatement.executeUpdate()
       
       preparedStatement.close()

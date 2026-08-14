@@ -43,7 +43,7 @@ object ChangeHistorySource {
         val preparedStatement = connection.prepareStatement(finalQueryString)
         
         for (i <- 0 until parameters.size) {
-          preparedStatement.setObject(i + 1, parameters(i))
+          ResultSetUtil.bind(preparedStatement, i + 1, parameters(i))
         }
 
         
@@ -182,7 +182,7 @@ object ChangeHistorySource {
       val preparedStatement = connection.prepareStatement(queryString)
       
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._3)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._3)
       }
       
       val deletedCount = preparedStatement.executeUpdate()

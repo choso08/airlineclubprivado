@@ -67,7 +67,7 @@ object AllianceMissionSource {
       val preparedStatement = connection.prepareStatement(queryString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
 
       for (i <- 0 until parameters.size) {
-        preparedStatement.setObject(i + 1, parameters(i))
+        ResultSetUtil.bind(preparedStatement, i + 1, parameters(i))
       }
 
 
@@ -120,7 +120,7 @@ object AllianceMissionSource {
         val preparedStatement = connection.prepareStatement(queryString.toString)
 
         for (i <- 0 until ids.size) {
-          preparedStatement.setObject(i + 1, ids(i))
+          ResultSetUtil.bind(preparedStatement, i + 1, ids(i))
         }
 
         val resultSet = preparedStatement.executeQuery()

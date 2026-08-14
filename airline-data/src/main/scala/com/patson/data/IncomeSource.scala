@@ -277,7 +277,7 @@ object IncomeSource {
     val preparedStatement = connection.prepareStatement(queryString.toString())
     
     for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._2)
     }
     preparedStatement
   }

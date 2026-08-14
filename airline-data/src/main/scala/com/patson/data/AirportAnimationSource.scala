@@ -56,7 +56,7 @@ object AirportAnimationSource {
       val preparedStatement = connection.prepareStatement(queryString)
 
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._2)
       }
 
 

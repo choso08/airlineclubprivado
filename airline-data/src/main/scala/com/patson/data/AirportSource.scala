@@ -163,7 +163,7 @@ object AirportSource {
       val preparedStatement = connection.prepareStatement(queryString)
 
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._2)
       }
 
 
@@ -249,7 +249,7 @@ object AirportSource {
     queryString.append(")")
 
     val statement = connection.prepareStatement(queryString.toString)
-    airportIds.zipWithIndex.foreach { case (id, index) => statement.setObject(index + 1, id) }
+    airportIds.zipWithIndex.foreach { case (id, index) => ResultSetUtil.bind(statement, index + 1, id) }
 
     try {
       val rs = statement.executeQuery()
@@ -271,7 +271,7 @@ object AirportSource {
       val preparedStatement = connection.prepareStatement(queryString)
 
       for (i <- 0 until parameters.size) {
-        preparedStatement.setObject(i + 1, parameters(i))
+        ResultSetUtil.bind(preparedStatement, i + 1, parameters(i))
       }
 
 
@@ -1106,7 +1106,7 @@ object AirportSource {
       val preparedStatement = connection.prepareStatement(queryString)
 
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._2)
       }
 
       var queryBonusString = "SELECT * FROM " + AIRPORT_CHAMPION_BONUS_TABLE
@@ -1118,7 +1118,7 @@ object AirportSource {
       val preparedBonusStatement = connection.prepareStatement(queryBonusString)
 
       for (i <- 0 until criteria.size) {
-        preparedBonusStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedBonusStatement, i + 1, criteria(i)._2)
       }
 
       val resultBonusSet = preparedBonusStatement.executeQuery()

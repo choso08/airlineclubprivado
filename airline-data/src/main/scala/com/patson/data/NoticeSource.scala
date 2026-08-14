@@ -119,12 +119,12 @@ object NoticeSource {
     try {  
       var preparedStatement = connection.prepareStatement("DELETE FROM " + COMPLETED_NOTICE_TABLE + " WHERE airline = ?")
       
-      preparedStatement.setObject(1, airlineId)
+      ResultSetUtil.bind(preparedStatement, 1, airlineId)
       preparedStatement.executeUpdate()
       preparedStatement.close()
 
       preparedStatement = connection.prepareStatement("DELETE FROM " + TRACKING_NOTICE_TABLE + " WHERE airline = ?")
-      preparedStatement.setObject(1, airlineId)
+      ResultSetUtil.bind(preparedStatement, 1, airlineId)
       preparedStatement.executeUpdate()
       preparedStatement.close()
     } finally {
@@ -138,8 +138,8 @@ object NoticeSource {
     try {
       var preparedStatement = connection.prepareStatement("DELETE FROM " + TRACKING_NOTICE_TABLE + " WHERE id = ? AND airline = ?")
 
-      preparedStatement.setObject(1, trackingId) //tracking notice should have unique id
-      preparedStatement.setObject(2, airlineId) //tracking notice should have unique id
+      ResultSetUtil.bind(preparedStatement, 1, trackingId) //tracking notice should have unique id
+      ResultSetUtil.bind(preparedStatement, 2, airlineId) //tracking notice should have unique id
       preparedStatement.executeUpdate()
       preparedStatement.close()
     } finally {

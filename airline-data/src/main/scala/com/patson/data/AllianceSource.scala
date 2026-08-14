@@ -61,7 +61,7 @@ object AllianceSource {
         val preparedStatement = connection.prepareStatement(queryString)
         
         for (i <- 0 until parameters.size) {
-          preparedStatement.setObject(i + 1, parameters(i))
+          ResultSetUtil.bind(preparedStatement, i + 1, parameters(i))
         }
         
         
@@ -91,7 +91,7 @@ object AllianceSource {
     try {
         val preparedStatement = connection.prepareStatement(BASE_ALLIANCE_MEMBER_QUERY + " WHERE alliance = ? ", java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
         
-        preparedStatement.setObject(1, allianceId)
+        ResultSetUtil.bind(preparedStatement, 1, allianceId)
         
         val resultSet = preparedStatement.executeQuery()
         
@@ -124,7 +124,7 @@ object AllianceSource {
     try {
         val preparedStatement = connection.prepareStatement("SELECT * FROM " + ALLIANCE_MEMBER_TABLE + " WHERE airline = ? ")
         
-        preparedStatement.setObject(1, airline.id)
+        ResultSetUtil.bind(preparedStatement, 1, airline.id)
         
         val resultSet = preparedStatement.executeQuery()
         
@@ -159,7 +159,7 @@ object AllianceSource {
         val preparedStatement = connection.prepareStatement(queryString.toString)
 
         for (i <- 0 until airlines.size) {
-          preparedStatement.setObject(i + 1, airlines(i).id)
+          ResultSetUtil.bind(preparedStatement, i + 1, airlines(i).id)
         }
 
         val result = scala.collection.mutable.Map[Airline, AllianceMember]()
@@ -209,7 +209,7 @@ object AllianceSource {
         val preparedStatement = connection.prepareStatement(queryString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
         
         for (i <- 0 until parameters.size) {
-          preparedStatement.setObject(i + 1, parameters(i))
+          ResultSetUtil.bind(preparedStatement, i + 1, parameters(i))
         }
         
         
@@ -304,7 +304,7 @@ object AllianceSource {
       val queryStatement = connection.prepareStatement(queryString)
 
       for (i <- 0 until criteria.size) {
-        queryStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(queryStatement, i + 1, criteria(i)._2)
       }
       val resultSet = queryStatement.executeQuery()
 
@@ -325,7 +325,7 @@ object AllianceSource {
       val deleteStatement = connection.prepareStatement(deleteString)
       
       for (i <- 0 until criteria.size) {
-        deleteStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(deleteStatement, i + 1, criteria(i)._2)
       }
       
       val deletedCount = deleteStatement.executeUpdate()
@@ -384,7 +384,7 @@ object AllianceSource {
       val queryStatement = connection.prepareStatement(queryString)
 
       for (i <- 0 until criteria.size) {
-        queryStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(queryStatement, i + 1, criteria(i)._2)
       }
 
       val resultSet = queryStatement.executeQuery()
@@ -401,7 +401,7 @@ object AllianceSource {
       val deleteStatement = connection.prepareStatement(deleteString)
       
       for (i <- 0 until criteria.size) {
-        deleteStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(deleteStatement, i + 1, criteria(i)._2)
       }
       
       val deletedCount = deleteStatement.executeUpdate()
@@ -459,7 +459,7 @@ object AllianceSource {
       val preparedStatement = connection.prepareStatement(queryString)
       
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._2)
       }
       
       val deletedCount = preparedStatement.executeUpdate()
@@ -544,7 +544,7 @@ object AllianceSource {
 
       val preparedStatement = connection.prepareStatement(queryString)
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._3)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._3)
       }
 
       val resultSet = preparedStatement.executeQuery()

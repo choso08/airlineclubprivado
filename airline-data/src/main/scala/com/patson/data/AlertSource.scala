@@ -161,7 +161,7 @@ object AlertSource {
         val preparedStatement = connection.prepareStatement(queryString)
         
         for (i <- 0 until parameters.size) {
-          preparedStatement.setObject(i + 1, parameters(i))
+          ResultSetUtil.bind(preparedStatement, i + 1, parameters(i))
         }
         
         
@@ -202,7 +202,7 @@ object AlertSource {
       
       val preparedStatement = connection.prepareStatement(queryString)
       
-      preparedStatement.setObject(1, cutoffCycle)
+      ResultSetUtil.bind(preparedStatement, 1, cutoffCycle)
       val deletedCount = preparedStatement.executeUpdate()
       
       preparedStatement.close()

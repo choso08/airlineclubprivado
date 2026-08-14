@@ -139,7 +139,7 @@ object ChristmasSource {
         val infoPreparedStatement = connection.prepareStatement(queryString)
 
         for (i <- 0 until parameters.size) {
-          infoPreparedStatement.setObject(i + 1, parameters(i))
+          ResultSetUtil.bind(infoPreparedStatement, i + 1, parameters(i))
         }
 
 

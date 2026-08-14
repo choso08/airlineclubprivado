@@ -1,7 +1,7 @@
 package com.patson.data
 
 import java.math.{BigDecimal, RoundingMode}
-import java.sql.ResultSet
+import java.sql.{PreparedStatement, ResultSet}
 
 /**
   * Reading money out of the database.
@@ -23,6 +23,36 @@ import java.sql.ResultSet
   * to cope with both.
   */
 object ResultSetUtil {
+
+  /**
+    * Bind one value into a query, translating what JDBC will not accept.
+    *
+    * The whole data layer is built on generic criteria - loadXByCriteria takes
+    * a list of (column, value) and binds each with setObject - so anything the
+    * game can put in a criteria list eventually reaches a driver. A Scala
+    * Enumeration value is exactly such a thing:
+    *
+    *   CountrySource.loadCountryAirlineTitlesByCriteria(
+    *     List(("airline", airline.id), ("title", Title.NATIONAL_AIRLINE)))
+    *
+    * Connector/J 5.1 accepted that and quietly called toString on it. The
+    * MariaDB driver refuses:
+    *
+    *   java.sql.SQLException: Type scala.Enumeration$Val not supported type
+    *
+    * which threw inside the websocket actor and killed the connection between
+    * the page and the game every two seconds. Enumerations are stored by their
+    * id - they are read back with Title(resultSet.getInt("title")) - so that is
+    * what goes down the wire.
+    *
+    * Everything else is passed through untouched.
+    */
+  def bind(statement : PreparedStatement, index : Int, value : Any) : Unit = {
+    value match {
+      case enumValue : Enumeration#Value => statement.setInt(index, enumValue.id)
+      case other => statement.setObject(index, other)
+    }
+  }
 
   /** A money column stored as text, read as a whole number. Copes with
     * "360000", "360000.0" and "3.6E5" alike, and with an empty column. */

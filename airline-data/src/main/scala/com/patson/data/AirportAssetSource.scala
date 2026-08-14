@@ -54,7 +54,7 @@ object AirportAssetSource {
       val preparedStatement = connection.prepareStatement(queryString, java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE, java.sql.ResultSet.CONCUR_READ_ONLY)
 
       for (i <- 0 until parameters.size) {
-        preparedStatement.setObject(i + 1, parameters(i))
+        ResultSetUtil.bind(preparedStatement, i + 1, parameters(i))
       }
 
 
@@ -134,7 +134,7 @@ object AirportAssetSource {
 
       val preparedStatement = connection.prepareStatement(queryString.toString)
       idList.zipWithIndex.foreach {
-        case (airportId, index) => preparedStatement.setObject(index + 1, airportId)
+        case (airportId, index) => ResultSetUtil.bind(preparedStatement, index + 1, airportId)
       }
 
       val resultSet = preparedStatement.executeQuery()
@@ -187,7 +187,7 @@ object AirportAssetSource {
       val preparedStatement = connection.prepareStatement(queryString)
 
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._2)
       }
 
 
@@ -238,7 +238,7 @@ object AirportAssetSource {
         val preparedStatement = connection.prepareStatement(queryString.toString)
 
         for (i <- 0 until ids.size) {
-          preparedStatement.setObject(i + 1, ids(i))
+          ResultSetUtil.bind(preparedStatement, i + 1, ids(i))
         }
 
         val resultSet = preparedStatement.executeQuery()
@@ -274,7 +274,7 @@ object AirportAssetSource {
         val preparedStatement = connection.prepareStatement(queryString.toString)
 
         for (i <- 0 until ids.size) {
-          preparedStatement.setObject(i + 1, ids(i))
+          ResultSetUtil.bind(preparedStatement, i + 1, ids(i))
         }
 
         val resultSet = preparedStatement.executeQuery()
@@ -439,7 +439,7 @@ object AirportAssetSource {
     val connection = Meta.getConnection()
     try {
       val preparedStatement = connection.prepareStatement(queryString)
-      preparedStatement.setObject(1, assetId)
+      ResultSetUtil.bind(preparedStatement, 1, assetId)
 
       val resultSet = preparedStatement.executeQuery()
       val result = ListBuffer[AirportAssetBoostHistory]()
@@ -496,7 +496,7 @@ object AirportAssetSource {
       val preparedStatement = connection.prepareStatement(queryString)
 
       for (i <- 0 until criteria.size) {
-        preparedStatement.setObject(i + 1, criteria(i)._2)
+        ResultSetUtil.bind(preparedStatement, i + 1, criteria(i)._2)
       }
 
       val resultSet = preparedStatement.executeQuery()
