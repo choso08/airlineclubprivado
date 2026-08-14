@@ -41,11 +41,12 @@ object SimulationEventStream{
     //
     // The configured duration is exactly the right first guess; measurements
     // replace it as soon as they exist.
-    var cycleDurationAverage : Long = {
+    val configuredCycleMillis : Long = {
       val config = com.typesafe.config.ConfigFactory.load()
       val seconds = if (config.hasPath("simulation.cycleDurationSeconds")) config.getInt("simulation.cycleDurationSeconds") else 30 * 60
       seconds.toLong * 1000
     }
+    var cycleDurationAverage : Long = configuredCycleMillis
     var cycleCount : Int = 0
     val MAX_DURATION_SAMPLE = 10
 
@@ -86,12 +87,28 @@ object SimulationEventStream{
             if (cycleCount > 0) { //with previous record, calculate the average then
               val durationSinceLastCycle = cycleEndTime - previousCycleEndTime
 
-              cycleDurationHistory.append(durationSinceLastCycle)
-              if (cycleDurationHistory.length > MAX_DURATION_SAMPLE) { //drop the first record
-                cycleDurationHistory = cycleDurationHistory.drop(1)
-              }
+              // Ignore a gap that bears no relation to the configured cycle
+              // length. The browser divides by this average to decide how fast
+              // to run its clock, so one absurd sample makes every client run
+              // ahead and then get yanked backwards on the next message - on
+              // the map, aircraft flying in reverse.
+              //
+              // Absurd samples are not hypothetical: the simulation being
+              // restarted, or a spell of cycles that threw and never completed,
+              // both leave a gap of hours between one completion and the next.
+              val plausible = durationSinceLastCycle > configuredCycleMillis / 4 &&
+                              durationSinceLastCycle < configuredCycleMillis * 4
 
-              cycleDurationAverage = cycleDurationHistory.sum / cycleDurationHistory.length
+              if (plausible) {
+                cycleDurationHistory.append(durationSinceLastCycle)
+                if (cycleDurationHistory.length > MAX_DURATION_SAMPLE) { //drop the first record
+                  cycleDurationHistory = cycleDurationHistory.drop(1)
+                }
+
+                cycleDurationAverage = cycleDurationHistory.sum / cycleDurationHistory.length
+              } else {
+                println(s"Ignoring implausible cycle gap of ${durationSinceLastCycle}ms - configured length is ${configuredCycleMillis}ms")
+              }
             }
             previousCycleEndTime = cycleEndTime
             cycleCount += 1

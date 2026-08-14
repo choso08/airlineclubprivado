@@ -572,11 +572,27 @@ var tickTimerCreator
 var gameClockAnchorWall = null   // real time when we last knew the game time
 var gameClockAnchorGame = null   // game time at that moment
 var gameClockMultiplier = null   // game milliseconds per real millisecond
+var gameClockCeiling = null      // game time at the end of the cycle we were told about
 
 /** Current in-game time in milliseconds, or null before the first tick. */
 function currentGameTime() {
     if (gameClockAnchorWall === null) return null
-    return gameClockAnchorGame + (new Date().getTime() - gameClockAnchorWall) * gameClockMultiplier
+    var running = gameClockAnchorGame + (new Date().getTime() - gameClockAnchorWall) * gameClockMultiplier
+    // Never walk past the end of the cycle we were last told about.
+    //
+    // How fast this clock runs comes from an AVERAGE of how long recent cycles
+    // took. A cycle slower than that average - or an average poisoned by a
+    // spell of cycles that failed and restarted - lets the clock stroll into
+    // the next cycle, and then the real message arrives and yanks it back.
+    // On the header that is a flickering date. On the map it is an aircraft
+    // flying backwards, which is what it looked like.
+    //
+    // Holding still at the boundary is the honest thing to show: the game
+    // genuinely has not moved on yet.
+    if (gameClockCeiling !== null && running > gameClockCeiling) {
+        return gameClockCeiling
+    }
+    return running
 }
 
 /** Minutes since the start of the in-game week: 0 is Sunday 00:00. */
@@ -604,6 +620,8 @@ function updateTime(cycle, fraction, cycleDurationEstimation) {
 	var wallClockStart = new Date()
 	gameClockAnchorWall = wallClockStart.getTime()
 	gameClockAnchorGame = gameTimeStart
+	//The end of the cycle we have just been told about - see currentGameTime.
+	gameClockCeiling = (cycle + 1) * gameTimePerCycle() + (window.GAME_START_EPOCH || 0)
 
 	//how much wall clock duration should be multiplied as game time duration
 	//
@@ -630,8 +648,10 @@ function updateTime(cycle, fraction, cycleDurationEstimation) {
 
         var durationTillNextTick = initialDurationTillNextTick - wallClockDurationSinceStart
 
-        var currentGameTime = gameTimeStart + wallClockDurationSinceStart * timeMultiplier
-        var currentGameDate = new Date(currentGameTime)
+        //Same clock the map uses, so the header cannot disagree with the
+        //aircraft - and so it stops at the cycle boundary rather than running
+        //ahead and jumping back.
+        var currentGameDate = new Date(currentGameTime())
         $(".currentTime").text("(" + days[currentGameDate.getDay()] + ") " + padBefore(currentGameDate.getMonth() + 1, "0", 2) + '/' + padBefore(currentGameDate.getDate(), "0", 2) +  " " + padBefore(currentGameDate.getHours(), "0", 2) + ":00")
 
         if (hasTickEstimation) {
