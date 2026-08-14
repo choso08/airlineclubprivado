@@ -572,50 +572,24 @@ var tickTimerCreator
 var gameClockAnchorWall = null   // real time when we last knew the game time
 var gameClockAnchorGame = null   // game time at that moment
 var gameClockMultiplier = null   // game milliseconds per real millisecond
-var gameClockCeiling = null      // game time at the end of the cycle we were told about
-var gameClockLastShown = null    // so it can never be shown going backwards
 
-/** Current in-game time in milliseconds, or null before the first tick. */
+/**
+ * Current in-game time in milliseconds, or null before the first tick.
+ *
+ * Deliberately as simple as it looks. It ran ahead and was yanked backwards
+ * once, and a ceiling was built to stop that, and then a gentler ceiling, and
+ * both of them were wrong: the clock was never the problem. The aircraft flew
+ * backwards because the connection to the page was dying every two seconds and
+ * re-anchoring this clock thirty times a minute, and that had nothing to do
+ * with time at all.
+ *
+ * With that fixed the clock is re-anchored once a week, so whatever it drifts
+ * in one week is what it corrects by - seconds, at the pace the estimate is
+ * now kept sane to. Correcting seconds needs no machinery.
+ */
 function currentGameTime() {
     if (gameClockAnchorWall === null) return null
-    var running = gameClockAnchorGame + (new Date().getTime() - gameClockAnchorWall) * gameClockMultiplier
-
-    // How fast this clock runs comes from an AVERAGE of how long recent weeks
-    // took, so it is never exactly right. Left alone it drifts ahead of the
-    // game and the next message yanks it back - on the map, an aircraft flying
-    // backwards.
-    //
-    // Two rules deal with that without ever showing either fault.
-    //
-    // Past the end of the week we were told about it is held back, but gently
-    // and in proportion. A flat brake was tried first and it was worse than
-    // the fault: drifting a few seconds ahead - which normal jitter does every
-    // week - dropped the aircraft to a tenth speed for the rest of the week,
-    // and the visible result was everything slowing to a crawl before each
-    // tick.
-    //
-    // This barely touches a small drift and tightens as the gap grows, never
-    // letting the clock get more than one week ahead of what it was told, no
-    // matter how wrong the estimate is:
-    //
-    //   a tenth of a week ahead   -> 91% speed
-    //   a full week ahead         -> held half a week ahead
-    //   hopelessly ahead          -> held one week ahead
-    if (gameClockCeiling !== null && running > gameClockCeiling) {
-        var oneCycle = gameTimePerCycle()
-        var overshoot = running - gameClockCeiling
-        running = gameClockCeiling + oneCycle * (1 - 1 / (1 + overshoot / oneCycle))
-    }
-
-    // And it never goes backwards. When a message says the game is behind
-    // where this clock had got to, the clock waits where it is for reality to
-    // reach it rather than rewinding - which, thanks to the creep above, is a
-    // second or two rather than a jump.
-    if (gameClockLastShown !== null && running < gameClockLastShown) {
-        running = gameClockLastShown
-    }
-    gameClockLastShown = running
-    return running
+    return gameClockAnchorGame + (new Date().getTime() - gameClockAnchorWall) * gameClockMultiplier
 }
 
 /** Minutes since the start of the in-game week: 0 is Sunday 00:00. */
@@ -643,8 +617,6 @@ function updateTime(cycle, fraction, cycleDurationEstimation) {
 	var wallClockStart = new Date()
 	gameClockAnchorWall = wallClockStart.getTime()
 	gameClockAnchorGame = gameTimeStart
-	//The end of the cycle we have just been told about - see currentGameTime.
-	gameClockCeiling = (cycle + 1) * gameTimePerCycle() + (window.GAME_START_EPOCH || 0)
 
 	//how much wall clock duration should be multiplied as game time duration
 	//
