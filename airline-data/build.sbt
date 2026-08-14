@@ -8,9 +8,16 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.8" % "test",
   "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0",
   //"org.xerial" % "sqlite-jdbc" % "3.8.11.2",
-  // Back on 5.1.49 after 8.4.0 took the live game down. The scrollable
-  // statements it needed are staying - both drivers honour those - so the
-  // upgrade is one line here and one in Constants when it is understood.
+  // The server is MariaDB - scripts/setup.sh installs mariadb-server - so this
+  // is the driver written for it, and the one that is still maintained.
+  //
+  // The night Connector/J 8.4.0 took the live game down is explained: Oracle
+  // dropped MariaDB support in Connector/J 8. There was never a version of
+  // that upgrade that was going to work.
+  //
+  // 5.1.49 stays on the classpath so AIRLINE_DB_DRIVER=mysql5 in
+  // game-settings.env puts the old driver back with a restart and no rebuild.
+  "org.mariadb.jdbc" % "mariadb-java-client" % "3.4.1",
   "mysql" % "mysql-connector-java" % "5.1.49",
   "org.apache.pekko" %% "pekko-actor" % "1.0.3",
   "org.apache.pekko" %% "pekko-stream" % "1.0.3",

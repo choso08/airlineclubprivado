@@ -188,12 +188,40 @@ object Constants {
   println("!!!!!!!!!!!!!!!DB HOST IS " + DB_HOST)
   val SCHEMA_NAME = if (configFactory.hasPath("mysqldb.schema")) configFactory.getString("mysqldb.schema") else "airline_v2_1"
 
+  // Which driver talks to the database.
+  //
+  //   mysql5  - Oracle's Connector/J 5.1.49, released 2020, what the game has
+  //             always used.
+  //   mariadb - MariaDB's own driver, actively maintained, and the right match
+  //             for the server: scripts/setup.sh installs mariadb-server.
+  //             Oracle dropped MariaDB support in Connector/J 8, so moving to
+  //             8 was never the way forward - that is why it took the game
+  //             down.
+  //
+  // Both drivers sit on the classpath, so this is a setting and a restart, not
+  // a rebuild. If anything looks wrong, put AIRLINE_DB_DRIVER back to mysql5
+  // in game-settings.env and restart.
+  val DB_FLAVOUR =
+    if (configFactory.hasPath("mysqldb.driver")) configFactory.getString("mysqldb.driver").trim.toLowerCase
+    else "mariadb"
+
   //val DATABASE_CONNECTION = "jdbc:mysql://" + DB_HOST + "/airline?rewriteBatchedStatements=true&useSSL=false&autoReconnect=true&useUnicode=true&characterEncoding=utf-8"
-  val DATABASE_CONNECTION = "jdbc:mysql://" + DB_HOST + "/" + SCHEMA_NAME +"?rewriteBatchedStatements=true&useSSL=false&autoReconnect=true&useUnicode=true&characterEncoding=utf-8" + dbParams
-  val DB_DRIVER = "com.mysql.jdbc.Driver"
+  private val useMariaDbDriver = DB_FLAVOUR == "mariadb"
+
+  val DB_DRIVER = if (useMariaDbDriver) "org.mariadb.jdbc.Driver" else "com.mysql.jdbc.Driver"
+
+  // The MariaDB driver is utf8mb4 throughout and needs no telling, so
+  // useUnicode and characterEncoding are gone. useSSL became sslMode, and
+  // there is no autoReconnect - c3p0 already tests every connection with
+  // SELECT 1 and replaces the dead ones, which is the better way round anyway.
+  val DATABASE_CONNECTION =
+    if (useMariaDbDriver)
+      "jdbc:mariadb://" + DB_HOST + "/" + SCHEMA_NAME + "?rewriteBatchedStatements=true&sslMode=disable" + dbParams
+    else
+      "jdbc:mysql://" + DB_HOST + "/" + SCHEMA_NAME + "?rewriteBatchedStatements=true&useSSL=false&autoReconnect=true&useUnicode=true&characterEncoding=utf-8" + dbParams
   val DATABASE_USER = if (configFactory.hasPath("mysqldb.user")) configFactory.getString("mysqldb.user") else "sa"
   val DATABASE_PASSWORD = if (configFactory.hasPath("mysqldb.password")) configFactory.getString("mysqldb.password") else "admin"
 
-  println(s"!!!!!!!!!!!!!!!FINAL DB str $DATABASE_CONNECTION with user $DATABASE_USER")
+  println(s"!!!!!!!!!!!!!!!FINAL DB str $DATABASE_CONNECTION with user $DATABASE_USER via $DB_DRIVER")
   
 }
