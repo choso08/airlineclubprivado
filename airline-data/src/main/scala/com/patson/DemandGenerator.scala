@@ -293,6 +293,11 @@ object DemandGenerator {
         businessClassPercentage *= 0.75
       }
 
+      // Whatever is happening in the world this week - a country everybody
+      // suddenly wants to visit, an airport nobody can rely on. Exactly 1.0,
+      // and free, on the weeks when nothing is happening, which is most of them.
+      adjustedDemand = adjustedDemand * ActiveWorldEvents.demandMultiplier(fromAirport, toAirport)
+
       var firstClassDemand = (adjustedDemand * firstClassPercentage).toInt
       var businessClassDemand = (adjustedDemand * businessClassPercentage).toInt
       val economyClassDemand = adjustedDemand.toInt - firstClassDemand - businessClassDemand

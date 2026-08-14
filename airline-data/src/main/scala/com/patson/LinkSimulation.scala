@@ -331,7 +331,8 @@ object LinkSimulation {
             else flightsFlown.toDouble * assignment.frequency / assignedFrequency
           computeFuelCostForFlights(flightLink, airplane.model.fuelBurn, loadFactor, flightsOfThisAirplane)
       }.sum
-      total.toInt
+      //a fuel crisis, on the weeks there is one - see WorldEventSimulation
+      (total * ActiveWorldEvents.fuelCostMultiplier).toInt
     }
 
 

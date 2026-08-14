@@ -100,6 +100,9 @@ object MainSimulation extends App {
       println("Loaded " + airports.size + " airports")
 
       CycleProfiler.phase("users") { UserSimulation.simulate(cycle) }
+      println("World events")
+      CycleProfiler.phase("world events") { WorldEventSimulation.simulate(cycle, airports) }
+
       println("Event simulation")
       CycleProfiler.phase("events") { EventSimulation.simulate(cycle, airports) }
 

@@ -175,6 +175,30 @@ object GameConfig {
     * per level. */
   val loungeCostPercent: Int = int("economy.loungeCostPercent", 100)
 
+  /** Whether things happen to the world now and again.
+    *
+    * The game's event system is used for exactly one thing - the Olympics,
+    * once every four in-game years - so between those, nothing ever happens
+    * that anybody has to react to. The world on week 300 is the world on week
+    * 3, and the only news is what the players did to each other.
+    *
+    * True lets a fuel crisis, a tourism boom, a slump, or an airport in
+    * trouble turn up now and then, each for a few weeks, each announced to
+    * everybody. */
+  val worldEventsEnabled: Boolean = boolean("simulation.worldEventsEnabled", false)
+
+  /** Roughly how many weeks between events. One is drawn with this chance each
+    * week, and only ever one at a time. */
+  val worldEventEveryWeeks: Int = int("simulation.worldEventEveryWeeks", 25)
+
+  /** How long one lasts, in weeks. */
+  val worldEventMinWeeks: Int = int("simulation.worldEventMinWeeks", 4)
+  val worldEventMaxWeeks: Int = int("simulation.worldEventMaxWeeks", 10)
+
+  /** How hard it hits, as a percentage. */
+  val worldEventMinStrengthPercent: Int = int("simulation.worldEventMinStrengthPercent", 15)
+  val worldEventMaxStrengthPercent: Int = int("simulation.worldEventMaxStrengthPercent", 40)
+
   /** Whether the game slows down when nobody is playing.
     *
     * A private server runs all week for people who play on some evenings. Left
