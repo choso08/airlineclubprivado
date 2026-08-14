@@ -198,17 +198,17 @@ object IncomeSource {
       
       while (resultSet.next()) {
           val airlineId = resultSet.getInt("i.airline")
-          val totalProfit = resultSet.getLong("i.profit")
-          val totalRevenue = resultSet.getLong("i.revenue") 
-          val totalExpense = resultSet.getLong("i.expense")
+          val totalProfit = ResultSetUtil.money(resultSet, "i.profit")
+          val totalRevenue = ResultSetUtil.money(resultSet, "i.revenue") 
+          val totalExpense = ResultSetUtil.money(resultSet, "i.expense")
           val period = Period(resultSet.getInt("i.period"))
           val cycle = resultSet.getInt("i.cycle")
            
           //should need that many queries...
           val linksBalance = LinksIncome(airlineId = resultSet.getInt("l.airline"),
-                         profit = resultSet.getLong("l.profit"),
-                         revenue = resultSet.getLong("l.revenue"), 
-                         expense = resultSet.getLong("l.expense"), 
+                         profit = ResultSetUtil.money(resultSet, "l.profit"),
+                         revenue = ResultSetUtil.money(resultSet, "l.revenue"), 
+                         expense = ResultSetUtil.money(resultSet, "l.expense"), 
                          ticketRevenue = resultSet.getLong("l.ticket_revenue"), 
                          airportFee = resultSet.getLong("l.airport_fee"), 
                          fuelCost = resultSet.getLong("l.fuel_cost"), 
@@ -223,9 +223,9 @@ object IncomeSource {
                          
             
           val transactionsBalance = TransactionsIncome(airlineId,
-                         profit = resultSet.getLong("t.profit"),
-                         revenue = resultSet.getLong("t.revenue"), 
-                         expense = resultSet.getLong("t.expense"), 
+                         profit = ResultSetUtil.money(resultSet, "t.profit"),
+                         revenue = ResultSetUtil.money(resultSet, "t.revenue"), 
+                         expense = ResultSetUtil.money(resultSet, "t.expense"), 
                          capitalGain = resultSet.getLong("t.capital_gain"), 
                          createLink = resultSet.getLong("t.create_link"), 
                          period = Period(resultSet.getInt("t.period")),
@@ -233,9 +233,9 @@ object IncomeSource {
               
           
           val othersBalance = OthersIncome(airlineId,
-                         profit = resultSet.getLong("o.profit"),
-                         revenue = resultSet.getLong("o.revenue"), 
-                         expense = resultSet.getLong("o.expense"), 
+                         profit = ResultSetUtil.money(resultSet, "o.profit"),
+                         revenue = ResultSetUtil.money(resultSet, "o.revenue"), 
+                         expense = ResultSetUtil.money(resultSet, "o.expense"), 
                          loanInterest = resultSet.getLong("o.loan_interest"), 
                          baseUpkeep = resultSet.getLong("o.base_upkeep"),
                          overtimeCompensation = resultSet.getLong("o.overtime_compensation"),

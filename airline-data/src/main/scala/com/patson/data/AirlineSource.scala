@@ -62,7 +62,7 @@ object AirlineSource {
         while (resultSet.next()) {
           val airline = Airline(resultSet.getString("name"), isGenerated = resultSet.getBoolean("is_generated"))
           airline.id = resultSet.getInt("id")
-          airline.setBalance(resultSet.getLong("balance"))
+          airline.setBalance(ResultSetUtil.money(resultSet, "balance"))
           airline.setReputation(resultSet.getDouble("reputation"))
           airline.setCurrentServiceQuality(resultSet.getDouble("service_quality"))
           airline.setTargetServiceQuality(resultSet.getInt("target_service_quality"))
@@ -662,7 +662,9 @@ object AirlineSource {
         val preparedStatement = connection.prepareStatement("INSERT INTO " + AIRLINE_TRANSACTION_TABLE + " VALUES(?, ?, ?, ?)")
         preparedStatement.setInt(1, transaction.airlineId)
         preparedStatement.setInt(2, transaction.transactionType.id)
-        preparedStatement.setDouble(3, transaction.amount)
+        //setDouble on a text column wrote "360000.0", which the 5.1 driver
+        //truncated in silence and every driver since refuses. See ResultSetUtil.
+        preparedStatement.setLong(3, transaction.amount)
         //cannot use MainSimulation.currentWeek as this could be called from other projects apart from simulation
         preparedStatement.setInt(4,CycleSource.loadCycle())
         
@@ -686,7 +688,7 @@ object AirlineSource {
         val transactions = new ListBuffer[AirlineTransaction]()
         
         while (resultSet.next()) {
-          transactions += AirlineTransaction(resultSet.getInt("airline"), TransactionType(resultSet.getInt("transaction_type")), resultSet.getLong("amount"))
+          transactions += AirlineTransaction(resultSet.getInt("airline"), TransactionType(resultSet.getInt("transaction_type")), ResultSetUtil.money(resultSet, "amount"))
         }
         
         resultSet.close()

@@ -280,8 +280,14 @@ case class LinkConsideration(link : Transport,
                              modifier : Option[CostModifier],
                              costProvider : CostProvider,
                              var id : Int = 0) extends IdObject {
-    lazy val from : Airport = if (inverted) link.to else link.from
-    lazy val to : Airport = if (inverted) link.from else link.to
+    // Deliberately strict. A lazy val on the JVM is not free: every read goes
+    // through a volatile check and the first one takes the instance's monitor.
+    // A cycle builds tens of millions of these and the route search reads
+    // from/to on every edge of every relaxation pass, so that overhead was
+    // being paid tens of millions of times to avoid a branch that costs
+    // nothing. cost below stays lazy - that one is genuinely expensive.
+    val from : Airport = if (inverted) link.to else link.from
+    val to : Airport = if (inverted) link.from else link.to
     
     override def toString() : String = {
       s"Consideration [${linkClass} -  Flight $id; ${link.airline.name}; ${from.city}(${from.iata}) => ${to.city}(${to.iata}); capacity ${link.capacity}; price ${link.price}; cost: $cost]"
