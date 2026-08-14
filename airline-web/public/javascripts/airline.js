@@ -2753,6 +2753,7 @@ function calculatePercentChange(existingValue, newValue){
 }
 
 var assignedDelegates = 0
+var delegateDiscountInfo = null
 var availableDelegates = 0
 var negotiationOddsLookup
 
@@ -2936,6 +2937,53 @@ function changeAssignedDelegateCountToMax() {
     }
 }
 
+/*
+ * The other half of the delegate panel: when routes are bought rather than
+ * negotiated there are no odds to improve, so delegates take a cut off the
+ * price instead. Same global assignedDelegates goes up to the server either
+ * way - it is the meaning that changes, not the field.
+ */
+function changeDiscountDelegateCount(delta) {
+    if (!delegateDiscountInfo) {
+        return
+    }
+    var target = assignedDelegates + delta
+    if (target < 0 || target > discountDelegateCeiling()) {
+        return
+    }
+    updateDiscountDelegateCount(target)
+}
+
+function changeDiscountDelegateCountToMax() {
+    if (delegateDiscountInfo) {
+        updateDiscountDelegateCount(discountDelegateCeiling())
+    }
+}
+
+function discountDelegateCeiling() {
+    //no point offering more than reaches the ceiling, or more than exist
+    return Math.min(delegateDiscountInfo.maxDelegates, availableDelegates)
+}
+
+function updateDiscountDelegateCount(delegateCount) {
+    assignedDelegates = delegateCount
+
+    var icons = $('#linkConfirmationModal div.discountDelegatesIcons')
+    icons.empty()
+    if (assignedDelegates == 0) {
+        icons.append("<span>None</span>")
+    }
+    for (i = 0; i < assignedDelegates; i++) {
+        icons.append($('<img src="assets/images/icons/user-silhouette-available.png" title="Assigned Delegate"/>'))
+    }
+
+    var discountPercent = Math.min(delegateDiscountInfo.maxDiscountPercent, assignedDelegates * delegateDiscountInfo.perDelegatePercent)
+    var cost = Math.round(delegateDiscountInfo.fullCost * (1 - discountPercent / 100))
+
+    $('#linkConfirmationModal .delegateDiscountValue').text(discountPercent + '%')
+    $('#linkConfirmationModal .delegateDiscountedCost').text('$' + commaSeparateNumber(cost))
+}
+
 function updateAssignedDelegateCount(delegateCount) {
     assignedDelegates = delegateCount
     $('#linkConfirmationModal div.assignedDelegatesIcons').empty()
@@ -2964,6 +3012,7 @@ function getLinkNegotiation(callback) {
     assignedDelegates = 0
     availableDelegates = 0
     negotiationOddsLookup = {}
+    delegateDiscountInfo = null
     var airlineId = activeAirline.id
     var url = "airlines/" + activeAirline.id + "/get-link-negotiation"
 
@@ -3121,9 +3170,27 @@ function getLinkNegotiation(callback) {
 
                     //$('#linkConfirmationModal .modal-content').css("height", 750)
                     $('#linkConfirmationModal div.negotiationInfo').show()
+                    $('#linkConfirmationModal div.delegateDiscountInfo').hide()
                 } else { //then no need for negotiation
                     $('#linkConfirmationModal .negotiateButton').hide()
                     $('#linkConfirmationModal .confirmButton').show()
+                    $('#linkConfirmationModal div.negotiationInfo').hide()
+
+                    //nothing to negotiate, so delegates buy a discount instead
+                    delegateDiscountInfo = result.delegateDiscount
+                    availableDelegates = result.delegateInfo.availableCount
+
+                    if (delegateDiscountInfo && delegateDiscountInfo.maxDelegates > 0) {
+                        refreshAirlineDelegateStatus($('#linkConfirmationModal div.discountDelegateStatus'), result.delegateInfo)
+                        $('#linkConfirmationModal .delegateDiscountNote').text(
+                            'Each delegate takes ' + delegateDiscountInfo.perDelegatePercent + '% off, up to '
+                            + delegateDiscountInfo.maxDiscountPercent + '%, and is busy for '
+                            + delegateDiscountInfo.cooldownWeeks + ' week(s) afterwards.')
+                        updateDiscountDelegateCount(0)
+                        $('#linkConfirmationModal div.delegateDiscountInfo').show()
+                    } else {
+                        $('#linkConfirmationModal div.delegateDiscountInfo').hide()
+                    }
                 }
                 $('#linkConfirmationModal div.controlButtons').show()
             }

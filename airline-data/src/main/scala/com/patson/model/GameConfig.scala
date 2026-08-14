@@ -115,14 +115,33 @@ object GameConfig {
     * for weeks and bars the route for weeks more if it fails. That is a lot of
     * waiting for five friends, and the waiting is the part nobody enjoys.
     *
-    * True removes the negotiation entirely: no delegates, no dice, no cooling
-    * off. The difficulty becomes a price instead - the route costs its usual
-    * creation cost plus negotiationFeePerPoint for each point of it, so a hard
-    * route is still a hard route, in money rather than in weeks. */
+    * True removes the negotiation entirely: no dice, no cooling off. The
+    * difficulty becomes a price instead - the route costs its usual creation
+    * cost plus negotiationFeePerPoint for each point of it, so a hard route is
+    * still a hard route, in money rather than in weeks.
+    *
+    * Delegates are not left without a job: see delegateDiscountPercent. */
   val buyRoutes: Boolean = boolean("rules.buyRoutes", false)
 
   /** What one point of negotiation difficulty costs, when routes are bought. */
   val negotiationFeePerPoint: Long = long("rules.negotiationFeePerPoint", 2000000L)
+
+  /** What one delegate takes off the price of opening a route, as a
+    * percentage, when routes are bought rather than negotiated.
+    *
+    * With buyRoutes there is nothing left to negotiate, which left delegates
+    * with no purpose at all - they still existed, still gained levels, and did
+    * nothing. This gives them the job instead: send them along and the route
+    * costs less. They stay tied up for delegateCooldownCycles weeks
+    * afterwards, so every route is a choice about where the pool goes rather
+    * than a button that is always worth pressing.
+    *
+    * 0 turns it off, and delegates go back to being decoration. */
+  val delegateDiscountPercent: Int = int("rules.delegateDiscountPercent", 10)
+
+  /** The most delegates can take off a route between them, as a percentage.
+    * Without a ceiling a big enough pool would make routes free. */
+  val maxDelegateDiscountPercent: Int = int("rules.maxDelegateDiscountPercent", 50)
 
   /** Whether applying to an alliance joins it outright.
     *

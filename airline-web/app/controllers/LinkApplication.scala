@@ -392,9 +392,12 @@ class LinkApplication @Inject()(cc: ControllerComponents) extends AbstractContro
           LinkSource.saveLink(incomingLink) match {
             case Some(link) => {
               // With rules.buyRoutes the difficulty is charged rather than
-              // negotiated - see NegotiationUtil.buyOutFee.
-              val cost = Computation.getLinkCreationCost(incomingLink.from, incomingLink.to) +
+              // negotiated - see NegotiationUtil.buyOutFee - and any delegates
+              // sent along take a cut off the total, which is the whole of
+              // what delegates are for once there is no negotiation to win.
+              val fullCost = Computation.getLinkCreationCost(incomingLink.from, incomingLink.to) +
                 NegotiationUtil.buyOutFee(request.user, incomingLink, existingLink)
+              val cost = Math.round(fullCost * (1 - NegotiationUtil.delegateDiscount(delegateCount)))
               AirlineSource.adjustAirlineBalance(request.user.id, cost * -1)
               AirlineSource.saveCashFlowItem(AirlineCashFlowItem(request.user.id, CashFlowType.CREATE_LINK, cost * -1))
 
@@ -420,6 +423,18 @@ class LinkApplication @Inject()(cc: ControllerComponents) extends AbstractContro
       }
 
     var result : JsObject = Json.toJson(resultLink).asInstanceOf[JsObject]
+
+    // No negotiation happened, so nothing above tied the delegates up - but
+    // they still bought the discount that was just applied, so they go to work
+    // for the same number of weeks. Only on a new route: an existing one costs
+    // nothing to change, so there is nothing for them to discount.
+    if (negotiationResultOption.isEmpty && delegateCount > 0 && existingLink.isEmpty) {
+      val cycle = CycleSource.loadCycle()
+      val task = DelegateTask.linkNegotiation(cycle, fromAirport, toAirport)
+      DelegateSource.saveBusyDelegates((0 until delegateCount).toList.map { _ =>
+        BusyDelegate(airline, task, Some(cycle + task.coolDown))
+      })
+    }
 
     negotiationResultOption.foreach { negotiationResult =>
       //update delegate status
@@ -1592,6 +1607,21 @@ class LinkApplication @Inject()(cc: ControllerComponents) extends AbstractContro
     "delegateInfo" -> Json.toJson(request.user.getDelegateInfo()),
     "toAirport" -> Json.toJson(incomingLink.to),
     "fromAirport" -> Json.toJson(incomingLink.from))
+
+    // What the dialog needs to offer delegates as a discount instead of as
+    // odds. Only a new route has a price to take anything off, and
+    // maxDelegates is 0 when the whole mechanism is switched off - which is
+    // what tells the dialog to leave the panel out.
+    if (existingLinkOption.isEmpty) {
+      val fullCost = Computation.getLinkCreationCost(incomingLink.from, incomingLink.to) +
+        NegotiationUtil.buyOutFee(request.user, incomingLink, existingLinkOption)
+      result = result + ("delegateDiscount" -> Json.obj(
+        "maxDelegates" -> NegotiationUtil.maxUsefulDelegates,
+        "perDelegatePercent" -> GameConfig.delegateDiscountPercent,
+        "maxDiscountPercent" -> GameConfig.maxDelegateDiscountPercent,
+        "cooldownWeeks" -> GameConfig.delegateCooldownCycles,
+        "fullCost" -> fullCost))
+    }
 
     getNegotiationRejectionReason(request.user, incomingLink.from, incomingLink.to, existingLinkOption).foreach {
       case (reason, rejectionType) => result = result + ("rejection" -> JsString(reason))

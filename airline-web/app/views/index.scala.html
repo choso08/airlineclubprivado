@@ -4444,6 +4444,37 @@
 			  <div class="rejection warning" style="display: none; align-items : center;"><img src='@routes.Assets.versioned("images/icons/prohibition.png")'><h5 class="reason"></h5></div>
 		  </div>
 
+		  @* Shown instead of the negotiation panel when routes are bought
+		     rather than negotiated. Same idea in a different currency:
+		     delegates buy a lower price here instead of better odds. Left out
+		     entirely when rules.delegateDiscountPercent is 0. *@
+		  <div class="delegateDiscountInfo" style="display: none;">
+			  <h4 style="margin-bottom: 10px; margin-top: 30px;">Delegates<span class="delegatesTooltip"><img src='@routes.Assets.versioned("images/icons/information.png")'></span></h4>
+			  <div class="section">
+				  <h4>Pool</h4>
+				  <div class="discountDelegateStatus"></div>
+
+				  <div style="width: 100%; margin-top: 10px;" class="delegatesAssignment table data">
+					  <div class="table-header">
+						  <div class="cell" style="width: 60%">Delegates sent to bring the price down</div>
+						  <div class="cell" style="width: 20%">Discount</div>
+						  <div class="cell" style="width: 20%">Route cost</div>
+					  </div>
+					  <div class="table-row">
+						  <div class="cell">
+							  <div style="float: left" class="discountDelegatesIcons"></div>
+							  <div style="float: right" class="clickable" onclick="changeDiscountDelegateCount(-1)"><img src='@routes.Assets.versioned("images/icons/minus-button.png")' title="Minus"/></div>
+							  <div style="float: right" class="clickable" onclick="changeDiscountDelegateCount(1)"><img src='@routes.Assets.versioned("images/icons/plus-button.png")' title="Add"/></div>
+							  <div style="float: right" class="clickable" onclick="changeDiscountDelegateCountToMax()"><img src='@routes.Assets.versioned("images/icons/arrow-stop-090.png")' title="Max"/></div>
+						  </div>
+						  <div class="cell delegateDiscountValue"></div>
+						  <div class="cell delegateDiscountedCost"></div>
+					  </div>
+				  </div>
+				  <h5 class="delegateDiscountNote" style="margin-top: 10px;"></h5>
+			  </div>
+		  </div>
+
 		  <div class="controlButtons">
 			  <div class="button confirmButton">Confirm</div>
 			  <div class="button negotiateButton">Negotiate</div>

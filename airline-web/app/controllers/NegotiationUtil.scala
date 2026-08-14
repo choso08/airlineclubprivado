@@ -26,6 +26,29 @@ object NegotiationUtil {
     (difficulty * GameConfig.negotiationFeePerPoint).toLong
   }
 
+  /** How many delegates it is worth sending on one route - the point past
+    * which they stop taking anything off the price. */
+  def maxUsefulDelegates : Int = {
+    if (!GameConfig.buyRoutes || GameConfig.delegateDiscountPercent <= 0) {
+      0
+    } else {
+      val toReachTheCeiling = Math.ceil(GameConfig.maxDelegateDiscountPercent.toDouble / GameConfig.delegateDiscountPercent).toInt
+      Math.min(MAX_ASSIGNED_DELEGATE, toReachTheCeiling)
+    }
+  }
+
+  /** What sending this many delegates takes off the price of a route, as a
+    * fraction. Zero unless routes are bought rather than negotiated - while
+    * there is a negotiation to win, delegates are busy winning it. */
+  def delegateDiscount(delegateCount : Int) : Double = {
+    if (!GameConfig.buyRoutes || delegateCount <= 0 || GameConfig.delegateDiscountPercent <= 0) {
+      0
+    } else {
+      val asked = delegateCount * GameConfig.delegateDiscountPercent / 100.0
+      Math.min(GameConfig.maxDelegateDiscountPercent / 100.0, asked)
+    }
+  }
+
   val NEW_LINK_BASE_COST = 100
   val MAX_ASSIGNED_DELEGATE = 10
   val FREE_LINK_THRESHOLD = 5 //for newbie
