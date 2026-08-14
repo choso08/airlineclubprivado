@@ -195,16 +195,39 @@ package object controllers {
       val flightType = Computation.getFlightType(fromAirport, toAirport, distance)
       val airplaneAssignments = json.\("airplanes").as[Map[Airplane, Int]](AirplaneAssignmentsRead)
 
+      // Timing comes from the aircraft themselves rather than from one model
+      // named alongside them, because a route can carry more than one type and
+      // a turboprop does not take the same time over a distance as a jet.
+      //
+      // The route still keeps a single duration, because everything downstream
+      // needs one number - what a passenger makes of the route, what the map
+      // draws. Weighted by frequency, that number is the time the average
+      // passenger on this route actually spends in the air.
+      val timedAssignments = airplaneAssignments.toList.map {
+        case (airplane, frequency) =>
+          (airplane,
+           frequency,
+           Computation.calculateFlightMinutesRequired(airplane.model, distance))
+      }
+      val totalFrequency = timedAssignments.map(_._2).sum
+
       val modelId = json.\("model").as[Int]
       val modelOption = ModelSource.loadModelById(modelId)
-      val duration = modelOption match {
-        case Some(model) => Computation.calculateDuration(model, distance)
-        case None => 0
-      }
-      val flightMinutesRequiredPerFlight = modelOption match {
-        case Some(model) => Computation.calculateFlightMinutesRequired(model, distance)
-        case None => 0
-      }
+
+      val duration =
+        if (totalFrequency > 0) {
+          val weighted = airplaneAssignments.toList.map {
+            case (airplane, frequency) => Computation.calculateDuration(airplane.model, distance).toDouble * frequency
+          }.sum
+          Math.round(weighted / totalFrequency).toInt
+        } else {
+          //nothing assigned yet - the dialog is still being filled in, so the
+          //model it has selected is the best guess there is
+          modelOption match {
+            case Some(model) => Computation.calculateDuration(model, distance)
+            case None => 0
+          }
+        }
 
 
       var rawQuality =  json.\("rawQuality").as[Int]
@@ -215,8 +238,8 @@ package object controllers {
       }
 
       val link = Link(fromAirport, toAirport, airline, price, distance, capacity = LinkClassValues.getInstance(), rawQuality, duration, frequency = 0, flightType) //compute frequency and capacity after validating the assigned airplanes
-      link.setAssignedAirplanes(airplaneAssignments.toList.map {
-        case(airplane, frequency) => (airplane, LinkAssignment(frequency, frequency * flightMinutesRequiredPerFlight))
+      link.setAssignedAirplanes(timedAssignments.map {
+        case(airplane, frequency, minutesPerFlight) => (airplane, LinkAssignment(frequency, frequency * minutesPerFlight))
       }.toMap)
       //(json \ "id").asOpt[Int].foreach { link.id = _ } 
       JsSuccess(link)

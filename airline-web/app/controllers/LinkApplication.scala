@@ -277,24 +277,23 @@ class LinkApplication @Inject()(cc: ControllerComponents) extends AbstractContro
 
     //validate slots
     val airplanesForThisLink = incomingLink.getAssignedAirplanes()
-    //validate all airplanes are same model
-    val airplaneModels = airplanesForThisLink.foldLeft(Set[Model]())(_ + _._1.model) //should be just one element
-    if (airplaneModels.size != 1) {
-      return BadRequest("Cannot insert link - not all airplanes are same model")
+
+    // A route may carry more than one type of aircraft - a small one for the
+    // quiet departures and a large one for the busy ones is an ordinary thing
+    // for an airline to do, and refusing it here was the only reason it could
+    // not. Everything that used to be checked once against "the" model is
+    // checked against each model on the route instead.
+    val airplaneModels = airplanesForThisLink.foldLeft(Set[Model]())(_ + _._1.model)
+
+    //validate every model on this route can reach
+    airplaneModels.find(_.range < incomingLink.distance).foreach { tooShort =>
+      return BadRequest(s"Cannot insert link - ${tooShort.name} cannot reach that distance")
     }
 
-    //validate the model has the range
-    val model = airplaneModels.toList(0)
-    if (model.range < incomingLink.distance) {
-      return BadRequest("Cannot insert link - model cannot reach that distance")
+    //validate every model on this route is allowed by both airports
+    airplaneModels.find(model => !incomingLink.from.allowsModel(model) || !incomingLink.to.allowsModel(model)).foreach { tooBig =>
+      return BadRequest(s"Cannot insert link - airport size does not allow ${tooBig.name}")
     }
-
-    //validate the model is allowed for airport sizes
-    if (!incomingLink.from.allowsModel(model) || !incomingLink.to.allowsModel(model)) {
-      return BadRequest("Cannot insert link - airport size does not allow that!")
-    }
-
-    val flightMinutesRequiredPerFrequency = Computation.calculateFlightMinutesRequired(model, incomingLink.distance)
 
     //check if the assigned planes are owned by this airline and have minutes left for this
     incomingLink.getAssignedAirplanes().foreach {
@@ -309,7 +308,8 @@ class LinkApplication @Inject()(cc: ControllerComponents) extends AbstractContro
         val linkAssignments = AirplaneSource.loadAirplaneLinkAssignmentsByAirplaneId(airplane.id)
         val existingFrequency = linkAssignments.getFrequencyByLink(incomingLink.id)
         val frequencyDelta = assignment.frequency - existingFrequency
-        val flightMinutesDelta = flightMinutesRequiredPerFrequency * frequencyDelta
+        //this aircraft's own model decides how long each of its flights takes
+        val flightMinutesDelta = Computation.calculateFlightMinutesRequired(airplane.model, incomingLink.distance) * frequencyDelta
         if (frequencyDelta > 0) {
           if (airplane.availableFlightMinutes < flightMinutesDelta) {
             return BadRequest(s"Cannot insert link - airplane require flight minutes : $flightMinutesDelta, but only have ${airplane.availableFlightMinutes} left")
@@ -328,7 +328,10 @@ class LinkApplication @Inject()(cc: ControllerComponents) extends AbstractContro
     //validate configuration is valid
     if ((incomingLink.futureCapacity()(ECONOMY) * ECONOMY.spaceMultiplier +
          incomingLink.futureCapacity()(BUSINESS) * BUSINESS.spaceMultiplier +
-         incomingLink.futureCapacity()(FIRST) * FIRST.spaceMultiplier) > incomingLink.futureFrequency() * model.capacity) {
+         incomingLink.futureCapacity()(FIRST) * FIRST.spaceMultiplier) > incomingLink.getAssignedAirplanes().map {
+           //the seats each aircraft could hold on its own flights, added up
+           case (airplane, assignment) => airplane.model.capacity.toLong * assignment.frequency
+         }.sum) {
       return BadRequest("Requested capacity exceed the allowed limit, invalid configuration!")
     }
 

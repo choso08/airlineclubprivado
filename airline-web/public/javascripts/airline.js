@@ -1599,16 +1599,51 @@ function mergeAirplaneEntry(airplaneEntry, $airplaneRow) {
 
 function updateFrequencyDetail(info) {
     var airplaneEntries = info.airplanes
-    $("#planLinkDetails .frequencyDetail .table-row").remove()
+    var shownModelId = parseInt($("#planLinkModelSelect").val())
 
-    var isEmpty = true
+    // Only the rows for the model being shown are rebuilt. Aircraft of other
+    // models already assigned to this route are left alone.
+    //
+    // This used to clear the table outright, which is why assigning a second
+    // type made the first type's frequencies vanish: the rows are what
+    // getAssignedAirplaneFrequencies reads, so anything not on screen was
+    // simply not sent. A route can carry more than one type - the capacity
+    // total below has always added the rows up aircraft by aircraft, and the
+    // server times each one against its own model.
+    $("#planLinkDetails .frequencyDetail .table-row.empty").remove()
+    $("#planLinkDetails .frequencyDetail .airplaneRow").each(function(index, row) {
+        var rowAirplane = $(row).data("airplane")
+        if (!rowAirplane || rowAirplane.modelId === shownModelId) {
+            $(row).remove()
+        }
+    })
+
     $.each(airplaneEntries, function(index, airplaneEntry) {
         if (airplaneEntry.frequency > 0) { //only draw for those that are assigned to this link
             addAirplaneRow($("#planLinkDetails .frequencyDetail"), airplaneEntry.airplane, airplaneEntry.frequency)
-            isEmpty = false
         }
     })
-    if (isEmpty) {
+
+    // Aircraft of other models already flying this route.
+    //
+    // Whatever is on screen is left as it is - it may have been edited and not
+    // saved yet - but any that are missing are added, because on opening the
+    // dialog the table starts empty and only the selected model is drawn into
+    // it. They would be invisible, and then dropped on save, which is the same
+    // way frequencies used to disappear.
+    $.each(planLinkInfoByModel, function(modelId, modelInfo) {
+        if (parseInt(modelId) === shownModelId || !modelInfo || !modelInfo.airplanes) {
+            return
+        }
+        $.each(modelInfo.airplanes, function(index, airplaneEntry) {
+            var alreadyShown = $("#planLinkDetails .frequencyDetail .airplaneRow[data-airplaneId='" + airplaneEntry.airplane.id + "']").length > 0
+            if (airplaneEntry.frequency > 0 && !alreadyShown) {
+                addAirplaneRow($("#planLinkDetails .frequencyDetail"), airplaneEntry.airplane, airplaneEntry.frequency)
+            }
+        })
+    })
+
+    if ($("#planLinkDetails .frequencyDetail .airplaneRow").length == 0) {
         $("#planLinkDetails .frequencyDetail").append("<div class='table-row empty'><div class='cell'></div><div class='cell'>-</div><div class='cell'>-</div></div>")
     }
 
