@@ -4,6 +4,7 @@ import com.patson.data.{AirlineSource, LogSource, WorldEventSource}
 import com.patson.model._
 
 import java.util.concurrent.ThreadLocalRandom
+import scala.util.control.NonFatal
 
 /**
   * Makes something happen to the world now and again.
@@ -21,32 +22,41 @@ object WorldEventSimulation {
   private[this] val HISTORY_WEEKS = 52
 
   def simulate(cycle : Int, airports : List[Airport]) : Unit = {
-    try {
-      if (!GameConfig.worldEventsEnabled) {
-        ActiveWorldEvents.clear()
-        return
+    if (!GameConfig.worldEventsEnabled) {
+      ActiveWorldEvents.clear()
+    } else {
+      try {
+        WorldEventSource.deleteBefore(cycle - HISTORY_WEEKS)
+
+        val active = WorldEventSource.loadActive(cycle)
+
+        //Only one at a time. Two at once and neither is the news any more, and
+        //the arithmetic of a boom inside a slump is nobody's idea of fun.
+        //
+        //Written without an early return on purpose: in Scala a return from
+        //inside a closure is thrown, so the catch below would have caught it
+        //and reported the new event as a failure - which is exactly what
+        //happened the first time this ran.
+        val effective =
+          if (active.isEmpty && shouldStartSomething()) {
+            create(cycle, airports) match {
+              case Some(event) =>
+                WorldEventSource.save(event)
+                announce(event, cycle)
+                List(event)
+              case None => active
+            }
+          } else {
+            active
+          }
+
+        ActiveWorldEvents.set(effective)
+      } catch {
+        //NonFatal rather than Throwable, for the same reason
+        case NonFatal(e) =>
+          println("Could not run the world events: " + e.getMessage)
+          ActiveWorldEvents.clear()
       }
-
-      WorldEventSource.deleteBefore(cycle - HISTORY_WEEKS)
-
-      val active = WorldEventSource.loadActive(cycle)
-
-      //Only one at a time. Two at once and neither is the news any more, and
-      //the arithmetic of a boom inside a slump is nobody's idea of fun.
-      if (active.isEmpty && shouldStartSomething()) {
-        create(cycle, airports).foreach { event =>
-          WorldEventSource.save(event)
-          announce(event, cycle)
-          ActiveWorldEvents.set(List(event))
-          return
-        }
-      }
-
-      ActiveWorldEvents.set(active)
-    } catch {
-      case e : Throwable =>
-        println("Could not run the world events: " + e.getMessage)
-        ActiveWorldEvents.clear()
     }
   }
 
@@ -102,7 +112,7 @@ object WorldEventSimulation {
       val logs = airlines.map(airline => Log(airline, message, LogCategory.SELF_NOTE, LogSeverity.WARN, cycle))
       LogSource.insertLogs(logs)
     } catch {
-      case e : Throwable => println("Could not announce the world event: " + e.getMessage)
+      case NonFatal(e) => println("Could not announce the world event: " + e.getMessage)
     }
   }
 }
