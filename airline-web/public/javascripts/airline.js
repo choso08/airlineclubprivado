@@ -595,15 +595,34 @@ var FLIGHT_MARKER_SVG =
 var FLIGHT_MARKER_URL = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(FLIGHT_MARKER_SVG)
 
 /**
- * How big to draw it. A regional hop and a transatlantic flight are not the
- * same aeroplane, and showing that costs nothing: the size alone tells you
- * what kind of route you are looking at without reading anything.
+ * How big to draw it: by the aircraft, not by the route.
+ *
+ * The game already sorts every model into a type, and that is the honest
+ * thing to show - a turboprop on a long route is still a turboprop. The size
+ * alone then tells you what is flying without reading anything.
  */
+var FLIGHT_MARKER_SIZE_BY_TYPE = {
+	'Light': 20,
+	'Small': 24,
+	'Regional': 28,
+	'Medium': 34,
+	'Large': 40,
+	'Extra large': 46,
+	'Jumbo': 52,
+	'Supersonic': 38
+}
+
 function flightMarkerSize(link) {
+	var model = (typeof loadedModelsById !== 'undefined') ? loadedModelsById[link.modelId] : null
+	if (model && FLIGHT_MARKER_SIZE_BY_TYPE[model.airplaneType]) {
+		return FLIGHT_MARKER_SIZE_BY_TYPE[model.airplaneType]
+	}
+	// The model list is fetched once and is normally there long before the map
+	// animates. Distance is the stand-in for the moments when it is not.
 	var km = link.distance || 0
-	if (km < 1500) return 16        // regional and short haul
-	if (km < 4000) return 22        // medium haul
-	return 30                       // long haul
+	if (km < 1500) return 26
+	if (km < 4000) return 34
+	return 42
 }
 
 /**
