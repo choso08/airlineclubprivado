@@ -166,8 +166,16 @@ install_timer airline-backup "Back up the Airline Club database" \
   "$REPO_ROOT/scripts/backup-db.sh" \
   "OnCalendar=*-*-* 04:00:00"
 
+# Nothing was watching the night the game stopped advancing and stayed that way
+# until somebody noticed flights jumping backwards. This watches.
+install_timer airline-watchdog "Notice if the Airline Club game stops advancing" \
+  "$REPO_ROOT/scripts/watchdog.sh" \
+  "OnBootSec=5min
+OnUnitActiveSec=5min"
+echo "   checking the game is still moving every 5 minutes"
+
 sudo systemctl daemon-reload
-sudo systemctl enable --now airline-update.timer airline-backup.timer
+sudo systemctl enable --now airline-update.timer airline-backup.timer airline-watchdog.timer
 
 # Remove any crontab lines a previous version of this installer left behind,
 # so the work is not attempted twice.

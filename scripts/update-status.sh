@@ -130,4 +130,20 @@ for unit in airline-web airline-sim; do
     bad "$unit is NOT running: systemctl status $unit"
   fi
 done
+
+heading "IS THE GAME ACTUALLY MOVING"
+# Services running is not the same as weeks passing - the night the driver
+# changed, both were up and the game had been standing still for hours.
+HEALTH_FILE="${AIRLINE_BACKUP_DIR:-$REPO_ROOT/backups}/health.status"
+if [[ -f "$HEALTH_FILE" ]]; then
+  HEALTH_LINE="$(cat "$HEALTH_FILE")"
+  case "$HEALTH_LINE" in
+    *"OK -"*)      good "$HEALTH_LINE" ;;
+    *RESTARTED*)   bad  "$HEALTH_LINE" ;;
+    *)             bad  "$HEALTH_LINE" ;;
+  esac
+else
+  note "No check has run yet. Run ./scripts/watchdog.sh, or install the timer"
+  note "with ./scripts/install-services.sh so it runs every 5 minutes."
+fi
 echo
