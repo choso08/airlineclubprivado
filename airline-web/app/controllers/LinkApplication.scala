@@ -386,18 +386,34 @@ class LinkApplication @Inject()(cc: ControllerComponents) extends AbstractContro
 
     logger.info("PUT " + incomingLink)
 
+    // With rules.buyRoutes the difficulty is charged rather than negotiated -
+    // see NegotiationUtil.buyOutFee - and any delegates sent along take a cut
+    // off the total, which is the whole of what delegates are for once there
+    // is no negotiation to win.
+    //
+    // Worked out BEFORE the route is saved, because the balance has to be
+    // checked against what will actually be charged. getRejectionReason
+    // checked against the cheapest this route could be - the price with every
+    // delegate the airline has - so that an airline able to afford it with
+    // delegates is not turned away before it can send any. Sending fewer than
+    // that is allowed, and costs more, and this is where that is caught.
+    val fullCost =
+      if (existingLink.isEmpty)
+        Computation.getLinkCreationCost(incomingLink.from, incomingLink.to) +
+          NegotiationUtil.buyOutFee(request.user, incomingLink, existingLink)
+      else 0
+    val creationCost = Math.round(fullCost * (1 - NegotiationUtil.delegateDiscount(delegateCount)))
+
+    if (existingLink.isEmpty && request.user.getBalance() < creationCost) {
+      return BadRequest(s"Not enough cash - this route costs $creationCost with $delegateCount delegate(s)")
+    }
+
     val resultLink : Link =
       if (negotiationResultOption.map(_.isSuccessful).getOrElse(true)) { //negotiation successful or no negotiation needed {
         if (existingLink.isEmpty) {
           LinkSource.saveLink(incomingLink) match {
             case Some(link) => {
-              // With rules.buyRoutes the difficulty is charged rather than
-              // negotiated - see NegotiationUtil.buyOutFee - and any delegates
-              // sent along take a cut off the total, which is the whole of
-              // what delegates are for once there is no negotiation to win.
-              val fullCost = Computation.getLinkCreationCost(incomingLink.from, incomingLink.to) +
-                NegotiationUtil.buyOutFee(request.user, incomingLink, existingLink)
-              val cost = Math.round(fullCost * (1 - NegotiationUtil.delegateDiscount(delegateCount)))
+              val cost = creationCost
               AirlineSource.adjustAirlineBalance(request.user.id, cost * -1)
               AirlineSource.saveCashFlowItem(AirlineCashFlowItem(request.user.id, CashFlowType.CREATE_LINK, cost * -1))
 
@@ -954,9 +970,20 @@ class LinkApplication @Inject()(cc: ControllerComponents) extends AbstractContro
           return Some("Route must be longer than " + DemandGenerator.MIN_DISTANCE + " km", DISTANCE)
         }
 
-        //check balance
-        val cost = Computation.getLinkCreationCost(fromAirport, toAirport)
-        if (airline.getBalance() < cost) {
+        //check balance, against the LEAST this route could cost rather than
+        //the most.
+        //
+        //Delegates take a cut off the price - see NegotiationUtil - so an
+        //airline that can afford a route with delegates was being told it
+        //could not afford it at all, and told it before the dialog draws the
+        //delegate panel, so there was no way to find out otherwise.
+        //
+        //What is actually charged is checked again when the route is created,
+        //against the delegates that were really sent.
+        val fullCost = Computation.getLinkCreationCost(fromAirport, toAirport)
+        val mostDelegates = Math.min(NegotiationUtil.maxUsefulDelegates, airline.getDelegateInfo().availableCount)
+        val cheapestCost = Math.round(fullCost * (1 - NegotiationUtil.delegateDiscount(mostDelegates)))
+        if (airline.getBalance() < cheapestCost) {
           return Some("Not enough cash to establish this route", NO_CASH)
         }
       case Some(existingLink) => //nothing

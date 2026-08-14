@@ -105,4 +105,21 @@ db "INSERT INTO log (airline, message, category, severity, cycle)
 
 NOW=$(db "SELECT CAST(balance AS SIGNED) FROM airline_info WHERE airline = $AIRLINE_ID;")
 printf 'Done. %s now holds %s\n' "$AIRLINE_NAME" "$(printf "%'d" "$NOW")"
-echo "The player sees a note in their log; it takes effect on their next page load."
+
+# The web site keeps airlines in memory for ten minutes AFTER they were last
+# looked at - so for somebody who is actually playing, that timer never runs
+# out and the new balance never appears. Writing to the database is not enough;
+# the site has to be made to read it again.
+#
+# Restarting the web site is how, and it costs nothing that matters: the
+# simulation is a separate process, so the clock keeps running, flights keep
+# flying and money keeps moving. Players get a dead page for about fifteen
+# seconds.
+if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet airline-web 2>/dev/null; then
+  echo "Restarting the web site so the new balance is actually read (~15s)..."
+  sudo systemctl restart airline-web && echo "   done - the game itself never stopped."
+else
+  echo "NOTE: the web site caches balances. Restart it for this to show:"
+  echo "      sudo systemctl restart airline-web"
+fi
+echo "The player also gets a note in their log saying where the money came from."
