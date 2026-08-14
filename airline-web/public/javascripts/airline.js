@@ -1601,15 +1601,21 @@ function updateFrequencyDetail(info) {
     var airplaneEntries = info.airplanes
     var shownModelId = parseInt($("#planLinkModelSelect").val())
 
-    // Only the rows for the model being shown are rebuilt. Aircraft of other
-    // models already assigned to this route are left alone.
-    //
-    // This used to clear the table outright, which is why assigning a second
-    // type made the first type's frequencies vanish: the rows are what
-    // getAssignedAirplaneFrequencies reads, so anything not on screen was
-    // simply not sent. A route can carry more than one type - the capacity
-    // total below has always added the rows up aircraft by aircraft, and the
-    // server times each one against its own model.
+    // The table is one element on the page, reused for every route. Rows left
+    // in it from the route looked at before have to go, or they are counted as
+    // part of this one - and since these rows are exactly what the save reads,
+    // an airline would find itself flying aircraft it never assigned. That is
+    // what went wrong when this stopped clearing the table outright.
+    var routeKey = $("#planLinkFromAirportId").val() + "-" + $("#planLinkToAirportId").val()
+    if ($("#planLinkDetails .frequencyDetail").data("routeKey") !== routeKey) {
+        $("#planLinkDetails .frequencyDetail .table-row").remove()
+        $("#planLinkDetails .frequencyDetail").data("routeKey", routeKey)
+    }
+
+    // Within one route, only the rows of the model being shown are rebuilt.
+    // Aircraft of other models already assigned to this route are left alone -
+    // wiping them is how their frequencies used to disappear the moment
+    // somebody looked at a second model.
     $("#planLinkDetails .frequencyDetail .table-row.empty").remove()
     $("#planLinkDetails .frequencyDetail .airplaneRow").each(function(index, row) {
         var rowAirplane = $(row).data("airplane")

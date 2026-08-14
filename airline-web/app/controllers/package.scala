@@ -289,7 +289,16 @@ package object controllers {
 
       link.getAssignedModel().foreach { model =>
         json = json + ("modelId" -> JsNumber(model.id))
-        json = json + ("modelName" -> JsString(model.name))
+        // A route may carry more than one type, and getAssignedModel only ever
+        // names the first - so a mixed route read as though the others were
+        // not there. Every type on it is named, in order of how many flights
+        // each one takes.
+        val modelsByFlights = link.getAssignedAirplanes().toList
+          .groupBy(_._1.model)
+          .map { case (model, assignments) => (model, assignments.map(_._2.frequency).sum) }
+          .toList.sortBy(-_._2)
+        val modelNames = modelsByFlights.map(_._1.name)
+        json = json + ("modelName" -> JsString(if (modelNames.isEmpty) model.name else modelNames.mkString(" + ")))
       }
 
       val constructingAirplanes = link.getAssignedAirplanes().filter(!_._1.isReady)
