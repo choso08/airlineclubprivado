@@ -573,25 +573,36 @@ var gameClockAnchorWall = null   // real time when we last knew the game time
 var gameClockAnchorGame = null   // game time at that moment
 var gameClockMultiplier = null   // game milliseconds per real millisecond
 var gameClockCeiling = null      // game time at the end of the cycle we were told about
+var gameClockLastShown = null    // so it can never be shown going backwards
 
 /** Current in-game time in milliseconds, or null before the first tick. */
 function currentGameTime() {
     if (gameClockAnchorWall === null) return null
     var running = gameClockAnchorGame + (new Date().getTime() - gameClockAnchorWall) * gameClockMultiplier
-    // Never walk past the end of the cycle we were last told about.
+
+    // How fast this clock runs comes from an AVERAGE of how long recent weeks
+    // took, so it is never exactly right. Left alone it drifts ahead of the
+    // game and the next message yanks it back - on the map, an aircraft flying
+    // backwards.
     //
-    // How fast this clock runs comes from an AVERAGE of how long recent cycles
-    // took. A cycle slower than that average - or an average poisoned by a
-    // spell of cycles that failed and restarted - lets the clock stroll into
-    // the next cycle, and then the real message arrives and yanks it back.
-    // On the header that is a flickering date. On the map it is an aircraft
-    // flying backwards, which is what it looked like.
+    // Two rules deal with that without ever showing either fault.
     //
-    // Holding still at the boundary is the honest thing to show: the game
-    // genuinely has not moved on yet.
+    // Past the end of the week we were told about, it creeps instead of
+    // running. Not a hard stop: stopping dead reads as the game having frozen,
+    // which is exactly what it was reported as. Creeping keeps the aircraft
+    // moving while making it impossible to get far ahead.
     if (gameClockCeiling !== null && running > gameClockCeiling) {
-        return gameClockCeiling
+        running = gameClockCeiling + (running - gameClockCeiling) * 0.1
     }
+
+    // And it never goes backwards. When a message says the game is behind
+    // where this clock had got to, the clock waits where it is for reality to
+    // reach it rather than rewinding - which, thanks to the creep above, is a
+    // second or two rather than a jump.
+    if (gameClockLastShown !== null && running < gameClockLastShown) {
+        running = gameClockLastShown
+    }
+    gameClockLastShown = running
     return running
 }
 
