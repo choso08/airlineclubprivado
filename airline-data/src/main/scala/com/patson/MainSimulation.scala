@@ -119,6 +119,9 @@ object MainSimulation extends App {
       val airplanes = CycleProfiler.phase("airplanes") { AirplaneSimulation.airplaneSimulation(cycle) }
       println("Airline simulation")
       CycleProfiler.phase("airlines") { AirlineSimulation.airlineSimulation(cycle, flightLinkResult, loungeResult, airplanes) }
+      println("Achievements")
+      CycleProfiler.phase("achievements") { AchievementSimulation.simulate(cycle, flightLinkResult) }
+
       println("Country simulation")
       val countryChampionInfo = CycleProfiler.phase("countries") { CountrySimulation.simulate(cycle) }
 

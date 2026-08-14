@@ -245,6 +245,7 @@ PUT		 /admin/send-broadcast-message		            controllers.AdminApplication.se
 GET      /admin/invalidate-image/:airportId/:imageType  controllers.AdminApplication.invalidateImage(imageType : String, airportId : Int)
 GET      /admin/invalidate-customization/:airlineId  controllers.AdminApplication.invalidateCustomization(airlineId : Int)
 GET      /weekly-digest            controllers.DigestApplication.getWeeklyDigest()
+GET      /achievements             controllers.AchievementApplication.getAchievements()
 PUT      /admin/force-cycle        controllers.AdminApplication.forceCycle()
 PUT      /admin/backup             controllers.AdminApplication.backupNow()
 GET      /admin/user-ips/:userId   controllers.AdminApplication.getUserIps(userId : Int)

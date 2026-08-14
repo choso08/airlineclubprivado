@@ -1202,3 +1202,26 @@ iframe.clip {
 	opacity: 0.7;
 }
 .flight-popup-close:hover { opacity: 1; }
+
+/*
+ * Aircraft on the map.
+ *
+ * The animation moves them twenty times a second, which is enough to be
+ * correct and not enough to look like flight - each step is a small jump. The
+ * browser can fill in between the steps far more cheaply than JavaScript can,
+ * so a transition slightly longer than the step turns the same twenty updates
+ * into continuous movement.
+ *
+ * Only the marker's own position is animated. Panning and zooming the map move
+ * the whole layer at once, not each marker, so this cannot make the map itself
+ * feel heavy.
+ */
+.rotatable-marker {
+    transition: transform 110ms linear;
+}
+
+/* The aeroplane inside turns on its own, and should snap round at the turn
+   rather than sweeping through half a circle on the way home. */
+.rotatable-marker img {
+    transition: none;
+}
