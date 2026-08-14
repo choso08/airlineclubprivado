@@ -500,7 +500,7 @@ abstract class AirportAsset() extends IdObject{
     def costModifier = costModifierConst
 
     val status : AirportAssetStatus.Value
-    val cost = (blueprint.assetType.baseCost * costModifier).toLong / 1000 * 1000 //zero last 3 digits
+    val cost = (blueprint.assetType.baseCost * costModifier * GameConfig.airportAssetCostPercent / 100).toLong / 1000 * 1000 //zero last 3 digits
     val value = cost * (status match {
         case AirportAssetStatus.BLUEPRINT => 0
         case AirportAssetStatus.UNDER_CONSTRUCTION => level - 1

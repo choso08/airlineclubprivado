@@ -2,7 +2,7 @@ package com.patson.model
 
 case class Lounge(airline : Airline, allianceId : Option[Int], airport : Airport, name : String = "", level : Int, status : LoungeStatus.Value, foundedCycle : Int) {
   def getValue : Long = {
-    level * 50000000 
+    level * 50000000L * GameConfig.loungeCostPercent / 100
   }
   
   val getUpkeep : Long = {

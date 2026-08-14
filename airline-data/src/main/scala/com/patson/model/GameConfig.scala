@@ -155,6 +155,26 @@ object GameConfig {
   /** What a base costs to keep every week, as a percentage of upstream's. */
   val baseUpkeepPercent: Int = int("economy.baseUpkeepPercent", 100)
 
+  /** Base scale needed for a base specialization, as a percentage of
+    * upstream's requirement.
+    *
+    * Upstream asks for scale 8 to 14. A scale 8 base costs a couple of hundred
+    * million and 14 is out of any reasonable reach, so on a server of five
+    * people the whole idea of a base that is good at something was written,
+    * shipped, and never once seen. */
+  val baseSpecializationScalePercent: Int = int("rules.baseSpecializationScalePercent", 100)
+
+  /** What an airport asset costs to build, as a percentage of upstream's.
+    *
+    * Upstream prices these between 200 million and 2 billion - a sensible
+    * late-game sink on a server where airlines run for years, and simply out
+    * of reach otherwise. */
+  val airportAssetCostPercent: Int = int("economy.airportAssetCostPercent", 100)
+
+  /** What a lounge costs to build, as a percentage of upstream's 50 million
+    * per level. */
+  val loungeCostPercent: Int = int("economy.loungeCostPercent", 100)
+
   /** Whether the game slows down when nobody is playing.
     *
     * A private server runs all week for people who play on some evenings. Left

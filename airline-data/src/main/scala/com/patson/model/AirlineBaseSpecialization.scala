@@ -8,6 +8,11 @@ object AirlineBaseSpecialization extends Enumeration {
   abstract class Specialization() extends super.Val {
     val getType : BaseSpecializationType.Value
     val scaleRequirement : Int
+    /** The scale actually needed on this server - see
+      * GameConfig.baseSpecializationScalePercent. Upstream's 8 to 14 puts
+      * every one of these out of reach of a game between friends. */
+    def requiredScale : Int =
+      Math.max(1, Math.ceil(scaleRequirement * GameConfig.baseSpecializationScalePercent / 100.0).toInt)
     val label : String
     def descriptions(airport : Airport) : List[String]
     val free = false

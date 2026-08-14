@@ -622,7 +622,7 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
                 val updateBase = base.copy(scale = base.scale - 1)
                 AirlineSource.saveAirlineBase(updateBase)
 
-                val (updatingSpecs, purgingSpecs) = base.specializations.filter(!_.free).partition(_.scaleRequirement <= updateBase.scale) //remove spec that no longer able to support
+                val (updatingSpecs, purgingSpecs) = base.specializations.filter(!_.free).partition(_.requiredScale <= updateBase.scale) //remove spec that no longer able to support
                 AirportSource.updateAirportBaseSpecializations(airportId, airlineId, updatingSpecs)
                 purgingSpecs.foreach(_.unapply(request.user, base.airport))
 
@@ -1060,7 +1060,7 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
     val airport = AirportCache.getAirport(airportId, true).get
     val base = airport.getAirlineBase(airlineId).get
     val activeSpecializations : List[AirlineBaseSpecialization.Value] = base.specializations
-    val specializationByScaleRequirement : List[(Int, List[AirlineBaseSpecialization.Value])] = AirlineBaseSpecialization.values.toList.groupBy(_.scaleRequirement).toList.sortBy(_._1)
+    val specializationByScaleRequirement : List[(Int, List[AirlineBaseSpecialization.Value])] = AirlineBaseSpecialization.values.toList.groupBy(_.requiredScale).toList.sortBy(_._1)
     val cooldown =
       AirportSource.loadAirportBaseSpecializationsLastUpdate(airportId, airlineId) match {
         case Some(lastUpdate) =>
@@ -1082,7 +1082,7 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
         specializations.foreach { specialization =>
           specializationsJson = specializationsJson.append(Json.toJsObject(specialization) +
             ("active" -> JsBoolean(activeSpecializations.contains(specialization))) +
-            ("available" -> JsBoolean(base.scale >= specialization.scaleRequirement)) +
+            ("available" -> JsBoolean(base.scale >= specialization.requiredScale)) +
             ("free" -> JsBoolean(specialization.free))
           )
         }
@@ -1110,7 +1110,7 @@ class AirlineApplication @Inject()(cc: ControllerComponents) extends AbstractCon
         case Some(base) =>
           val specializationByScale = mutable.HashMap[Int, AirlineBaseSpecialization.Value]() //use a map by scale, to avoid selecting multiple spec per scale
           inputSpecializations.foreach { specialization =>
-            specializationByScale.put(specialization.scaleRequirement, specialization)
+            specializationByScale.put(specialization.requiredScale, specialization)
 
           }
           val selectedSpecializations = specializationByScale.values.toList.filter(!_.free)
