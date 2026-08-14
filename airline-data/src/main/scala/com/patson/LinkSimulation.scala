@@ -242,6 +242,40 @@ object LinkSimulation {
     } * (0.7 + 0.3 * loadFactor)).toInt //at 0 LF, 70% fuel cost
   }
 
+  /**
+    * Fuel for one aircraft's share of a route's flights.
+    *
+    * Same formula as computeFuelCost, with the number of flights passed in
+    * rather than taken from the route, so each aircraft can be charged for its
+    * own flights against its own fuel burn. Returns a Double so the caller can
+    * add up the aircraft and round once.
+    */
+  def computeFuelCostForFlights(flightLink : Link, fuelBurn : Int, loadFactor : Double, flights : Double) : Double = {
+    (if (flightLink.distance <= MAX_ASCEND_DISTANCE_1 * 2) {
+      val ascendDistance, descendDistance = flightLink.distance/2
+      (fuelBurn.toDouble * ASCEND_FUEL_BURN_MULTIPLIER_1 * ascendDistance + fuelBurn.toDouble * descendDistance) * FUEL_UNIT_COST * flights
+    } else if (flightLink.distance <= MAX_ASCEND_DISTANCE_2 * 2) {
+      val ascendDistance1 = MAX_ASCEND_DISTANCE_1
+      val ascendDistance2 = flightLink.distance / 2 - ascendDistance1
+      (fuelBurn.toDouble * ASCEND_FUEL_BURN_MULTIPLIER_1 * ascendDistance1 +
+        fuelBurn.toDouble * ASCEND_FUEL_BURN_MULTIPLIER_2 * ascendDistance2 +
+        fuelBurn.toDouble * (flightLink.distance - ascendDistance1 - ascendDistance2)) * FUEL_UNIT_COST * flights
+    } else if (flightLink.distance <= MAX_ASCEND_DISTANCE_3 * 2) {
+      val ascendDistance1 = MAX_ASCEND_DISTANCE_1
+      val ascendDistance2 = MAX_ASCEND_DISTANCE_2
+      val ascendDistance3 = flightLink.distance / 2 - ascendDistance1 - ascendDistance2
+      (fuelBurn.toDouble * ASCEND_FUEL_BURN_MULTIPLIER_1 * ascendDistance1 +
+        fuelBurn.toDouble * ASCEND_FUEL_BURN_MULTIPLIER_2 * ascendDistance2 +
+        fuelBurn.toDouble * ASCEND_FUEL_BURN_MULTIPLIER_3 * ascendDistance3 +
+        fuelBurn.toDouble * (flightLink.distance - ascendDistance1 - ascendDistance2 - ascendDistance3)) * FUEL_UNIT_COST * flights
+    } else {
+      (fuelBurn.toDouble * ASCEND_FUEL_BURN_MULTIPLIER_1 * MAX_ASCEND_DISTANCE_1 +
+        fuelBurn.toDouble * ASCEND_FUEL_BURN_MULTIPLIER_2 * MAX_ASCEND_DISTANCE_2 +
+        fuelBurn.toDouble * ASCEND_FUEL_BURN_MULTIPLIER_3 * MAX_ASCEND_DISTANCE_3 +
+        fuelBurn.toDouble * (flightLink.distance - MAX_ASCEND_DISTANCE_1 - MAX_ASCEND_DISTANCE_2 - MAX_ASCEND_DISTANCE_3)) * FUEL_UNIT_COST * flights
+    }) * (0.7 + 0.3 * loadFactor)
+  }
+
   def computeFuelCost(flightLink : Link, fuelBurn : Int,  loadFactor : Double) : Int = {
     (if (flightLink.distance <= MAX_ASCEND_DISTANCE_1 * 2) {
       val ascendDistance, descendDistance = flightLink.distance/2
@@ -276,10 +310,28 @@ object LinkSimulation {
     val loadFactor = flightLink.getTotalSoldSeats.toDouble / flightLink.getTotalCapacity
 
     //val totalFuelBurn = link //fuel burn actually similar to crew cost
-    val fuelCost = flightLink.getAssignedModel() match {
-      case Some(model) =>
-        computeFuelCost(link, model.fuelBurn, loadFactor)
-      case None => 0
+    //
+    // Fuel and airport fees used to be charged as though every flight on the
+    // route were flown by whichever aircraft happened to be first in the list.
+    // That is true while a route takes one model, and stops being true the
+    // moment it can take two - so both are worked out aircraft by aircraft
+    // now, each against its own model and its own share of the flights.
+    //
+    // With one model the arithmetic is the same: the frequencies sum to the
+    // route's frequency, and the fuel formula is linear in the number of
+    // flights.
+    val flightsFlown = Math.max(0, flightLink.frequency - flightLink.cancellationCount)
+    val assignedFrequency = flightLink.getAssignedAirplanes().values.map(_.frequency).sum
+
+    val fuelCost = {
+      val total = flightLink.getAssignedAirplanes().map {
+        case (airplane, assignment) =>
+          val flightsOfThisAirplane =
+            if (assignedFrequency <= 0) 0.0
+            else flightsFlown.toDouble * assignment.frequency / assignedFrequency
+          computeFuelCostForFlights(flightLink, airplane.model.fuelBurn, loadFactor, flightsOfThisAirplane)
+      }.sum
+      total.toInt
     }
 
 
@@ -305,11 +357,14 @@ object LinkSimulation {
     maintenanceCost = (maintenanceCost * AirplaneMaintenanceUtil.getMaintenanceFactor(link.airline.id)).toInt
 
 
-    val airportFees = flightLink.getAssignedModel() match {
-      case Some(model) =>
-        val airline = flightLink.airline
-        (flightLink.from.slotFee(model, airline) + flightLink.to.slotFee(model, airline) + flightLink.from.landingFee(model) + flightLink.to.landingFee(model)) * flightLink.frequency
-      case None => 0
+    val airportFees = {
+      val airline = flightLink.airline
+      flightLink.getAssignedAirplanes().map {
+        case (airplane, assignment) =>
+          val model = airplane.model
+          (flightLink.from.slotFee(model, airline) + flightLink.to.slotFee(model, airline) +
+            flightLink.from.landingFee(model) + flightLink.to.landingFee(model)) * assignment.frequency
+      }.sum
     }
 
     var depreciation = 0
