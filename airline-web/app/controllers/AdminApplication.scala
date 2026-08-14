@@ -207,7 +207,16 @@ class AdminApplication @Inject()(cc: ControllerComponents) extends AbstractContr
       Forbidden("Not an admin user")
     } else {
       val config = com.typesafe.config.ConfigFactory.load()
-      val script = if (config.hasPath("admin.backupScript")) config.getString("admin.backupScript").trim else ""
+      val configured = if (config.hasPath("admin.backupScript")) config.getString("admin.backupScript").trim else ""
+      // Falls back to this instance's own backup script. run-web.sh sources
+      // scripts/common.sh, which exports REPO_ROOT, so the server knows where
+      // it is installed without anybody writing a path into a file. Still not
+      // request-controlled - the only two possibilities are a path an admin
+      // configured and this one.
+      val script =
+        if (configured.nonEmpty) configured
+        else Option(System.getenv("REPO_ROOT")).map(_ + "/scripts/backup-db.sh").getOrElse("")
+
       if (script.isEmpty) {
         BadRequest(Json.obj("started" -> false, "message" -> "Backups from the page are not enabled - set AIRLINE_BACKUP_SCRIPT"))
       } else if (!new java.io.File(script).canExecute) {
