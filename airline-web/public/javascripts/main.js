@@ -587,12 +587,24 @@ function currentGameTime() {
     //
     // Two rules deal with that without ever showing either fault.
     //
-    // Past the end of the week we were told about, it creeps instead of
-    // running. Not a hard stop: stopping dead reads as the game having frozen,
-    // which is exactly what it was reported as. Creeping keeps the aircraft
-    // moving while making it impossible to get far ahead.
+    // Past the end of the week we were told about it is held back, but gently
+    // and in proportion. A flat brake was tried first and it was worse than
+    // the fault: drifting a few seconds ahead - which normal jitter does every
+    // week - dropped the aircraft to a tenth speed for the rest of the week,
+    // and the visible result was everything slowing to a crawl before each
+    // tick.
+    //
+    // This barely touches a small drift and tightens as the gap grows, never
+    // letting the clock get more than one week ahead of what it was told, no
+    // matter how wrong the estimate is:
+    //
+    //   a tenth of a week ahead   -> 91% speed
+    //   a full week ahead         -> held half a week ahead
+    //   hopelessly ahead          -> held one week ahead
     if (gameClockCeiling !== null && running > gameClockCeiling) {
-        running = gameClockCeiling + (running - gameClockCeiling) * 0.1
+        var oneCycle = gameTimePerCycle()
+        var overshoot = running - gameClockCeiling
+        running = gameClockCeiling + oneCycle * (1 - 1 / (1 + overshoot / oneCycle))
     }
 
     // And it never goes backwards. When a message says the game is behind
