@@ -107,7 +107,14 @@ object SimulationEventStream{
 
                 cycleDurationAverage = cycleDurationHistory.sum / cycleDurationHistory.length
               } else {
+                // A gap this far off means the rhythm was broken - the
+                // simulation was restarted, or weeks were failing and never
+                // completing. Samples from before that tell us nothing about
+                // the pace now, so they go with it rather than dragging the
+                // average around for the next ten weeks.
                 println(s"Ignoring implausible cycle gap of ${durationSinceLastCycle}ms - configured length is ${configuredCycleMillis}ms")
+                cycleDurationHistory = ListBuffer[Long]()
+                cycleDurationAverage = configuredCycleMillis
               }
             }
             previousCycleEndTime = cycleEndTime

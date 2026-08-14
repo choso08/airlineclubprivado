@@ -206,6 +206,28 @@ object UserSource {
     }        
   } 
   
+  /**
+    * How many players have been active since the given moment.
+    *
+    * Deliberately a count rather than loadUsersByLastActive: the simulation
+    * asks this before every week to decide whether anybody is around, and it
+    * does not want the users themselves, let alone their airlines.
+    */
+  def countUsersActiveSince(since : java.util.Calendar) : Int = {
+    val connection = Meta.getConnection()
+    try {
+      val preparedStatement = connection.prepareStatement("SELECT COUNT(*) FROM " + USER_TABLE + " WHERE last_active > ?")
+      preparedStatement.setTimestamp(1, new java.sql.Timestamp(since.getTimeInMillis))
+      val resultSet = preparedStatement.executeQuery()
+      val count = if (resultSet.next()) resultSet.getInt(1) else 0
+      resultSet.close()
+      preparedStatement.close()
+      count
+    } finally {
+      connection.close()
+    }
+  }
+
   def updateUserLastActive(user: User) = {
     val connection = Meta.getConnection()
     try {    

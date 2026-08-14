@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.Actor
 import com.patson.data._
-import com.patson.model.Airport
+import com.patson.model.{Airport, GameConfig}
 import com.patson.stream.{CycleCompleted, CycleStart, DirectDemandInfo, SimulationEventStream}
 import com.patson.util.{AirlineCache, AirplaneOwnershipCache, AirplaneOwnershipInfo, AirportCache}
 
@@ -67,7 +67,7 @@ object MainSimulation extends App {
         if (forceCycleFile.exists()) {
           forceCycleFile.delete()
           println("Cycle forced by request")
-          actor ! Start
+          actor ! ForceStart
         }
       } catch {
         case e : Throwable => println("Could not check for a forced cycle: " + e.getMessage)
@@ -177,24 +177,76 @@ object MainSimulation extends App {
     */
   class MainSimulationActor extends Actor {
     currentWeek = CycleSource.loadCycle()
+
+    //how many scheduled ticks in a row have been let go while nobody played
+    private[this] var restedTicks = 0
+
     def receive = {
       case Start =>
-        status = SimulationStatus.IN_PROGRESS
-        val endTime = startCycle(currentWeek)
+        if (shouldRest()) {
+          restedTicks += 1
+          println(s"Holiday mode: nobody has played in ${GameConfig.holidayIdleMinutes} minutes - " +
+                  s"resting this week ($restedTicks of ${GameConfig.holidaySlowdown - 1})")
+        } else {
+          restedTicks = 0
+          runWeek()
+        }
+      case ForceStart =>
+        //asked for explicitly, so it happens whether or not anybody is around
+        restedTicks = 0
+        runWeek()
+    }
 
-        currentWeek += 1
-        CycleSource.setCycle(currentWeek)
-        status = SimulationStatus.WAITING_CYCLE_START
-        postCycle(currentWeek) //post cycle do some quick updates, no long simulation
+    /**
+      * Whether to let this scheduled week go by without playing it out.
+      *
+      * The game runs all week for people who play on some evenings. Advancing
+      * regardless means friends who miss two days come back to a world that
+      * moved months without them. So while nobody is around it plays one week
+      * in holidaySlowdown - and the moment anybody logs in, the next tick is a
+      * real one again.
+      */
+    private def shouldRest() : Boolean = {
+      if (!GameConfig.holidayMode || GameConfig.holidaySlowdown <= 1) {
+        return false
+      }
+      //rested long enough - let one through, so the world still moves slowly
+      if (restedTicks >= GameConfig.holidaySlowdown - 1) {
+        return false
+      }
+      try {
+        val since = java.util.Calendar.getInstance()
+        since.add(java.util.Calendar.MINUTE, -GameConfig.holidayIdleMinutes)
+        UserSource.countUsersActiveSince(since) == 0
+      } catch {
+        //never let this decision be the reason a week does not happen
+        case e : Throwable =>
+          println("Could not tell whether anybody is playing, so playing the week: " + e.getMessage)
+          false
+      }
+    }
 
-        //notify the websockets via EventStream
-        println("Publish Cycle Complete message")
-        SimulationEventStream.publish(CycleCompleted(currentWeek - 1, endTime))
+    private def runWeek() : Unit = {
+      status = SimulationStatus.IN_PROGRESS
+      val endTime = startCycle(currentWeek)
+
+      currentWeek += 1
+      CycleSource.setCycle(currentWeek)
+      status = SimulationStatus.WAITING_CYCLE_START
+      postCycle(currentWeek) //post cycle do some quick updates, no long simulation
+
+      //notify the websockets via EventStream
+      println("Publish Cycle Complete message")
+      SimulationEventStream.publish(CycleCompleted(currentWeek - 1, endTime))
     }
   }
    
   
   case class Start()
+
+  /** A week asked for explicitly - by the Force week button - which happens
+    * whether or not anybody is around to see it. See holiday mode. */
+  case object ForceStart
 
   var status : SimulationStatus.Value = SimulationStatus.WAITING_CYCLE_START
   object SimulationStatus extends Enumeration {

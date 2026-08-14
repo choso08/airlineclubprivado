@@ -631,10 +631,22 @@ function updateTime(cycle, fraction, cycleDurationEstimation) {
 	//shows a clock crawling at a sixth of the real speed until the first
 	//message lands.
 	var configuredCycleMillis = (window.GAME_CYCLE_SECONDS || 1800) * 1000
-	var timeMultiplier = cycleDurationEstimation > 0 ?
-	    gameTimePerCycle() / cycleDurationEstimation :
-		gameTimePerCycle() / configuredCycleMillis
-	gameClockMultiplier = timeMultiplier
+
+	// The measured estimate is the gap between one week finishing and the next,
+	// so anything that interrupts that rhythm distorts it: a restart of the
+	// simulation reports a gap of hours, a spell of failing weeks the same. A
+	// clock built on that either crawls or races, and racing now means it
+	// reaches the end of the week and stops there - an aircraft frozen on the
+	// map for minutes at a time.
+	//
+	// The configured length is what the game is actually aiming for, so the
+	// measurement is only trusted within sight of it. Outside that, it is
+	// wrong, not informative.
+	var estimate = cycleDurationEstimation > 0 ? cycleDurationEstimation : configuredCycleMillis
+	estimate = Math.max(configuredCycleMillis / 2, Math.min(configuredCycleMillis * 2, estimate))
+
+	gameClockMultiplier = gameTimePerCycle() / estimate
+	var timeMultiplier = gameClockMultiplier
 
 
 	if (currentTickTimer) {

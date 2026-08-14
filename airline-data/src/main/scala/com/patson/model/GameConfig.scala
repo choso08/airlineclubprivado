@@ -143,6 +143,25 @@ object GameConfig {
     * Without a ceiling a big enough pool would make routes free. */
   val maxDelegateDiscountPercent: Int = int("rules.maxDelegateDiscountPercent", 50)
 
+  /** Whether the game slows down when nobody is playing.
+    *
+    * A private server runs all week for people who play on some evenings. Left
+    * alone it advances a week every few minutes regardless, so friends who
+    * miss two days come back to a world that has moved months without them -
+    * which is how a game between five people quietly turns into a game between
+    * whoever logged in most.
+    *
+    * True makes the simulation rest while nobody is around: it still wakes on
+    * schedule, but only actually plays out one week in holidaySlowdown. The
+    * moment anybody logs in it is back to full speed on the next tick. */
+  val holidayMode: Boolean = boolean("simulation.holidayMode", false)
+
+  /** How long with nobody playing before the game starts resting. */
+  val holidayIdleMinutes: Int = int("simulation.holidayIdleMinutes", 30)
+
+  /** How much slower it runs while resting: 4 means one week in four. */
+  val holidaySlowdown: Int = int("simulation.holidaySlowdown", 4)
+
   /** Whether applying to an alliance joins it outright.
     *
     * Upstream makes every application wait for a leader to approve it, which
