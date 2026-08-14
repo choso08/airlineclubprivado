@@ -103,8 +103,9 @@ fi
 # Build while the old version is still serving. Nothing is stopped yet, so a
 # compile error here is free.
 echo ">> [3/5] Building (the running game is untouched until this succeeds)"
-( cd "$REPO_ROOT/airline-data" && "$REPO_ROOT/scripts/sbt" publishLocal )
-( cd "$REPO_ROOT/airline-web"  && "$REPO_ROOT/scripts/sbt" stage )
+# One build, so staging the web site compiles the simulation with it - there
+# is no longer a publish step in between that could deliver a stale copy.
+( cd "$REPO_ROOT" && "$REPO_ROOT/scripts/sbt" airlineWeb/stage )
 
 echo ">> [4/5] Restarting the web site (game clock keeps running throughout)"
 WARN_SECONDS="${AIRLINE_UPDATE_WARNING_SECONDS:-30}"

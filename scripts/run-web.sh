@@ -13,13 +13,13 @@ PORT="${AIRLINE_WEB_PORT:-9000}"
 
 if [[ "${1:-}" == "--dev" ]]; then
   echo ">> Starting web front-end in DEV mode on port ${PORT} (dies when stdin closes)"
-  sbt_run airline-web "run ${PORT}"
+  sbt_run "airlineWeb/run ${PORT}"
 fi
 
 STAGE_DIR="$REPO_ROOT/airline-web/target/universal/stage"
 if [[ ! -x "$STAGE_DIR/bin/airline-web" ]]; then
   echo ">> No production build found, running 'sbt stage' first..."
-  ( cd "$REPO_ROOT/airline-web" && "$REPO_ROOT/scripts/sbt" stage )
+  ( cd "$REPO_ROOT" && "$REPO_ROOT/scripts/sbt" airlineWeb/stage )
 fi
 
 if [[ "${AIRLINE_APP_SECRET:-changeme}" == "changeme" ]]; then

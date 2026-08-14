@@ -48,4 +48,4 @@ if [[ -n "$EXISTING_USERS" && "$EXISTING_USERS" -gt 0 ]]; then
 fi
 
 echo ">> Initialising world data into $SCHEMA at ${AIRLINE_DB_HOST:-localhost:3306}"
-sbt_run airline-data "runMain com.patson.init.MainInit"
+sbt_run "airlineData/runMain com.patson.init.MainInit"

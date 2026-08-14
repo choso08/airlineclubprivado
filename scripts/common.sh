@@ -49,8 +49,12 @@ if [[ -f "$REPO_ROOT/game-settings.env" ]]; then
 fi
 
 sbt_run() {
-  # $1 = subproject directory, rest = sbt commands
-  local project_dir="$1"; shift
-  cd "$REPO_ROOT/$project_dir"
+  # sbt commands, run against the one build at the repo root. Address a half
+  # by its project id: airlineData/compile, airlineWeb/stage, and so on.
+  #
+  # This used to take a subproject directory and run sbt inside it, because the
+  # two halves were two separate builds talking through a published artifact.
+  # They are one build now - see build.sbt.
+  cd "$REPO_ROOT"
   exec "$REPO_ROOT/scripts/sbt" "$@"
 }

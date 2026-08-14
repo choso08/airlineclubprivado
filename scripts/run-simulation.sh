@@ -12,4 +12,4 @@ export AIRLINE_SBT_JVM_OPTS="${AIRLINE_SBT_JVM_OPTS:-} \
   -Dpekko.loggers.0=org.apache.pekko.event.slf4j.Slf4jLogger \
   -Dpekko.logging-filter=org.apache.pekko.event.slf4j.Slf4jLoggingFilter"
 
-sbt_run airline-data "runMain com.patson.MainSimulation"
+sbt_run "airlineData/runMain com.patson.MainSimulation"
