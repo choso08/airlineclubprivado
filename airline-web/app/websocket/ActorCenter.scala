@@ -134,6 +134,14 @@ sealed class LocalMainActor(remoteActor : ActorSelection) extends Actor {
     case Resubscribe(remoteActor) =>
       println(self.path.toString +  " Attempting to resubscribe")
       remoteActor ! "subscribe"
+      // And ask what time it is.
+      //
+      // Subscribing only signs up for what happens NEXT, so after the
+      // simulation restarts every open page sat there with no clock until a
+      // whole week had passed - up to half an hour on the stock settings. The
+      // answer is published to the local event stream, so every page that is
+      // open gets it at once.
+      remoteActor ! "getCycleInfo"
     case Terminated(actor) =>
       println(s"$actor is terminated!!")
 //    case BroadcastWrapper(message) => {
@@ -155,6 +163,8 @@ sealed class LocalMainActor(remoteActor : ActorSelection) extends Actor {
   override def preStart() = {
     super.preStart()
     remoteActor ! "subscribe"
+    //same reason as in Resubscribe: subscribing alone leaves the page clockless
+    remoteActor ! "getCycleInfo"
     timer.scheduleAtFixedRate(new TimerTask {
       override def run() : Unit = {
           self ! KeepAlivePing

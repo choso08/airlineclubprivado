@@ -77,7 +77,7 @@ case class AirlineBase(airline : Airline, airport : Airport, countryCode : Strin
       val income = CountrySource.loadCountryByCode(countryCode).map(_.income).getOrElse(0)
       compensation += delta * (50000 + income) / 52 * 10 //weekly compensation, *10, as otherwise it's too low
 
-      compensation
+      compensation * GameConfig.officeOvertimePercent / 100
     }
   }
 
@@ -144,7 +144,9 @@ object AirlineBase {
         60 * scale
       }
 
-    base + scaleBonus
+    //see GameConfig.officeStaffCapacityPercent - this is the real limit on
+    //how many routes an airline can run
+    (base + scaleBonus) * GameConfig.officeStaffCapacityPercent / 100
   }
 }
 

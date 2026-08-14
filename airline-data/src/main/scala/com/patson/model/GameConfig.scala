@@ -175,6 +175,25 @@ object GameConfig {
     * per level. */
   val loungeCostPercent: Int = int("economy.loungeCostPercent", 100)
 
+  /** How many office staff a base supports, as a percentage of upstream's.
+    *
+    * This is what really limits how many routes an airline can run: every
+    * route needs staff at the airport it leaves from, a base supports
+    * 60 + 80 per level at a headquarters and 60 per level elsewhere, and going
+    * over is charged as overtime every week for ever. So "I need a bigger
+    * headquarters before I can open anything else" is the shape of the whole
+    * mid-game.
+    *
+    * That is a fine rule for a server where people play for months. Raising
+    * this lets a given headquarters carry proportionally more routes without
+    * removing the idea that a bigger one carries more. */
+  val officeStaffCapacityPercent: Int = int("rules.officeStaffCapacityPercent", 100)
+
+  /** What going over that capacity costs, as a percentage of upstream's
+    * overtime. 0 removes the penalty entirely - and with it any reason to
+    * upgrade a headquarters at all. */
+  val officeOvertimePercent: Int = int("rules.officeOvertimePercent", 100)
+
   /** Whether things happen to the world now and again.
     *
     * The game's event system is used for exactly one thing - the Olympics,
