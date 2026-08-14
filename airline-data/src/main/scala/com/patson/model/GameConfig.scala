@@ -143,6 +143,18 @@ object GameConfig {
     * Without a ceiling a big enough pool would make routes free. */
   val maxDelegateDiscountPercent: Int = int("rules.maxDelegateDiscountPercent", 50)
 
+  /** What building or upgrading a base costs, as a percentage of upstream's
+    * price.
+    *
+    * Both this and baseUpkeepPercent scale a curve that grows by 1.7 for every
+    * level, so the top levels are where the money actually is - halving them
+    * is the difference between a second base being a project and being out of
+    * reach on a server where nobody is grinding for hours a day. */
+  val baseCostPercent: Int = int("economy.baseCostPercent", 100)
+
+  /** What a base costs to keep every week, as a percentage of upstream's. */
+  val baseUpkeepPercent: Int = int("economy.baseUpkeepPercent", 100)
+
   /** Whether the game slows down when nobody is playing.
     *
     * A private server runs all week for people who play on some evenings. Left

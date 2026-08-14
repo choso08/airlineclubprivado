@@ -13,17 +13,19 @@ case class AirlineBase(airline : Airline, airport : Airport, countryCode : Strin
       0
     } else {
       var baseCost = (1000000 + airport.rating.overallRating * 120000).toLong
-      (baseCost * airportSizeRatio * Math.pow (COST_EXPONENTIAL_BASE, (scale - 1) )).toLong
+      (baseCost * airportSizeRatio * Math.pow (COST_EXPONENTIAL_BASE, (scale - 1) )
+        * GameConfig.baseCostPercent / 100).toLong
     }
   }
 
   val COST_EXPONENTIAL_BASE = 1.7
-  
+
   lazy val getUpkeep : Long = {
     val adjustedScale = if (scale == 0) 1 else scale //for non-existing base, calculate as if the base is 1
     var baseUpkeep = (5000 + airport.rating.overallRating * 150).toLong
 
-    (baseUpkeep * airportSizeRatio * Math.pow(COST_EXPONENTIAL_BASE, adjustedScale - 1)).toInt
+    (baseUpkeep * airportSizeRatio * Math.pow(COST_EXPONENTIAL_BASE, adjustedScale - 1)
+      * GameConfig.baseUpkeepPercent / 100).toInt
   }
 
   lazy val airportSizeRatio =
