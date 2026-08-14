@@ -581,6 +581,57 @@ function interpolateAlongDrawnLine(from, to, fraction) {
 	return new google.maps.LatLng(unproject(y), lng)
 }
 
+/**
+ * The aircraft drawn on the map, as an image built here rather than a file.
+ *
+ * Drawn nose-up, so rotating it by the flight's heading points it along the
+ * route. White with a dark outline reads on both the light and the dark map.
+ */
+var FLIGHT_MARKER_SVG =
+	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+	'<path d="M12 1.5 L13.5 9 L22.5 13.8 L22.5 15.6 L13.5 13.3 L13.5 18.8 L16.2 20.6 L16.2 22 L12 20.9 L7.8 22 L7.8 20.6 L10.5 18.8 L10.5 13.3 L1.5 15.6 L1.5 13.8 L10.5 9 Z" ' +
+	'fill="#ffffff" stroke="#16212e" stroke-width="1.1" stroke-linejoin="round"/></svg>'
+
+var FLIGHT_MARKER_URL = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(FLIGHT_MARKER_SVG)
+
+/**
+ * How big to draw it. A regional hop and a transatlantic flight are not the
+ * same aeroplane, and showing that costs nothing: the size alone tells you
+ * what kind of route you are looking at without reading anything.
+ */
+function flightMarkerSize(link) {
+	var km = link.distance || 0
+	if (km < 1500) return 16        // regional and short haul
+	if (km < 4000) return 22        // medium haul
+	return 30                       // long haul
+}
+
+/**
+ * Heading of the drawn line, in degrees clockwise from north.
+ *
+ * Measured in the same flattened projection the line is drawn in - see
+ * interpolateAlongDrawnLine - so the aeroplane points along the line the
+ * player can actually see, rather than along the true great circle it is
+ * standing in for.
+ */
+function flightMarkerHeading(from, to) {
+	var lat1 = typeof from.lat === 'function' ? from.lat() : from.lat
+	var lng1 = typeof from.lng === 'function' ? from.lng() : from.lng
+	var lat2 = typeof to.lat === 'function' ? to.lat() : to.lat
+	var lng2 = typeof to.lng === 'function' ? to.lng() : to.lng
+	if (typeof lat1 !== 'number' || typeof lat2 !== 'number') return 0
+
+	var clamp = function(lat) { return Math.max(-85.05, Math.min(85.05, lat)) }
+	var project = function(lat) {
+		return Math.log(Math.tan(Math.PI / 4 + clamp(lat) * Math.PI / 360))
+	}
+	// Longitude in the same units as the projected latitude, so the angle on
+	// screen is the angle we compute.
+	var dx = (lng2 - lng1) * Math.PI / 180
+	var dy = project(lat2) - project(lat1)
+	return Math.atan2(dx, dy) * 180 / Math.PI
+}
+
 /** Departure times, in minutes from Sunday 00:00, exactly as the game places them. */
 function flightDepartureMinutes(link) {
 	var frequency = link.frequency
@@ -652,18 +703,21 @@ function drawFlightMarker(line, link) {
 
 	var from = line.getPath().getAt(0)
 	var to = line.getPath().getAt(1)
-	// The dot is a 12 pixel image. Drawn at that size it is a fair picture of an
-	// aeroplane at this scale and an unfair thing to ask anyone to click, since
-	// it is also moving. Given a 20 pixel box it stays small on screen and
-	// becomes something a hand can actually land on.
+
+	// An aeroplane rather than a dot, and the size says what kind of route it
+	// is: a small one for regional hops, larger for medium haul, larger again
+	// across an ocean. Rotated below to point along its own route.
+	var markerSize = flightMarkerSize(link)
+	var outboundHeading = flightMarkerHeading(from, to)
 	var image = {
-		url: "assets/images/markers/dot.png",
+		url: FLIGHT_MARKER_URL,
 		origin: new google.maps.Point(0, 0),
 		// A plain object rather than google.maps.Size: the OpenStreetMap shim
 		// reads .width and .height and does not define that class, and the real
 		// Google API accepts either.
-		scaledSize: { width: 28, height: 28 },
-		anchor: new google.maps.Point(14, 14),
+		scaledSize: { width: markerSize, height: markerSize },
+		anchor: new google.maps.Point(markerSize / 2, markerSize / 2),
+		rotation: outboundHeading
 	}
 
 	var departures = flightDepartureMinutes(link)
@@ -721,7 +775,19 @@ function drawFlightMarker(line, link) {
 			var end = progress.outbound ? to : from
 			marker.setPosition(interpolateAlongDrawnLine(start, end, progress.fraction))
 			marker.flightInfo = { link: link, progress: progress }
-			if (!marker.getMap()) marker.setMap(map)
+
+			var justAppeared = !marker.getMap()
+			if (justAppeared) marker.setMap(map)
+
+			// Turn it round on the way home. Only when the direction changes,
+			// or when the aircraft has just been put back on the map and its
+			// image was built fresh facing outbound: this runs twenty times a
+			// second for every aircraft on the map, and the heading of a
+			// straight line does not move in between.
+			if (marker.setRotation && (justAppeared || marker.headingOutbound !== progress.outbound)) {
+				marker.headingOutbound = progress.outbound
+				marker.setRotation(progress.outbound ? outboundHeading : outboundHeading + 180)
+			}
 		})
 	}, animationInterval)
 

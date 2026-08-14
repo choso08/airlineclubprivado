@@ -480,6 +480,21 @@
       var w = size ? (size.width || size.x || 24) : 24;
       var h = size ? (size.height || size.y || 24) : 24;
       var anchor = icon.anchor ? [icon.anchor.x, icon.anchor.y] : [w / 2, h / 2];
+      // An icon that has to point somewhere - an aircraft along its route -
+      // cannot be a plain L.icon: Leaflet writes the marker's position into
+      // that element's own transform, so rotating it fights the positioning.
+      // A divIcon gives us an inner image to turn instead, and setRotation
+      // below moves it without rebuilding anything.
+      if (typeof icon.rotation === 'number') {
+        return L.divIcon({
+          className: 'rotatable-marker',
+          iconSize: [w, h],
+          iconAnchor: anchor,
+          html: '<img src="' + icon.url + '" width="' + w + '" height="' + h +
+                '" style="transform: rotate(' + icon.rotation + 'deg); display: block;"' +
+                (title ? ' alt="' + title + '"' : '') + '>'
+        });
+      }
       return L.icon({
         iconUrl: icon.url,
         iconSize: [w, h],
@@ -539,6 +554,23 @@
   Marker.prototype.setIcon = function (icon) {
     var built = buildIcon(icon, this._leaflet.options.title);
     if (built) this._leaflet.setIcon(built);
+  };
+  /**
+   * Turn a rotatable icon to face a heading, in degrees clockwise from north.
+   *
+   * Cheap on purpose: it writes one style on an image that already exists,
+   * because the flight animation calls this for every aircraft on the map many
+   * times a second. Rebuilding the icon instead would rebuild that much DOM.
+   * Harmless on a marker that was not built rotatable, and on one whose
+   * element is not on screen yet - the angle is remembered and applied when it
+   * appears.
+   */
+  Marker.prototype.setRotation = function (degrees) {
+    this._rotation = degrees;
+    var el = this._leaflet.getElement();
+    if (!el) return;
+    var img = el.tagName === 'IMG' ? el : el.querySelector('img');
+    if (img) img.style.transform = 'rotate(' + degrees + 'deg)';
   };
   Marker.prototype.setTitle = function (t) {
     this._leaflet.options.title = t;
