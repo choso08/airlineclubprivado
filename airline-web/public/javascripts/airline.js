@@ -315,13 +315,81 @@ function refreshLinks(forceRedraw) {
 
 
 
+/**
+ * A point along the great circle between two places.
+ *
+ * The shortest path between two airports is not the straight line on a flat
+ * map - it is the arc an aircraft actually flies, which is why a flight from
+ * Lisbon to New York goes up past Ireland rather than straight across. The map
+ * library's own geodesic option is a Google Maps feature that the
+ * OpenStreetMap layer underneath this does not implement, so the arc is worked
+ * out here and drawn as a many-sided line.
+ *
+ * Longitudes come back unwrapped - continuous, rather than jumping from +179
+ * to -179 - because a polyline drawn across that jump is drawn the long way
+ * round the entire world.
+ */
+function greatCirclePoint(lat1, lng1, lat2, lng2, fraction) {
+	var toRad = Math.PI / 180, toDeg = 180 / Math.PI
+
+	// take the short way round
+	var dLng = lng2 - lng1
+	if (dLng > 180) lng2 -= 360
+	else if (dLng < -180) lng2 += 360
+
+	var f1 = lat1 * toRad, l1 = lng1 * toRad
+	var f2 = lat2 * toRad, l2 = lng2 * toRad
+
+	var delta = 2 * Math.asin(Math.sqrt(
+		Math.pow(Math.sin((f2 - f1) / 2), 2) +
+		Math.cos(f1) * Math.cos(f2) * Math.pow(Math.sin((l2 - l1) / 2), 2)))
+
+	if (!delta || isNaN(delta)) {
+		return { lat: lat1, lng: lng1 }
+	}
+
+	var a = Math.sin((1 - fraction) * delta) / Math.sin(delta)
+	var b = Math.sin(fraction * delta) / Math.sin(delta)
+
+	var x = a * Math.cos(f1) * Math.cos(l1) + b * Math.cos(f2) * Math.cos(l2)
+	var y = a * Math.cos(f1) * Math.sin(l1) + b * Math.cos(f2) * Math.sin(l2)
+	var z = a * Math.sin(f1) + b * Math.sin(f2)
+
+	var lat = Math.atan2(z, Math.sqrt(x * x + y * y)) * toDeg
+	var lng = Math.atan2(y, x) * toDeg
+
+	// keep it continuous with where the line started
+	while (lng - lng1 > 180) lng -= 360
+	while (lng - lng1 < -180) lng += 360
+
+	return { lat: lat, lng: lng }
+}
+
+/**
+ * The arc between two airports, as points to draw a line through.
+ *
+ * More points on a longer route, because that is where the curve is: a hop
+ * between two Portuguese cities is a straight line at any honest resolution,
+ * and a crossing of the Atlantic is not.
+ */
+function greatCirclePath(fromLat, fromLng, toLat, toLng) {
+	var span = Math.abs(toLat - fromLat) + Math.abs(((toLng - fromLng + 540) % 360) - 180)
+	var steps = Math.max(2, Math.min(48, Math.round(span / 2)))
+
+	var points = []
+	for (var i = 0; i <= steps; i++) {
+		points.push(greatCirclePoint(fromLat, fromLng, toLat, toLng, i / steps))
+	}
+	return points
+}
+
 function drawFlightPath(link, linkColor) {
 	
    if (!linkColor) {
 	   linkColor = getLinkColor(link.profit, link.revenue) 
    }
    var flightPath = new google.maps.Polyline({
-     path: [{lat: link.fromLatitude, lng: link.fromLongitude}, {lat: link.toLatitude, lng: link.toLongitude}],
+     path: greatCirclePath(link.fromLatitude, link.fromLongitude, link.toLatitude, link.toLongitude),
      geodesic: true,
      strokeColor: linkColor,
      strokeOpacity: pathOpacityByStyle[currentStyles].normal,
@@ -338,7 +406,7 @@ function drawFlightPath(link, linkColor) {
    polylines.push(flightPath)
    
    var shadowPath = new google.maps.Polyline({
-	     path: [{lat: link.fromLatitude, lng: link.fromLongitude}, {lat: link.toLatitude, lng: link.toLongitude}],
+	     path: greatCirclePath(link.fromLatitude, link.fromLongitude, link.toLatitude, link.toLongitude),
 	     geodesic: true,
 	     map: map,
 	     strokeColor: getLinkColor(link.profit, link.revenue),
@@ -566,20 +634,13 @@ function interpolateAlongDrawnLine(from, to, fraction) {
 		return google.maps.geometry.spherical.interpolate(from, to, fraction)
 	}
 
-	// The poles are infinitely far away in this projection; nothing flies
-	// there, but clamping keeps the arithmetic finite if anything ever does.
-	var clamp = function(lat) { return Math.max(-85.05, Math.min(85.05, lat)) }
-	var project = function(lat) {
-		return Math.log(Math.tan(Math.PI / 4 + clamp(lat) * Math.PI / 360))
-	}
-	var unproject = function(y) {
-		return (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI
-	}
-
-	var y = project(lat1) + (project(lat2) - project(lat1)) * fraction
-	var lng = lng1 + (lng2 - lng1) * fraction
-	return new google.maps.LatLng(unproject(y), lng)
+	// The same arc the line is drawn along - see greatCirclePath. Anything
+	// else and the aircraft leaves its own route, which is what happened when
+	// this interpolated in a straight line and the line was a curve.
+	var point = greatCirclePoint(lat1, lng1, lat2, lng2, fraction)
+	return new google.maps.LatLng(point.lat, point.lng)
 }
+
 
 /**
  * The aircraft drawn on the map, as an image built here rather than a file.
@@ -720,8 +781,10 @@ function drawFlightMarker(line, link) {
 		return
 	}
 
-	var from = line.getPath().getAt(0)
-	var to = line.getPath().getAt(1)
+	// The route's actual ends. The drawn path is an arc of many points now, so
+	// its first two are a few kilometres apart rather than a continent.
+	var from = { lat: link.fromLatitude, lng: link.fromLongitude }
+	var to = { lat: link.toLatitude, lng: link.toLongitude }
 
 	// An aeroplane rather than a dot, and the size says what kind of route it
 	// is: a small one for regional hops, larger for medium haul, larger again
@@ -798,15 +861,16 @@ function drawFlightMarker(line, link) {
 			var justAppeared = !marker.getMap()
 			if (justAppeared) marker.setMap(map)
 
-			// Turn it round on the way home. Only when the direction changes,
-			// or when the aircraft has just been put back on the map and its
-			// image was built fresh facing outbound: this runs twenty times a
-			// second for every aircraft on the map, and the heading of a
-			// straight line does not move in between.
-			if (marker.setRotation && (justAppeared || marker.headingOutbound !== progress.outbound)) {
-				marker.headingOutbound = progress.outbound
-				marker.setRotation(progress.outbound ? outboundHeading : outboundHeading + 180)
+			// On an arc the heading changes the whole way along, so it is
+			// taken from where the aircraft is to a little further on rather
+			// than once for the leg.
+			if (marker.setRotation) {
+				var ahead = Math.min(1, progress.fraction + 0.02)
+				marker.setRotation(flightMarkerHeading(
+					interpolateAlongDrawnLine(start, end, progress.fraction),
+					interpolateAlongDrawnLine(start, end, ahead)))
 			}
+
 		})
 	}, animationInterval)
 
