@@ -3,8 +3,7 @@
 package com.patson
 
 import java.util.concurrent.TimeUnit
-import org.apache.pekko.actor.Props
-import org.apache.pekko.actor.Actor
+import org.apache.pekko.actor.{Actor, ActorInitializationException, ActorRef, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
 import com.patson.data._
 import com.patson.model.{Airport, GameConfig, Seasons}
 import com.patson.stream.{CycleCompleted, CycleStart, DirectDemandInfo, SimulationEventStream}
@@ -13,6 +12,7 @@ import com.patson.util.{AirlineCache, AirplaneOwnershipCache, AirplaneOwnershipI
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
 
 object MainSimulation extends App {
   // Real seconds between cycles. One cycle is one in-game week, so the stock
@@ -52,9 +52,24 @@ object MainSimulation extends App {
   
   mainFlow
   
+  // How long the game may stand still before this process decides something is
+  // wrong and plays a week itself: two whole weeks that never came, plus a
+  // minute of margin so one slow cycle is never mistaken for a stopped game.
+  val STALL_MILLIS : Long = (CYCLE_DURATION.toLong * 2 + 60) * 1000
+
   def mainFlow() = {
-    val actor = actorSystem.actorOf(Props[MainSimulationActor])
-    actorSystem.scheduler.schedule(Duration.Zero, Duration(CYCLE_DURATION, TimeUnit.SECONDS), actor, Start)
+    val supervisor = actorSystem.actorOf(Props(new SimulationSupervisor))
+
+    // The tick is a scheduled job that sends a message, rather than a schedule
+    // addressed to the actor. The difference matters more than it looks: the
+    // addressed form cancels itself for good the moment the receiving actor is
+    // gone, so one week that killed the actor - a database hiccup while it was
+    // starting is enough - stopped every week after it, for ever, with the
+    // process still running and nothing in the log to say so. The supervisor
+    // outlives its worker, so the tick always has somewhere to land.
+    actorSystem.scheduler.schedule(Duration.Zero, Duration(CYCLE_DURATION, TimeUnit.SECONDS)) {
+      supervisor ! Start
+    }
 
     // Checked often enough to feel immediate and cheaply enough not to matter:
     // one stat() every two seconds. The file is deleted before the cycle is
@@ -67,7 +82,7 @@ object MainSimulation extends App {
         if (forceCycleFile.exists()) {
           forceCycleFile.delete()
           println("Cycle forced by request")
-          actor ! ForceStart
+          supervisor ! ForceStart
         }
       } catch {
         case e : Throwable => println("Could not check for a forced cycle: " + e.getMessage)
@@ -177,6 +192,78 @@ object MainSimulation extends App {
 
 
   /**
+    * Owns the actor that plays the weeks, and outlives it.
+    *
+    * Everything that can go wrong goes wrong inside the worker: a query that
+    * fails, a connection pool that is empty for a second, a bug in one of the
+    * simulations. None of that may be allowed to stop the world for good, and
+    * until now any of it could - the process stayed up, the web site stayed
+    * up, the clock kept counting down, and no week ever happened again.
+    *
+    * This does nothing risky itself, so it does not die, and it is the only
+    * thing the clock talks to.
+    */
+  class SimulationSupervisor extends Actor {
+    override val supervisorStrategy = OneForOneStrategy() {
+      case _ : ActorInitializationException =>
+        //It could not even start, which in practice means the database was not
+        //there. Restarting straight away would spin at full speed; the next
+        //tick builds a new one in a few minutes, by which time it may be back.
+        println("The simulation could not start. Trying again on the next week.")
+        SupervisorStrategy.Stop
+      case NonFatal(e) =>
+        println("The simulation actor failed, starting it again: " + e)
+        e.printStackTrace()
+        SupervisorStrategy.Restart
+    }
+
+    private[this] var worker : Option[ActorRef] = None
+    //when the worker last proved it was alive by dealing with a tick
+    private[this] var lastTickHandled = System.currentTimeMillis()
+
+    private def weeks() : ActorRef = worker match {
+      case Some(actor) => actor
+      case None =>
+        val actor = context.actorOf(Props(new MainSimulationActor))
+        context.watch(actor)
+        worker = Some(actor)
+        actor
+    }
+
+    override def preStart() : Unit = {
+      //Nothing outside this process is guaranteed to be watching - the
+      //watchdog has to be installed, and it may not be - so the game also
+      //keeps an eye on itself.
+      context.system.scheduler.schedule(Duration(1, TimeUnit.MINUTES), Duration(1, TimeUnit.MINUTES)) {
+        self ! StallCheck
+      }
+    }
+
+    def receive = {
+      case TickHandled =>
+        lastTickHandled = System.currentTimeMillis()
+
+      case Terminated(actor) =>
+        if (worker.contains(actor)) {
+          worker = None
+          println("The simulation actor is gone - a new one will play the next week.")
+        }
+
+      case StallCheck =>
+        val standingStill = System.currentTimeMillis() - lastTickHandled
+        if (status != SimulationStatus.IN_PROGRESS && standingStill > STALL_MILLIS) {
+          println(s"No week has been played for ${standingStill / 1000} seconds - playing one now.")
+          //Give it a full window before trying again, rather than every minute
+          lastTickHandled = System.currentTimeMillis()
+          weeks() ! Start
+        }
+
+      case message =>
+        weeks() ! message
+    }
+  }
+
+  /**
     * The simulation can be seen like this:
     * On week(cycle) n. It starts the long simulation (pax simulation) at the "END of the week"
     * when it finishes computing the pax of the past week. It sets the current week to next week (which indicates a beginning of week n + 1)
@@ -199,10 +286,15 @@ object MainSimulation extends App {
           restedTicks = 0
           runWeek()
         }
+        //A rested week counts too: what the supervisor is watching for is a
+        //worker that has stopped answering, not a world that is standing still
+        //on purpose.
+        context.parent ! TickHandled
       case ForceStart =>
         //asked for explicitly, so it happens whether or not anybody is around
         restedTicks = 0
         runWeek()
+        context.parent ! TickHandled
     }
 
     /**
@@ -234,18 +326,43 @@ object MainSimulation extends App {
       }
     }
 
+    /**
+      * Play one week.
+      *
+      * A week that fails must not take the ones after it with it. Failing
+      * loudly and coming back next week is the worst that should happen, and
+      * the failure is printed in full: the night the database driver changed,
+      * every cycle threw and nothing said what, which cost most of a day.
+      */
     private def runWeek() : Unit = {
-      status = SimulationStatus.IN_PROGRESS
-      val endTime = startCycle(currentWeek)
+      try {
+        status = SimulationStatus.IN_PROGRESS
+        val endTime = startCycle(currentWeek)
 
-      currentWeek += 1
-      CycleSource.setCycle(currentWeek)
-      status = SimulationStatus.WAITING_CYCLE_START
-      postCycle(currentWeek) //post cycle do some quick updates, no long simulation
+        currentWeek += 1
+        CycleSource.setCycle(currentWeek)
+        status = SimulationStatus.WAITING_CYCLE_START
+        postCycle(currentWeek) //post cycle do some quick updates, no long simulation
 
-      //notify the websockets via EventStream
-      println("Publish Cycle Complete message")
-      SimulationEventStream.publish(CycleCompleted(currentWeek - 1, endTime))
+        //notify the websockets via EventStream
+        println("Publish Cycle Complete message")
+        SimulationEventStream.publish(CycleCompleted(currentWeek - 1, endTime))
+      } catch {
+        case NonFatal(e) =>
+          println("!!!!!!!!!!!!!!! WEEK " + currentWeek + " FAILED: " + e)
+          e.printStackTrace()
+          //Read the week back from the database rather than trusting what is in
+          //memory: the failure may have been after it moved on.
+          try {
+            currentWeek = CycleSource.loadCycle()
+          } catch {
+            case NonFatal(_) => //it will be right again the next time it works
+          }
+      } finally {
+        //Never leave it looking busy. Something that is stuck IN_PROGRESS for
+        //ever is a game nothing will try to rescue.
+        status = SimulationStatus.WAITING_CYCLE_START
+      }
     }
   }
    
@@ -255,6 +372,12 @@ object MainSimulation extends App {
   /** A week asked for explicitly - by the Force week button - which happens
     * whether or not anybody is around to see it. See holiday mode. */
   case object ForceStart
+
+  /** The worker telling the supervisor it dealt with a tick: proof of life. */
+  case object TickHandled
+
+  /** The supervisor asking itself whether the game is still moving. */
+  case object StallCheck
 
   var status : SimulationStatus.Value = SimulationStatus.WAITING_CYCLE_START
   object SimulationStatus extends Enumeration {
