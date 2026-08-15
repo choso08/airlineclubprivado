@@ -1147,6 +1147,9 @@
       'Not enough cash for the deposit': 'Nao tens dinheiro para a entrada',
       'Leasing and instalments are switched off in this world': 'Aluguer e prestacoes estao desligados neste mundo',
 
+      // ------------------------------------------------------------- taxes
+      'Tax on route profit:': 'Imposto sobre o lucro das rotas:',
+
       // -------------------------------------------------------------- cargo
       'Cargo': 'Carga',
       'Break it': 'Desistir',

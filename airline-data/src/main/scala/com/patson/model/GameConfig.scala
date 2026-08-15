@@ -298,6 +298,22 @@ object GameConfig {
   val nightFromHour: Int = int("simulation.nightFromHour", 0)
   val nightToHour: Int = int("simulation.nightToHour", 10)
 
+  /** Whether the country a route leaves from taxes its profit.
+    *
+    * The game has countries with an income and a name and asks nothing of an
+    * airline for being there, so one airport is as good as another once the
+    * passengers are counted. A tax on the routes leaving a base makes where
+    * you put your bases a question about the country too. */
+  val taxEnabled: Boolean = boolean("simulation.taxEnabled", false)
+
+  /** The rate a middling country charges, as a percentage of route profit. */
+  val taxBasePercent: Double = double("simulation.taxBasePercent", 15)
+
+  /** How far the rate moves either side of that with the country's income.
+    * At 8 on a base of 15, the poorest countries charge 7% and the richest
+    * 23%. */
+  val taxIncomeSpreadPercent: Double = double("simulation.taxIncomeSpreadPercent", 8)
+
   /** Whether freight can be contracted for.
     *
     * An aircraft's hold flies empty every week of its life here, and the only

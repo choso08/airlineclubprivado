@@ -529,7 +529,10 @@ package object controllers {
         "name" -> country.name,
         "airportPopulation" -> country.airportPopulation,
         "incomeLevel" -> Computation.getIncomeLevel(country.income).toInt,
-        "openness" ->  country.openness
+        "openness" ->  country.openness,
+        //What this country takes from the profit of routes leaving it. 0 when
+        //taxes are switched off, which is how the page knows not to show it.
+        "taxRatePercent" -> BigDecimal(Taxes.ratePercent(country)).setScale(1, RoundingMode.HALF_UP)
       )
     }
   }

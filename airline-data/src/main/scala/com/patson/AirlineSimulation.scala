@@ -48,6 +48,11 @@ object AirlineSimulation {
 
     val assetsByAirlineId = AirportAssetSource.loadAirportAssetsByAssetCriteria(List.empty).groupBy(_.airline.get.id) //load all owned assets
 
+    //What each country charges on the profit of the routes that leave it.
+    //Worked out once here rather than per route: it is the same answer for
+    //every route out of the same country.
+    val taxRateByCountry : immutable.Map[String, Double] = allCountries.view.mapValues(Taxes.ratePercent).toMap
+
     //Aircraft that are not paid for. Tidy up first: a plan whose aircraft no
     //longer exists would otherwise go on charging somebody for nothing.
     AirplanePaymentPlanSource.deleteOrphans()
@@ -242,10 +247,24 @@ object AirlineSimulation {
         //would mean altering the table of every world that already exists.
         val cargo = cargoEarnings.getOrElse(airline.id, 0L)
 
-        othersSummary.put(OtherIncomeItemType.ASSET_EXPENSE, -1 * (assetExpense + airplanePayments + (if (cargo < 0) -cargo else 0L)))
+        //And what the countries take. A route is taxed where it departs -
+        //which is a base, since a route cannot start anywhere else - so where
+        //an airline puts its bases becomes a question about the country and
+        //not only about the passengers. Route by route, and only on profit: a
+        //route that loses money is not taxed and does not shelter one that
+        //earns.
+        val routeTax = flightLinkResultByAirline.get(airline.id) match {
+          case Some(consumptions) =>
+            consumptions.map { details =>
+              Taxes.taxOnProfit(details.profit, taxRateByCountry.getOrElse(details.link.from.countryCode, 0.0))
+            }.sum
+          case None => 0L
+        }
+
+        othersSummary.put(OtherIncomeItemType.ASSET_EXPENSE, -1 * (assetExpense + airplanePayments + routeTax + (if (cargo < 0) -cargo else 0L)))
         othersSummary.put(OtherIncomeItemType.ASSET_REVENUE, assetRevenue + (if (cargo > 0) cargo else 0L))
 
-        totalCashExpense += assetExpense + airplanePayments + (if (cargo < 0) -cargo else 0L)
+        totalCashExpense += assetExpense + airplanePayments + routeTax + (if (cargo < 0) -cargo else 0L)
         totalCashRevenue += assetRevenue + (if (cargo > 0) cargo else 0L)
 
 

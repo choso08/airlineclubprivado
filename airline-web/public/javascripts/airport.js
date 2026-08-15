@@ -95,6 +95,16 @@ function updateAirportDetails(airport, cityImageUrl, airportImageUrl) {
 	}
 	$("#airportDetailsZone").text(zoneById[airport.zone])
 	$("#airportDetailsOpenness").html(getOpennessSpan(loadedCountriesByCode[airport.countryCode].openness))
+
+	// What this country takes from the profit of routes leaving it. Shown only
+	// where it applies, so a world with taxes off looks exactly as it did.
+	var taxRate = loadedCountriesByCode[airport.countryCode].taxRatePercent
+	if (taxRate > 0) {
+		$("#airportDetailsTax").text(taxRate + "% of what a route from here earns")
+		$("#airportDetailsTaxRow").show()
+	} else {
+		$("#airportDetailsTaxRow").hide()
+	}
 	
 //	refreshAirportExtendedDetails(airport)
 	//updateAirportSlots(airport.id)
