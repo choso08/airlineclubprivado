@@ -157,8 +157,35 @@ class Application @Inject()(cc: ControllerComponents, val configuration: play.ap
     Ok(views.html.test())
   }
 
+  /**
+    * Which week it is, how far into it we are, and how long a week takes.
+    *
+    * Everything the clock on the page needs, answered by the web site alone.
+    * It used to come only over the link to the simulation, which meant that
+    * whenever that link was down - or the simulation had restarted and this
+    * process was still holding a dead address - a page opened with no clock at
+    * all and no aircraft moving on the map.
+    *
+    * The fraction is capped at 1: a week that has run long is a week that is
+    * about to end, not one that is somehow into the next.
+    */
   def getCurrentCycle() = Action  {
-    Ok(Json.obj("cycle" -> CycleSource.loadCycle()))
+    val cycle = CycleSource.loadCycle()
+    val configuredMillis = configuration.getOptional[Int]("simulation.cycleDurationSeconds").getOrElse(1800).toLong * 1000
+
+    val (fraction, duration) = CycleTimingSource.load() match {
+      case Some(timing) =>
+        val length = if (timing.durationMillis > 0) timing.durationMillis else configuredMillis
+        val elapsed = System.currentTimeMillis() - timing.endedAt
+        (Math.max(0.0, Math.min(1.0, elapsed.toDouble / length)), length)
+      case None =>
+        //Nothing written down yet - a world whose first week has not finished
+        //since this was added. Start the clock at the top of the week; the
+        //next week that finishes corrects it.
+        (0.0, configuredMillis)
+    }
+
+    Ok(Json.obj("cycle" -> cycle, "fraction" -> fraction, "cycleDurationEstimation" -> duration))
   }
 
 

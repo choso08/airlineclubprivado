@@ -33,6 +33,13 @@ $( document ).ready(function() {
         refreshWallpaper()
 	}
 
+    syncGameClock()
+    //Once a minute, not because the clock needs it - it runs on its own - but
+    //because this is the only thing that notices a week has passed when the
+    //link to the simulation is down. It re-anchors at most once a week, when
+    //the week number has actually changed.
+    setInterval(syncGameClock, 60000)
+
     registerEscape()
     updateAirlineColors()
 	initTabGroup()
@@ -600,7 +607,44 @@ function currentGameWeekMinute() {
     return date.getDay() * 24 * 60 + date.getHours() * 60 + date.getMinutes()
 }
 
+var lastAnchoredCycle = null
+
+/**
+ * Start (or re-start) the clock from the web server, without the simulation.
+ *
+ * The clock used to have exactly one source: a message over the link between
+ * the web site and the simulation. When that link is down - or the simulation
+ * has restarted and the web site is still holding a dead address - the message
+ * never comes and the page sits there with no clock and no aircraft moving on
+ * the map. That was reported twice, and this is why it cannot happen again:
+ * the answer now comes out of the database that both halves already share.
+ *
+ * It re-anchors only when the week has actually changed, so the clock is not
+ * nudged every minute. Re-anchoring too often is not harmless - a reconnection
+ * storm once re-anchored it thirty times a minute and the aircraft flew
+ * backwards.
+ */
+function syncGameClock() {
+    $.ajax({
+        type: 'GET',
+        url: "current-cycle",
+        dataType: 'json',
+        success: function(info) {
+            if (lastAnchoredCycle === info.cycle) {
+                return
+            }
+            lastAnchoredCycle = info.cycle
+            currentCycle = info.cycle
+            updateTime(info.cycle, info.fraction, info.cycleDurationEstimation)
+        },
+        error: function() {
+            //the site itself is unreachable; the page has bigger problems
+        }
+    });
+}
+
 function updateTime(cycle, fraction, cycleDurationEstimation) {
+    lastAnchoredCycle = cycle
 	$(".currentTime").attr("title", "Current Cycle: " + cycle)
 	//The in-game date is just "cycle 0 = the epoch", so a fresh world starts in
 	//January 1970 and the clock reads as 1970 + one week per cycle. The offset
