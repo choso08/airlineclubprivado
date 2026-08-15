@@ -285,6 +285,10 @@ object AirlineSimulation {
           }
         }
 
+        //The three of them written down separately as well, so the Payments
+        //panel can take the asset line apart again - see WeeklyExtrasSource.
+        WeeklyExtrasSource.save(airline.id, WeeklyExtrasSource.WeeklyExtras(cycle, airplanePayments, cargo, routeTax, creditUsed))
+
         othersSummary.put(OtherIncomeItemType.ASSET_EXPENSE, -1 * (assetExpense + airplanePayments + routeTax + (if (cargo < 0) -cargo else 0L)))
         othersSummary.put(OtherIncomeItemType.ASSET_REVENUE, assetRevenue + (if (cargo > 0) cargo else 0L))
 

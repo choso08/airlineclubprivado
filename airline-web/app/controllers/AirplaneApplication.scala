@@ -1,7 +1,7 @@
 package controllers
 
 import scala.math.BigDecimal.int2bigDecimal
-import com.patson.data.{AirlineSource, AirplanePaymentPlanSource, AirplaneSource, CashFlowSource, CountrySource, CycleSource, LinkSource, LogSource, TaxCreditSource}
+import com.patson.data.{AirlineSource, AirplanePaymentPlanSource, AirplaneSource, CashFlowSource, CountrySource, CycleSource, LinkSource, LogSource, TaxCreditSource, WeeklyExtrasSource}
 import com.patson.data.airplane.ModelSource
 import com.patson.model.airplane.{Model, _}
 import com.patson.model._
@@ -689,11 +689,29 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
       }
     }
 
+    //What is still owed altogether. A lease has no end and so nothing "left
+    //to pay" - only a weekly cost - so only instalments count here.
+    val leftToPay = plans.filter(!_.isLease).map(plan => Math.max(0, plan.weeksRemaining).toLong * plan.weeklyPayment).sum
+
+    val extras = WeeklyExtrasSource.load(airlineId)
+
     Ok(Json.obj(
       "enabled" -> GameConfig.aircraftFinancingEnabled,
       "weeklyTotal" -> plans.map(_.weeklyPayment).sum,
+      "leftToPayTotal" -> leftToPay,
       "vatCredit" -> TaxCreditSource.get(airlineId),
       "vatPercent" -> GameConfig.vatPercent,
+      //Last week's numbers for the three things that share the asset line in
+      //the income statement, so that line can be read rather than guessed at.
+      "lastWeek" -> (extras match {
+        case Some(week) => Json.obj(
+          "cycle" -> week.cycle,
+          "aircraftPayments" -> week.aircraftPayments,
+          "cargo" -> week.cargo,
+          "tax" -> week.tax,
+          "taxCreditUsed" -> week.taxCreditUsed)
+        case None => JsNull
+      }),
       "plans" -> entries))
   }
 

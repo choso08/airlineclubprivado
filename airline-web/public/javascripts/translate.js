@@ -1150,6 +1150,12 @@
       // ---------------------------------------------------------- payments
       'Payments': 'Pagamentos',
       'Leaving every week': 'Sai todas as semanas',
+      'Still to pay in total': 'Falta pagar ao todo',
+      'Last week, inside "Asset expense"': 'Na semana passada, dentro da "Despesa dos bens"',
+      'Aircraft payments': 'Pagamentos de avioes',
+      'Country tax on routes': 'Imposto do pais sobre as rotas',
+      'VAT reclaimed against it': 'IVA recuperado contra ele',
+      'Freight': 'Carga',
       'VAT still to reclaim': 'IVA ainda por recuperar',
       'Leased': 'Alugado',
       'On instalments': 'A prestacoes',

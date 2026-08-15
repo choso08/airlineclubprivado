@@ -44,11 +44,33 @@
     html += '<div class="table" style="width: 100%; margin-bottom: 10px;">';
     html += '<div class="table-row"><div class="cell" style="width: 60%;"><h5>Leaving every week</h5></div>' +
       '<div class="cell">' + money(result.weeklyTotal) + '</div></div>';
+    html += '<div class="table-row"><div class="cell"><h5>Still to pay in total</h5></div>' +
+      '<div class="cell">' + money(result.leftToPayTotal) + '</div></div>';
     if (result.vatPercent > 0) {
       html += '<div class="table-row"><div class="cell"><h5>VAT still to reclaim</h5></div>' +
         '<div class="cell">' + money(result.vatCredit) + '</div></div>';
     }
     html += '</div>';
+
+    // The income statement puts these three inside one line - "Asset
+    // expense" - because its columns are fixed in the database. Here they are
+    // taken apart again.
+    if (result.lastWeek) {
+      var week = result.lastWeek;
+      html += '<h4>Last week, inside "Asset expense"</h4>';
+      html += '<div class="table" style="width: 100%; margin-bottom: 10px;">';
+      html += '<div class="table-row"><div class="cell" style="width: 60%;">Aircraft payments</div>' +
+        '<div class="cell">-' + money(week.aircraftPayments) + '</div></div>';
+      html += '<div class="table-row"><div class="cell">Country tax on routes</div>' +
+        '<div class="cell">-' + money(week.tax) + '</div></div>';
+      if (week.taxCreditUsed > 0) {
+        html += '<div class="table-row"><div class="cell">VAT reclaimed against it</div>' +
+          '<div class="cell">+' + money(week.taxCreditUsed) + '</div></div>';
+      }
+      html += '<div class="table-row"><div class="cell">Freight</div>' +
+        '<div class="cell">' + (week.cargo < 0 ? '-' : '+') + money(Math.abs(week.cargo)) + '</div></div>';
+      html += '</div>';
+    }
 
     var plans = result.plans || [];
     if (plans.length === 0) {
