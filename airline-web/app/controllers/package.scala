@@ -299,6 +299,10 @@ package object controllers {
           .toList.sortBy(-_._2)
         val modelNames = modelsByFlights.map(_._1.name)
         json = json + ("modelName" -> JsString(if (modelNames.isEmpty) model.name else modelNames.mkString(" + ")))
+        // The busiest single type, kept separate because the picture of the
+        // aircraft is looked up by name - and there is no photograph of
+        // "Boeing 787-8 Dreamliner + Airbus A350-1000".
+        json = json + ("primaryModelName" -> JsString(modelNames.headOption.getOrElse(model.name)))
       }
 
       val constructingAirplanes = link.getAssignedAirplanes().filter(!_._1.isReady)

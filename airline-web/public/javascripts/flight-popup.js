@@ -127,8 +127,11 @@
       (link.flightCode || 'Flight') + ' &nbsp;' + originCode + ' &rarr; ' + destinationCode;
 
     var image = el.querySelector('.flight-popup-image');
-    if (link.modelName) {
-      image.src = 'assets/images/airplanes/' + link.modelName.replace(/\s+/g, '-').toLowerCase() + '.png';
+    // primaryModelName is the busiest single type on the route: a route may
+    // carry two, and modelName names both, which is no use as a filename.
+    var pictureOf = link.primaryModelName || link.modelName
+    if (pictureOf) {
+      image.src = 'assets/images/airplanes/' + pictureOf.replace(/\s+/g, '-').toLowerCase() + '.png';
       image.style.display = '';
       image.onerror = function () { image.style.display = 'none'; };
     } else {

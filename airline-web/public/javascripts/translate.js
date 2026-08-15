@@ -1107,6 +1107,26 @@
       'A billion': 'Mil milhoes',
       'First to hold $1,000,000,000': 'Primeiro a ter $1.000.000.000',
 
+      // ------------------------------------------------- deals between us
+      'Deals': 'Negocios',
+      'Offer something': 'Propor alguma coisa',
+      'Cash you give': 'Dinheiro que das',
+      'Cash you want': 'Dinheiro que queres',
+      'Aircraft you give': 'Avioes que das',
+      'Send offer': 'Enviar proposta',
+      'Accept': 'Aceitar',
+      'Decline': 'Recusar',
+      'Withdraw': 'Retirar',
+      'Waiting': 'A aguardar',
+      'Accepted': 'Aceite',
+      'Declined': 'Recusada',
+      'Expired': 'Expirada',
+      'Nothing yet.': 'Ainda nada.',
+      'Offer sent': 'Proposta enviada',
+      'what this is for': 'para que e',
+      'There is nobody else here to deal with yet.': 'Ainda nao ha mais ninguem com quem negociar.',
+      'None idle - aircraft on a route cannot change hands': 'Nenhum livre - avioes numa rota nao mudam de dono',
+
       // ---------------------------------------------------------- olympics
       'Olympics Voting Active': 'Votação olímpica a decorrer',
       'Unclaimed Olympics passenger reward (': 'Prémio olímpico de passageiros por receber (',
