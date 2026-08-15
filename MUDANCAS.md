@@ -160,6 +160,20 @@ frota em bom estado: normalmente 1,3 atrasos pequenos e 0,2 cancelamentos por
 semana; com uma inspeção 4,9 pequenos e 2,0 grandes; com uma greve 0,9
 cancelamentos. Alguns por cento da receita da semana.
 
+### Carga
+O porão de um avião voava vazio todas as semanas. Agora há **contratos**:
+alguém oferece tantas toneladas por semana entre dois aeroportos, durante
+tantas semanas, por um preço — e as ofertas só aparecem em rotas que já voas.
+
+Aceitar é prometer espaço numa rota que passas a ter de manter a voar, e ser
+pago todas as semanas aconteça o que acontecer aos passageiros. O porão é a
+sério: 0,02 toneladas por lugar por voo, portanto um avião de 180 lugares a
+voar 14 vezes leva 50 toneladas por semana, e um contrato pede entre um quarto
+e dois terços disso. Uma semana sem espaço perde o pagamento dessa semana, três
+cancelam o contrato, e desistir de propósito custa quatro semanas.
+
+Painel novo no topo: **Carga**.
+
 ### Noite mais lenta
 O servidor corre a noite toda para gente que está a dormir — e a 3 minutos por
 semana isso são 160 semanas entre deitar e acordar. Das 00h às 10h uma semana
