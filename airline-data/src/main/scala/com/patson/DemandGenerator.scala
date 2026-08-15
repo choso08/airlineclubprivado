@@ -298,6 +298,11 @@ object DemandGenerator {
       // and free, on the weeks when nothing is happening, which is most of them.
       adjustedDemand = adjustedDemand * ActiveWorldEvents.demandMultiplier(fromAirport, toAirport)
 
+      // And the time of year: people go on holiday in the summer, and the
+      // summer is a different month depending on which half of the world the
+      // beach is in. Exactly 1.0 when seasons are switched off.
+      adjustedDemand = adjustedDemand * Seasons.demandMultiplier(fromAirport, toAirport, passengerType)
+
       var firstClassDemand = (adjustedDemand * firstClassPercentage).toInt
       var businessClassDemand = (adjustedDemand * businessClassPercentage).toInt
       val economyClassDemand = adjustedDemand.toInt - firstClassDemand - businessClassDemand

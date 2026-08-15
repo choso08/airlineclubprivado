@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.Actor
 import com.patson.data._
-import com.patson.model.{Airport, GameConfig}
+import com.patson.model.{Airport, GameConfig, Seasons}
 import com.patson.stream.{CycleCompleted, CycleStart, DirectDemandInfo, SimulationEventStream}
 import com.patson.util.{AirlineCache, AirplaneOwnershipCache, AirplaneOwnershipInfo, AirportCache}
 
@@ -100,6 +100,8 @@ object MainSimulation extends App {
       println("Loaded " + airports.size + " airports")
 
       CycleProfiler.phase("users") { UserSimulation.simulate(cycle) }
+      Seasons.setCycle(cycle)
+
       println("World events")
       CycleProfiler.phase("world events") { WorldEventSimulation.simulate(cycle, airports) }
 

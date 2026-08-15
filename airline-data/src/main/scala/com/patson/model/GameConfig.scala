@@ -194,6 +194,18 @@ object GameConfig {
     * upgrade a headquarters at all. */
   val officeOvertimePercent: Int = int("rules.officeOvertimePercent", 100)
 
+  /** How much the time of year moves demand, as a percentage. 0 is off.
+    *
+    * The game runs a calendar and then ignores it: demand in January is demand
+    * in August, so a route to the Algarve is worth the same in the rain as in
+    * the sun and choosing routes is a decision made once and never revisited.
+    *
+    * With seasons on, holiday travel follows the summer - which is a different
+    * month in each hemisphere - and business travel dips when the offices
+    * empty at Christmas and in August. At 30 a beach route swings roughly a
+    * third either side of its average across the year. */
+  val seasonStrengthPercent: Int = int("simulation.seasonStrengthPercent", 0)
+
   /** Whether things happen to the world now and again.
     *
     * The game's event system is used for exactly one thing - the Olympics,
