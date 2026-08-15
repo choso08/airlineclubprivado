@@ -671,6 +671,7 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
             "deposit" -> AirplanePaymentPlan.instalmentDeposit(model.price),
             "weekly" -> AirplanePaymentPlan.instalmentWeeklyPayment(model.price),
             "weeks" -> AirplanePaymentPlan.instalmentWeeks,
+            "ratePercent" -> BigDecimal(AirplanePaymentPlan.instalmentAnnualRatePercent).setScale(1, BigDecimal.RoundingMode.HALF_UP),
             "total" -> AirplanePaymentPlan.instalmentTotal(model.price))))
     }
   }

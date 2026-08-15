@@ -261,10 +261,10 @@ function loadFinancingTerms(modelId) {
             }
             $('#buyAirplaneModal').data("financing", terms)
             $('#buyAirplaneModal .leaseTerms').text(
-                "$" + commaSeparateNumber(terms.lease.deposit) + " now, then $" + commaSeparateNumber(terms.lease.weekly) + " a week - never yours")
+                "$" + commaSeparateNumber(terms.lease.deposit) + " + $" + commaSeparateNumber(terms.lease.weekly) + "/week, never yours")
             $('#buyAirplaneModal .instalmentTerms').text(
-                "$" + commaSeparateNumber(terms.instalments.deposit) + " now, then $" + commaSeparateNumber(terms.instalments.weekly) +
-                " a week for " + terms.instalments.weeks + " weeks - yours at the end ($" + commaSeparateNumber(terms.instalments.total) + " in total)")
+                "$" + commaSeparateNumber(terms.instalments.deposit) + " + $" + commaSeparateNumber(terms.instalments.weekly) +
+                "/week x " + terms.instalments.weeks + " (" + terms.instalments.ratePercent + "%), then yours")
             $('#buyAirplaneModal .financingOption').show()
             $('#buyAirplaneModal .leaseButton, #buyAirplaneModal .instalmentsButton').show()
         },
@@ -449,8 +449,8 @@ function promptBuyAirplane(modelId, condition, price, deliveryTime, explicitHome
                 var terms = $('#buyAirplaneModal').data("financing")
                 //Worth a warning: walking away from instalments loses everything
                 //paid so far, unlike a lease, which owes nothing once handed back.
-                var message = "Pay $" + commaSeparateNumber(terms.instalments.weekly) + " a week for " + terms.instalments.weeks +
-                    " weeks. Give the aircraft back before then and what you have paid is gone. Go ahead?"
+                var message = "$" + commaSeparateNumber(terms.instalments.weekly) + " a week for " + terms.instalments.weeks +
+                    " weeks. Give it back before then and what you paid is gone. Go ahead?"
                 promptConfirm(message, function() {
                     financeAirplane(modelId, quantity, options.homeAirportId, options.configurationId, 'INSTALMENTS')
                 })

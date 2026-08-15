@@ -56,6 +56,32 @@ object AirplanePaymentPlan {
   def instalmentWeeks : Int = Math.max(1, GameConfig.instalmentWeeks)
 
   /**
+    * The yearly interest on instalments, as a percentage.
+    *
+    * It follows the bank's rate rather than sitting at a number of its own,
+    * because it is the same money market - and it sits below it, because this
+    * is a loan against the aircraft itself. Miss the payments and the aircraft
+    * goes back; the bank has no such comfort, and charges for it.
+    *
+    * Fixed at the moment the plan is signed: the weekly payment is written
+    * into the plan and never moves afterwards. What varies is the rate you are
+    * offered, not the one you already took.
+    */
+  def instalmentAnnualRatePercent : Double = {
+    val bankRate =
+      try {
+        com.patson.data.BankSource.loadLoanInterestRateByCycle(com.patson.data.CycleSource.loadCycle()) match {
+          case Some(rate) => rate.annualRate.toDouble * 100
+          case None => GameConfig.loanInterestRate * 100
+        }
+      } catch {
+        case _ : Throwable => GameConfig.loanInterestRate * 100
+      }
+    //never free money, however low the bank goes
+    Math.max(1.0, bankRate - GameConfig.instalmentRateBelowBankPercent)
+  }
+
+  /**
     * Instalments: the weekly payment on what is left after the deposit.
     *
     * The same arithmetic a bank does - equal payments that cover the interest
@@ -65,7 +91,7 @@ object AirplanePaymentPlan {
   def instalmentWeeklyPayment(price : Int) : Long = {
     val borrowed = price - instalmentDeposit(price)
     val weeks = instalmentWeeks
-    val weeklyRate = GameConfig.instalmentAnnualRatePercent / 100.0 / 52
+    val weeklyRate = instalmentAnnualRatePercent / 100.0 / 52
     if (weeklyRate <= 0) {
       Math.max(1L, Math.round(borrowed.toDouble / weeks))
     } else {
