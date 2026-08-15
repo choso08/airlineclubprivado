@@ -194,6 +194,26 @@ object GameConfig {
     * upgrade a headquarters at all. */
   val officeOvertimePercent: Int = int("rules.officeOvertimePercent", 100)
 
+  /** How much passengers differ from one another in the price they will
+    * accept, as a percentage. 0 restores the old behaviour.
+    *
+    * Every passenger has a price above which they do not fly, and that limit
+    * was exactly the same for all of them - which is why there was a wall:
+    * measured, at 1.2 times the suggested fare 4% of them still flew, and at
+    * 1.3 times none did. Charging a little more did not cost you some
+    * passengers, it cost you all of them, so the price box had a right answer
+    * rather than a decision in it.
+    *
+    * With this on each group has its own limit, spread evenly this far either
+    * side of the old one - either side, so that the average is unchanged and
+    * the world does not simply become richer. Demand then slopes away instead
+    * of falling off a cliff: at 40, 1.2 times the fare keeps 13% and 1.3 times
+    * keeps 4%.
+    *
+    * Overcharging is not free even when they do fly: satisfaction is already
+    * nil at that price, so loyalty at that airport falls week after week. */
+  val priceElasticityPercent: Int = int("simulation.priceElasticityPercent", 0)
+
   /** How much the time of year moves demand, as a percentage. 0 is off.
     *
     * The game runs a calendar and then ignores it: demand in January is demand

@@ -154,7 +154,7 @@ object PassengerSimulation {
                  //val MIN_AIPLANE_SPEED = 300.0
                  //val linkClass = passengerGroup.preference.preferredLinkClass
 
-                 val rejection = getRouteRejection(pickedRoute, fromAirport, toAirport, passengerGroup.preference.preferredLinkClass)
+                 val rejection = getRouteRejection(pickedRoute, fromAirport, toAirport, passengerGroup.preference.preferredLinkClass, passengerSeed(passengerGroup, toAirport))
                  rejection match {
                    case None =>
                      synchronized {
@@ -265,7 +265,60 @@ object PassengerSimulation {
     val TOTAL_COST, LINK_COST, DISTANCE = Value
   }
 
-  def getRouteRejection(route: Route, fromAirport: Airport, toAirport: Airport, preferredLinkClass : LinkClass) : Option[RouteRejectionReason.Value] = {
+  /**
+    * How much more than the usual limit this particular group of passengers
+    * will put up with, as a multiplier of the limit.
+    *
+    * Everybody used to stop at exactly the same price, which is why a route
+    * went from half full to empty over a few euros. Here that limit is a
+    * different one for each group, spread evenly either side of the old one -
+    * so as the fare climbs, the share of people who still fly slopes away
+    * instead of hitting a wall.
+    *
+    * It has to be the SAME answer every time for the same passengers: a
+    * rejected group is offered again up to ten times per week, and a fresh
+    * coin toss each time would let almost everybody through in the end. So it
+    * is worked out from who they are rather than drawn at random, which also
+    * makes a week repeatable.
+    */
+  /**
+    * Who these passengers are, as one number.
+    *
+    * Cheap on purpose - this is asked for millions of times a week, so it uses
+    * a handful of numbers the objects already carry rather than hashing a
+    * whole airport. Never 0, which is the value that means "the old
+    * behaviour" and is what the tests pass.
+    */
+  def passengerSeed(passengerGroup : PassengerGroup, toAirport : Airport) : Int = {
+    val preference = passengerGroup.preference
+    val whichKind = preference match {
+      case appeal : AppealPreference => appeal.id //already unique per group
+      case other => (other.priceSensitivity * 100).toInt
+    }
+    val seed = (passengerGroup.fromAirport.id * 31 + toAirport.id) * 31 +
+      (whichKind * 7 + preference.preferredLinkClass.level * 3 + preference.getPreferenceType.id)
+    if (seed == 0) 1 else seed
+  }
+
+  private def overpayTolerance(seed : Int) : Double = {
+    val elasticity = GameConfig.priceElasticityPercent
+    if (elasticity <= 0 || seed == 0) {
+      1.0
+    } else {
+      //Knuth's multiplier: neighbouring seeds land far apart, so two groups
+      //flying out of the same airport do not get near enough the same answer.
+      val mixed = seed * 0x9E3779B1
+      val fraction = ((mixed >>> 8) & 0xFFFF).toDouble / 0x10000
+      //Centred on the old limit rather than sitting above it: half of them put
+      //up with more, half with less. Spreading upwards only would have raised
+      //the limit for everybody, which is not elasticity, it is just cheaper
+      //flying - every airline in the world would have carried more passengers
+      //at the same fares, the AI ones included.
+      1 + elasticity / 100.0 * (fraction - 0.5)
+    }
+  }
+
+  def getRouteRejection(route: Route, fromAirport: Airport, toAirport: Airport, preferredLinkClass : LinkClass, passengerSeed : Int = 0) : Option[RouteRejectionReason.Value] = {
     import RouteRejectionReason._
     val routeDisplacement = Util.calculateDistance(fromAirport.latitude, fromAirport.longitude, toAirport.latitude, toAirport.longitude).toInt
     val routeDistance = route.links.foldLeft(0)(_ + _.link.distance)
@@ -281,7 +334,10 @@ object PassengerSimulation {
         1
       }
 
-    val routeAffordableCost = Pricing.computeStandardPrice(routeDisplacement, Computation.getFlightType(fromAirport, toAirport, routeDisplacement), preferredLinkClass) * ROUTE_COST_TOLERANCE_FACTOR * incomeAdjustedFactor
+    //what these particular passengers will stretch to, over the usual limit
+    val stretch = overpayTolerance(passengerSeed)
+
+    val routeAffordableCost = Pricing.computeStandardPrice(routeDisplacement, Computation.getFlightType(fromAirport, toAirport, routeDisplacement), preferredLinkClass) * ROUTE_COST_TOLERANCE_FACTOR * incomeAdjustedFactor * stretch
     if (route.totalCost > routeAffordableCost) {
       //println(s"rejected affordable: $routeAffordableCost, cost : , ${route.totalCost}  $route" )
       return Some(TOTAL_COST)
@@ -292,7 +348,7 @@ object PassengerSimulation {
       val link = linkConsideration.link
 
 
-      val linkAffordableCost = link.standardPrice(preferredLinkClass) * LINK_COST_TOLERANCE_FACTOR * incomeAdjustedFactor
+      val linkAffordableCost = link.standardPrice(preferredLinkClass) * LINK_COST_TOLERANCE_FACTOR * incomeAdjustedFactor * stretch
 
       linkConsideration.cost > linkAffordableCost
     }
