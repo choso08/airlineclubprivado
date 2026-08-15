@@ -5,7 +5,7 @@ import com.patson.data.{AirlineSource, AirplanePaymentPlanSource, AirplaneSource
 import com.patson.data.airplane.ModelSource
 import com.patson.model.airplane.{Model, _}
 import com.patson.model._
-import play.api.libs.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString, JsValue, Json, Writes}
+import play.api.libs.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Json, Writes}
 import play.api.mvc._
 
 import scala.collection.mutable.ListBuffer
@@ -657,6 +657,44 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
             }
           }
     }
+  }
+
+  /**
+    * Everything an airline is paying for by the week, in one place.
+    *
+    * A lease and a set of instalments are commitments that run for months, and
+    * until now the only way to see one was to open each aircraft in turn -
+    * which is no way to answer "how much of my week is already spoken for".
+    */
+  def getPaymentPlans(airlineId : Int) = AuthenticatedAirline(airlineId) { request =>
+    val currentCycle = CycleSource.loadCycle()
+    val plans = AirplanePaymentPlanSource.loadByAirline(airlineId)
+
+    val entries = plans.flatMap { plan =>
+      AirplaneSource.loadAirplaneById(plan.airplaneId).map { airplane =>
+        val weeksPaid = Math.max(0, currentCycle - plan.startCycle)
+        Json.obj(
+          "airplaneId" -> airplane.id,
+          "name" -> airplane.model.name,
+          "condition" -> Math.round(airplane.condition),
+          "kind" -> plan.kind.toString,
+          "weeklyPayment" -> plan.weeklyPayment,
+          "weeksRemaining" -> plan.weeksRemaining,
+          "weeksPaid" -> weeksPaid,
+          "paidSoFar" -> weeksPaid * plan.weeklyPayment,
+          //A lease never ends, so there is nothing left to pay on it - only a
+          //weekly cost for as long as it is kept
+          "leftToPay" -> (if (plan.isLease) JsNull else JsNumber(BigDecimal(Math.max(0, plan.weeksRemaining) * plan.weeklyPayment))),
+          "onRoute" -> !AirplaneSource.loadAirplaneLinkAssignmentsByAirplaneId(airplane.id).assignments.isEmpty)
+      }
+    }
+
+    Ok(Json.obj(
+      "enabled" -> GameConfig.aircraftFinancingEnabled,
+      "weeklyTotal" -> plans.map(_.weeklyPayment).sum,
+      "vatCredit" -> TaxCreditSource.get(airlineId),
+      "vatPercent" -> GameConfig.vatPercent,
+      "plans" -> entries))
   }
 
   /**

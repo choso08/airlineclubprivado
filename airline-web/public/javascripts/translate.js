@@ -1147,6 +1147,16 @@
       'Not enough cash for the deposit': 'Nao tens dinheiro para a entrada',
       'Leasing and instalments are switched off in this world': 'Aluguer e prestacoes estao desligados neste mundo',
 
+      // ---------------------------------------------------------- payments
+      'Payments': 'Pagamentos',
+      'Leaving every week': 'Sai todas as semanas',
+      'VAT still to reclaim': 'IVA ainda por recuperar',
+      'Leased': 'Alugado',
+      'On instalments': 'A prestacoes',
+      'for as long as you keep it': 'enquanto o mantiveres',
+      'Nothing on a payment plan. Aircraft bought outright do not appear here.':
+        'Nada a pagamento. Avioes comprados de uma vez nao aparecem aqui.',
+
       // ------------------------------------------------------------- taxes
       'Tax on route profit:': 'Imposto sobre o lucro das rotas:',
 
