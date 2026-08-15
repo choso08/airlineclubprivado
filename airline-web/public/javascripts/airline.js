@@ -712,6 +712,44 @@ function flightMarkerHeading(from, to) {
 	return Math.atan2(dx, dy) * 180 / Math.PI
 }
 
+/**
+ * How far to the side of the line an aircraft flies, in degrees.
+ *
+ * Outbound and inbound aircraft used to be drawn on exactly the same line, so
+ * on a busy route they met in the middle and sat on top of each other pointing
+ * opposite ways - which reads as a cross, not as two aeroplanes. Real traffic
+ * is separated by direction for the same reason, and each keeps right.
+ */
+var FLIGHT_TRACK_OFFSET = 0.13
+
+/** The same point, moved to the right of the given heading. */
+function offsetToTheRight(position, heading, degrees) {
+	var lat = typeof position.lat === 'function' ? position.lat() : position.lat
+	var lng = typeof position.lng === 'function' ? position.lng() : position.lng
+	if (typeof lat !== 'number' || typeof lng !== 'number') return position
+
+	var radians = (heading + 90) * Math.PI / 180
+	//lat shrinks the further from the equator, so the sideways step in
+	//longitude has to grow to stay the same distance on screen
+	var shrink = Math.max(0.2, Math.cos(lat * Math.PI / 180))
+	return new google.maps.LatLng(lat + degrees * Math.cos(radians), lng + degrees * Math.sin(radians) / shrink)
+}
+
+/**
+ * The most aeroplanes drawn for one route.
+ *
+ * A route flown two hundred times a week cannot be drawn two hundred times -
+ * it becomes a smear on the map and twenty position calculations a second for
+ * each of them. Above this the departures are sampled evenly, so the route
+ * still moves to its own timetable, with fewer aircraft showing it.
+ *
+ * Set with AIRLINE_MAP_MAX_FLIGHTS.
+ */
+function maxFlightMarkers() {
+	var configured = parseInt(window.MAP_MAX_FLIGHTS)
+	return (isNaN(configured) || configured < 1) ? 4 : configured
+}
+
 /** Departure times, in minutes from Sunday 00:00, exactly as the game places them. */
 function flightDepartureMinutes(link) {
 	var frequency = link.frequency
@@ -806,6 +844,16 @@ function drawFlightMarker(line, link) {
 	if (departures.length === 0) {
 		return
 	}
+	var markerLimit = maxFlightMarkers()
+	if (departures.length > markerLimit) {
+		//evenly, so what is drawn is still spread across the whole week
+		var sampled = []
+		var step = departures.length / markerLimit
+		for (var s = 0; s < markerLimit; s++) {
+			sampled.push(departures[Math.floor(s * step)])
+		}
+		departures = sampled
+	}
 
 	// One marker per departure. A route flying twice a week has two aircraft
 	// on the map at the times it actually flies, and nothing in between -
@@ -855,20 +903,24 @@ function drawFlightMarker(line, link) {
 			}
 			var start = progress.outbound ? from : to
 			var end = progress.outbound ? to : from
-			marker.setPosition(interpolateAlongDrawnLine(start, end, progress.fraction))
+
+			// On an arc the heading changes the whole way along, so it is
+			// taken from where the aircraft is to a little further on rather
+			// than once for the leg.
+			var here = interpolateAlongDrawnLine(start, end, progress.fraction)
+			var ahead = interpolateAlongDrawnLine(start, end, Math.min(1, progress.fraction + 0.02))
+			var heading = flightMarkerHeading(here, ahead)
+
+			// Keeping right of the line means the two directions pass beside
+			// each other instead of through each other.
+			marker.setPosition(offsetToTheRight(here, heading, FLIGHT_TRACK_OFFSET))
 			marker.flightInfo = { link: link, progress: progress }
 
 			var justAppeared = !marker.getMap()
 			if (justAppeared) marker.setMap(map)
 
-			// On an arc the heading changes the whole way along, so it is
-			// taken from where the aircraft is to a little further on rather
-			// than once for the leg.
 			if (marker.setRotation) {
-				var ahead = Math.min(1, progress.fraction + 0.02)
-				marker.setRotation(flightMarkerHeading(
-					interpolateAlongDrawnLine(start, end, progress.fraction),
-					interpolateAlongDrawnLine(start, end, ahead)))
+				marker.setRotation(heading)
 			}
 
 		})

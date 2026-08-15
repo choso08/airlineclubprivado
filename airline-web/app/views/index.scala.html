@@ -138,6 +138,8 @@
 
 	  @* How fast the aircraft cross the map, as a fraction of real speed. *@
 	  window.MAP_FLIGHT_SPEED = @configuration.getOptional[Double]("map.flightSpeed").getOrElse(0.5);
+	  @* The most aircraft drawn on one route at a time. *@
+	  window.MAP_MAX_FLIGHTS = @configuration.getOptional[Int]("map.maxFlightsDrawn").getOrElse(4);
 	</script>
 	@* Must load after the panels' own scripts so its observer is watching by
 	   the time they start building anything. *@
