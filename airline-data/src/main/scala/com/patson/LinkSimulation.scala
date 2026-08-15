@@ -186,6 +186,14 @@ object LinkSimulation {
       link => {
         var i = 0
         val assignedInServiceAirplanes = link.getAssignedAirplanes().filter(_._1.isReady)
+
+        // A strike or an inspection at this airline, if there is one on. It
+        // works through the delays the game already simulates rather than
+        // through anything of its own: those already cost compensation,
+        // already disappoint passengers, and already show on the flight card.
+        val cancellationFactor = ActiveIncidents.cancellationMultiplier(link.airline.id)
+        val delayFactor = ActiveIncidents.delayMultiplier(link.airline.id)
+
         for ( i <- 0 until link.frequency) {
           var airplaneCount : Int = assignedInServiceAirplanes.size
           if (airplaneCount > 0) {
@@ -193,20 +201,27 @@ object LinkSimulation {
             val errorValue = ThreadLocalRandom.current().nextDouble()
             val conditionMultiplier = (Airplane.MAX_CONDITION - airplane.condition).toDouble / Airplane.MAX_CONDITION
 
+            // An incident on an otherwise perfect fleet has to be able to
+            // cause something: at full condition the multiplier above is 0,
+            // and anything times 0 is a week in which the strike changed
+            // nothing at all.
+            val incidentFloor = if (cancellationFactor > 1 || delayFactor > 1) 0.3 else 0.0
+            val wear = Math.max(conditionMultiplier, incidentFloor)
+
             if (airplane.condition > Airplane.CRITICAL_CONDITION) { //small chance of delay and cancellation
-              if (errorValue < cancellationNormalThreshold * conditionMultiplier) {
+              if (errorValue < cancellationNormalThreshold * wear * cancellationFactor) {
                 link.cancellationCount = link.cancellationCount + 1
-              } else if (errorValue < majorDelayNormalThreshold * conditionMultiplier) {
+              } else if (errorValue < majorDelayNormalThreshold * wear * delayFactor) {
                 link.majorDelayCount = link.majorDelayCount + 1
-              } else if (errorValue < minorDelayNormalThreshold * conditionMultiplier) {
+              } else if (errorValue < minorDelayNormalThreshold * wear * delayFactor) {
                 link.minorDelayCount = link.minorDelayCount + 1
               }
             } else {
-              if (errorValue < cancellationCriticalThreshold * conditionMultiplier) {
+              if (errorValue < cancellationCriticalThreshold * wear * cancellationFactor) {
                 link.cancellationCount = link.cancellationCount + 1
-              } else if (errorValue < majorDelayCriticalThreshold * conditionMultiplier) {
+              } else if (errorValue < majorDelayCriticalThreshold * wear * delayFactor) {
                 link.majorDelayCount = link.majorDelayCount + 1
-              } else if (errorValue < minorDelayCriticalThreshold * conditionMultiplier) {
+              } else if (errorValue < minorDelayCriticalThreshold * wear * delayFactor) {
                 link.minorDelayCount = link.minorDelayCount + 1
               }
             }
@@ -331,8 +346,10 @@ object LinkSimulation {
             else flightsFlown.toDouble * assignment.frequency / assignedFrequency
           computeFuelCostForFlights(flightLink, airplane.model.fuelBurn, loadFactor, flightsOfThisAirplane)
       }.sum
-      //a fuel crisis, on the weeks there is one - see WorldEventSimulation
-      (total * ActiveWorldEvents.fuelCostMultiplier).toInt
+      //a fuel crisis, on the weeks there is one - see WorldEventSimulation.
+      //Held inside the same band as everything else this fork added: a crisis
+      //is a bad month, not a bankruptcy.
+      (total * GameConfig.limitAddedSwing(ActiveWorldEvents.fuelCostMultiplier)).toInt
     }
 
 

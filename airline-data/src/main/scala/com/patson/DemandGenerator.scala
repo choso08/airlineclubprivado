@@ -294,14 +294,18 @@ object DemandGenerator {
       }
 
       // Whatever is happening in the world this week - a country everybody
-      // suddenly wants to visit, an airport nobody can rely on. Exactly 1.0,
-      // and free, on the weeks when nothing is happening, which is most of them.
-      adjustedDemand = adjustedDemand * ActiveWorldEvents.demandMultiplier(fromAirport, toAirport)
-
-      // And the time of year: people go on holiday in the summer, and the
-      // summer is a different month depending on which half of the world the
-      // beach is in. Exactly 1.0 when seasons are switched off.
-      adjustedDemand = adjustedDemand * Seasons.demandMultiplier(fromAirport, toAirport, passengerType)
+      // suddenly wants to visit, an airport nobody can rely on - and the time
+      // of year, since people go on holiday in the summer and the summer is a
+      // different month depending on which half of the world the beach is in.
+      // Exactly 1.0, and free, on the weeks when neither is doing anything,
+      // which is most of them.
+      //
+      // Multiplied together and then held inside one band, so that a boom in a
+      // country whose summer it also happens to be cannot double a route. A
+      // week is supposed to have its own character, not its own economy.
+      adjustedDemand = adjustedDemand * GameConfig.limitAddedSwing(
+        ActiveWorldEvents.demandMultiplier(fromAirport, toAirport) *
+        Seasons.demandMultiplier(fromAirport, toAirport, passengerType))
 
       var firstClassDemand = (adjustedDemand * firstClassPercentage).toInt
       var businessClassDemand = (adjustedDemand * businessClassPercentage).toInt

@@ -44,6 +44,9 @@ object MainSimulation extends App {
 
   var currentWeek: Int = 0
 
+  //when the last week finished, for working out how long a week is taking
+  private var lastWeekEndedAt : Long = 0
+
 //  implicit val actorSystem = ActorSystem("rabbit-akka-stream")
 
 //  import actorSystem.dispatcher
@@ -55,7 +58,39 @@ object MainSimulation extends App {
   // How long the game may stand still before this process decides something is
   // wrong and plays a week itself: two whole weeks that never came, plus a
   // minute of margin so one slow cycle is never mistaken for a stopped game.
-  val STALL_MILLIS : Long = (CYCLE_DURATION.toLong * 2 + 60) * 1000
+  //
+  // A def rather than a val, and deliberately. This object extends App, so its
+  // fields are initialised in source order at startup - and mainFlow() is
+  // called further up this file than a val here would be defined. A val would
+  // therefore still be 0 when the supervisor first read it, every wait would
+  // look like a stall, and the game would quietly play a week a minute.
+  def stallMillis : Long = (cycleSecondsNow().toLong * 2 + 60) * 1000
+
+  /**
+    * How long a week should take right now.
+    *
+    * The night is slower if it has been set to be. A server runs all night for
+    * people who are asleep, and at three minutes a week that is a hundred and
+    * sixty weeks between going to bed and getting up - three years of a world
+    * nobody watched.
+    *
+    * Read fresh every time rather than once at startup, which is the whole
+    * point: the pace has to change at ten in the morning without anybody
+    * restarting anything.
+    */
+  def cycleSecondsNow() : Int = {
+    val night = GameConfig.nightCycleSeconds
+    if (night <= 0) {
+      CYCLE_DURATION
+    } else {
+      val hour = java.time.LocalTime.now().getHour
+      val from = GameConfig.nightFromHour
+      val to = GameConfig.nightToHour
+      //a window that crosses midnight is still one window
+      val quiet = if (from <= to) hour >= from && hour < to else hour >= from || hour < to
+      if (quiet) night else CYCLE_DURATION
+    }
+  }
 
   def mainFlow() = {
     val supervisor = actorSystem.actorOf(Props(new SimulationSupervisor))
@@ -67,9 +102,25 @@ object MainSimulation extends App {
     // starting is enough - stopped every week after it, for ever, with the
     // process still running and nothing in the log to say so. The supervisor
     // outlives its worker, so the tick always has somewhere to land.
-    actorSystem.scheduler.schedule(Duration.Zero, Duration(CYCLE_DURATION, TimeUnit.SECONDS)) {
-      supervisor ! Start
+    //
+    // And it schedules itself one week at a time rather than at a fixed rate,
+    // because the length of a week is not fixed: the night can be set to run
+    // slower, and that has to take effect at the hour it is set for, without
+    // anybody restarting anything.
+    def scheduleNextWeek() : Unit = {
+      val seconds = cycleSecondsNow()
+      actorSystem.scheduler.scheduleOnce(Duration(seconds, TimeUnit.SECONDS)) {
+        try {
+          supervisor ! Start
+        } finally {
+          //whatever happened, there must always be a next week
+          scheduleNextWeek()
+        }
+      }
     }
+
+    supervisor ! Start //one straight away, as it always did
+    scheduleNextWeek()
 
     // Checked often enough to feel immediate and cheaply enough not to matter:
     // one stat() every two seconds. The file is deleted before the cycle is
@@ -119,6 +170,9 @@ object MainSimulation extends App {
 
       println("World events")
       CycleProfiler.phase("world events") { WorldEventSimulation.simulate(cycle, airports) }
+
+      println("Incidents")
+      CycleProfiler.phase("incidents") { IncidentSimulation.simulate(cycle) }
 
       println("Event simulation")
       CycleProfiler.phase("events") { EventSimulation.simulate(cycle, airports) }
@@ -251,7 +305,7 @@ object MainSimulation extends App {
 
       case StallCheck =>
         val standingStill = System.currentTimeMillis() - lastTickHandled
-        if (status != SimulationStatus.IN_PROGRESS && standingStill > STALL_MILLIS) {
+        if (status != SimulationStatus.IN_PROGRESS && standingStill > stallMillis) {
           println(s"No week has been played for ${standingStill / 1000} seconds - playing one now.")
           //Give it a full window before trying again, rather than every minute
           lastTickHandled = System.currentTimeMillis()
@@ -343,6 +397,20 @@ object MainSimulation extends App {
         CycleSource.setCycle(currentWeek)
         status = SimulationStatus.WAITING_CYCLE_START
         postCycle(currentWeek) //post cycle do some quick updates, no long simulation
+
+        //Write down when this week finished, so that the web site can start a
+        //clock without having to ask this process anything. When the link
+        //between the two is down - or the simulation has just restarted and
+        //the web site is holding a dead address - nothing answers, and a page
+        //opens with no clock and no aircraft moving.
+        try {
+          val previousEnd = lastWeekEndedAt
+          lastWeekEndedAt = endTime
+          val gap = if (previousEnd > 0) endTime - previousEnd else CYCLE_DURATION.toLong * 1000
+          CycleTimingSource.save(currentWeek - 1, endTime, gap)
+        } catch {
+          case NonFatal(e) => println("Could not write down when the week finished: " + e.getMessage)
+        }
 
         //notify the websockets via EventStream
         println("Publish Cycle Complete message")

@@ -225,9 +225,13 @@ object GameConfig {
   /** Instalments: how many weeks of payments. 104 is two in-game years. */
   val instalmentWeeks: Int = int("rules.instalmentWeeks", 104)
 
-  /** Instalments: the yearly interest on what is still owed. The same order as
-    * the bank's, since it is the same favour being asked. */
-  val instalmentAnnualRatePercent: Int = int("rules.instalmentAnnualRatePercent", 12)
+  /** Instalments: how far below the bank's rate the interest sits, in points.
+    *
+    * It follows the bank rather than sitting at a number of its own, because
+    * it is the same money market - and below it, because this is a loan
+    * against the aircraft itself: miss the payments and the aircraft goes
+    * back. The bank has no such comfort and charges for it. */
+  val instalmentRateBelowBankPercent: Double = double("rules.instalmentRateBelowBankPercent", 3)
 
   /** How much passengers differ from one another in the price they will
     * accept, as a percentage. 0 restores the old behaviour.
@@ -260,6 +264,65 @@ object GameConfig {
     * empty at Christmas and in August. At 30 a beach route swings roughly a
     * third either side of its average across the year. */
   val seasonStrengthPercent: Int = int("simulation.seasonStrengthPercent", 0)
+
+  /** The most anything added to this fork may move demand or costs, as a
+    * percentage, however many of them happen at once.
+    *
+    * Seasons, world events and everything else here are meant to give a week
+    * its own character, not to decide it. A summer that doubles a route and a
+    * winter that empties it is not a season, it is a lottery - and two of them
+    * lining up in the same week would be worse still.
+    *
+    * So the whole lot is multiplied together and then held inside this band.
+    * At 30 the very worst week this fork can produce is seven tenths of an
+    * ordinary one, and the very best is thirteen tenths. */
+  val maxAddedSwingPercent: Int = int("simulation.maxAddedSwingPercent", 30)
+
+  /** Hold a multiplier inside that band. */
+  def limitAddedSwing(multiplier : Double) : Double = {
+    val swing = Math.max(0, maxAddedSwingPercent) / 100.0
+    Math.max(1 - swing, Math.min(1 + swing, multiplier))
+  }
+
+  /** Seconds a week takes during the quiet hours. 0 keeps one pace all day.
+    *
+    * A private server runs all night for people who are asleep. At three
+    * minutes a week that is a hundred and sixty weeks between going to bed and
+    * waking up - three years of a world nobody watched. Slowing the night down
+    * is the difference between coming back to your airline and coming back to
+    * a stranger's. */
+  val nightCycleSeconds: Int = int("simulation.nightCycleSeconds", 0)
+
+  /** The quiet hours, on the server's own clock, from one and up to the other.
+    * Crossing midnight is allowed: 23 to 10 is a night. */
+  val nightFromHour: Int = int("simulation.nightFromHour", 0)
+  val nightToHour: Int = int("simulation.nightToHour", 10)
+
+  /** Whether things go wrong at one airline at a time.
+    *
+    * World events give everybody something to react to at once, but they
+    * cannot single anybody out - and a game between five people needs that
+    * too: a week where one of you is in trouble and the other four can see it.
+    *
+    * Not bad luck landing on whoever it feels like: the chance is worked out
+    * from the state of the fleet, so new aircraft almost never have an
+    * incident and worn out ones have them regularly. */
+  val incidentsEnabled: Boolean = boolean("simulation.incidentsEnabled", false)
+
+  /** The chance, per real airline per week, at an average fleet - as a
+    * percentage. A new fleet is a third of this, a worn out one twice it. */
+  val incidentChancePercent: Double = double("simulation.incidentChancePercent", 2)
+
+  /** How long a strike or an inspection lasts, in weeks. A breakdown is always
+    * a single week - it is the repair bill that hurts, not a spell. */
+  val incidentMinWeeks: Int = int("simulation.incidentMinWeeks", 2)
+  val incidentMaxWeeks: Int = int("simulation.incidentMaxWeeks", 5)
+
+  /** How hard it hits, as a percentage: how much likelier delays and
+    * cancellations become, and how much of an aircraft's value a repair
+    * costs. */
+  val incidentMinStrengthPercent: Int = int("simulation.incidentMinStrengthPercent", 100)
+  val incidentMaxStrengthPercent: Int = int("simulation.incidentMaxStrengthPercent", 300)
 
   /** Whether things happen to the world now and again.
     *
