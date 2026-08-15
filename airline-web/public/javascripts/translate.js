@@ -1147,6 +1147,21 @@
       'Not enough cash for the deposit': 'Nao tens dinheiro para a entrada',
       'Leasing and instalments are switched off in this world': 'Aluguer e prestacoes estao desligados neste mundo',
 
+      // -------------------------------------------------------------- cargo
+      'Cargo': 'Carga',
+      'Break it': 'Desistir',
+      'On offer': 'Em oferta',
+      'Running': 'A decorrer',
+      'Completed': 'Cumprido',
+      'Cancelled': 'Cancelado',
+      'Lapsed': 'Caducou',
+      'Cargo is switched off in this world.': 'A carga esta desligada neste mundo.',
+      'Nothing offered yet. Offers turn up on routes you already fly.':
+        'Ainda nao ha ofertas. Aparecem em rotas que ja voas.',
+      'That contract is no longer on the table': 'Esse contrato ja nao esta em cima da mesa',
+      'That contract is not running': 'Esse contrato nao esta a decorrer',
+      'Not your contract': 'Esse contrato nao e teu',
+
       // ---------------------------------------------------------- olympics
       'Olympics Voting Active': 'Votação olímpica a decorrer',
       'Unclaimed Olympics passenger reward (': 'Prémio olímpico de passageiros por receber (',

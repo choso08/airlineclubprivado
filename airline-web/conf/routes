@@ -252,6 +252,12 @@ GET      /achievements             controllers.AchievementApplication.getAchieve
 GET      /airlines/:airlineId/deals                       controllers.AirlineDealApplication.getDeals(airlineId : Int)
 GET      /airlines/:airlineId/deals/counterparties        controllers.AirlineDealApplication.getCounterparties(airlineId : Int)
 GET      /airlines/:airlineId/deals/offerable-airplanes   controllers.AirlineDealApplication.getOfferableAirplanes(airlineId : Int)
+
+# Cargo contracts
+GET      /airlines/:airlineId/cargo-contracts   controllers.CargoApplication.getContracts(airlineId : Int)
+PUT      /airlines/:airlineId/cargo-contracts/:contractId/accept   controllers.CargoApplication.acceptContract(airlineId : Int, contractId : Int)
+PUT      /airlines/:airlineId/cargo-contracts/:contractId/decline   controllers.CargoApplication.declineContract(airlineId : Int, contractId : Int)
+PUT      /airlines/:airlineId/cargo-contracts/:contractId/cancel   controllers.CargoApplication.cancelContract(airlineId : Int, contractId : Int)
 PUT      /airlines/:airlineId/deals                       controllers.AirlineDealApplication.createDeal(airlineId : Int)
 PUT      /airlines/:airlineId/deals/:dealId/accept        controllers.AirlineDealApplication.acceptDeal(airlineId : Int, dealId : Int)
 PUT      /airlines/:airlineId/deals/:dealId/decline       controllers.AirlineDealApplication.declineDeal(airlineId : Int, dealId : Int)

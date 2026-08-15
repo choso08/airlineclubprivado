@@ -298,6 +298,27 @@ object GameConfig {
   val nightFromHour: Int = int("simulation.nightFromHour", 0)
   val nightToHour: Int = int("simulation.nightToHour", 10)
 
+  /** Whether freight can be contracted for.
+    *
+    * An aircraft's hold flies empty every week of its life here, and the only
+    * thing an airline can sell is a seat. Cargo arrives as contracts rather
+    * than as money quietly added to every route, so that taking one is a
+    * decision: hold space promised away on a route that now has to keep
+    * flying, paid for steadily whatever the passengers do. */
+  val cargoEnabled: Boolean = boolean("simulation.cargoEnabled", false)
+
+  /** What a tonne of freight is worth over a kilometre. */
+  val cargoRatePerTonneKm: Double = double("simulation.cargoRatePerTonneKm", 2.0)
+
+  /** The chance each week, per airline, of another offer turning up, and how
+    * many may sit on the table unanswered. */
+  val cargoOfferChancePercent: Int = int("simulation.cargoOfferChancePercent", 25)
+  val cargoMaxOffers: Int = int("simulation.cargoMaxOffers", 3)
+
+  /** How long a contract runs, in weeks. */
+  val cargoMinWeeks: Int = int("simulation.cargoMinWeeks", 8)
+  val cargoMaxWeeks: Int = int("simulation.cargoMaxWeeks", 26)
+
   /** Whether things go wrong at one airline at a time.
     *
     * World events give everybody something to react to at once, but they

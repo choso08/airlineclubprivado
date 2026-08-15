@@ -23,7 +23,7 @@ object AirlineSimulation {
   val BANKRUPTCY_CASH_THRESHOLD = -10000000 //-10M
   val MAX_AIRPORT_CHAMPION_BOOST_ENTRIES = 120 //per airline, how many airport champ entries can it add up for reputation boost
 
-  def airlineSimulation(cycle: Int, flightLinkResult : List[LinkConsumptionDetails], loungeResult : scala.collection.immutable.Map[Lounge, LoungeConsumptionDetails], airplanes : List[Airplane]) = {
+  def airlineSimulation(cycle: Int, flightLinkResult : List[LinkConsumptionDetails], loungeResult : scala.collection.immutable.Map[Lounge, LoungeConsumptionDetails], airplanes : List[Airplane], cargoEarnings : immutable.Map[Int, Long] = immutable.Map.empty) = {
     //compute profit
     val allAirlines = AirlineSource.loadAllAirlines(true)
     val allLinks = LinkSource.loadAllLinks(LinkSource.FULL_LOAD)
@@ -236,11 +236,17 @@ object AirlineSimulation {
         //risk for a label.
         val airplanePayments = weeklyPaymentByAirlineId.getOrElse(airline.id, 0L)
 
-        othersSummary.put(OtherIncomeItemType.ASSET_EXPENSE, -1 * (assetExpense + airplanePayments))
-        othersSummary.put(OtherIncomeItemType.ASSET_REVENUE, assetRevenue)
+        //Freight carried this week, or forfeited for want of room. It joins
+        //the asset line for the same reason the aircraft payments do: the
+        //income statement's columns are fixed in the database, and adding one
+        //would mean altering the table of every world that already exists.
+        val cargo = cargoEarnings.getOrElse(airline.id, 0L)
 
-        totalCashExpense += assetExpense + airplanePayments
-        totalCashRevenue += assetRevenue
+        othersSummary.put(OtherIncomeItemType.ASSET_EXPENSE, -1 * (assetExpense + airplanePayments + (if (cargo < 0) -cargo else 0L)))
+        othersSummary.put(OtherIncomeItemType.ASSET_REVENUE, assetRevenue + (if (cargo > 0) cargo else 0L))
+
+        totalCashExpense += assetExpense + airplanePayments + (if (cargo < 0) -cargo else 0L)
+        totalCashRevenue += assetRevenue + (if (cargo > 0) cargo else 0L)
 
 
         //calculate extra cash flow due to difference in fuel cost

@@ -192,7 +192,9 @@ object MainSimulation extends App {
       println("Airplane simulation")
       val airplanes = CycleProfiler.phase("airplanes") { AirplaneSimulation.airplaneSimulation(cycle) }
       println("Airline simulation")
-      CycleProfiler.phase("airlines") { AirlineSimulation.airlineSimulation(cycle, flightLinkResult, loungeResult, airplanes) }
+      println("Cargo")
+      val cargoEarnings = CycleProfiler.phase("cargo") { CargoSimulation.simulate(cycle, flightLinkResult) }
+      CycleProfiler.phase("airlines") { AirlineSimulation.airlineSimulation(cycle, flightLinkResult, loungeResult, airplanes, cargoEarnings) }
       println("Achievements")
       CycleProfiler.phase("achievements") { AchievementSimulation.simulate(cycle, flightLinkResult) }
 
