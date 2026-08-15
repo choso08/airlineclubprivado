@@ -124,10 +124,13 @@ Comprar era a única maneira de ter um avião.
 
 - **Alugar**: 10% de entrada, 18% do preço por ano, para sempre, e o avião nunca
   é teu. Devolves na semana em que deixas de precisar.
-- **Prestações**: 25% de entrada, 104 pagamentos semanais a 12% ao ano, e quando
-  pagas a última o avião passa a ser teu.
+- **Prestações**: 25% de entrada, 104 pagamentos semanais a uma taxa 3 pontos
+  abaixo do banco, e quando pagas a última o avião passa a ser teu.
 
-Nos dois casos o avião chega **na hora**, sem semanas de construção. Enquanto não
+Alugado, o avião chega **na hora** — é o avião de outra pessoa, já construído, e
+tê-lo hoje é metade da razão de alugar. A prestações é um avião novo comprado a
+crédito, por isso **demora a ser construído como uma compra normal** — senão
+prestações seria simplesmente melhor do que comprar. Enquanto não
 estiver pago não pode ser vendido, trocado, dado num negócio, nem conta como
 património.
 
@@ -159,6 +162,16 @@ a ser uma decisão em vez de uma conta. Medido em 200 semanas de 40 voos, com a
 frota em bom estado: normalmente 1,3 atrasos pequenos e 0,2 cancelamentos por
 semana; com uma inspeção 4,9 pequenos e 2,0 grandes; com uma greve 0,9
 cancelamentos. Alguns por cento da receita da semana.
+
+### Subsídios regionais
+No jogo cada rota tem de se pagar a si própria, por isso os aeroportos pequenos
+ficam vazios para sempre. Agora uma rota **entre dois aeroportos pequenos**
+(tamanho ≤ 3), **curta** (≤ 1500 km) e que **dá prejuízo** recebe de volta
+**metade do prejuízo da semana**, até 500.000.
+
+Nunca torna a rota lucrativa por si só, e uma rota que dá lucro não recebe nada
+— a ideia é tornar possível voar para o interior, não transformar isso num
+negócio melhor do que voar para as capitais.
 
 ### Impostos por país
 Uma rota passa a pagar imposto ao país **de onde parte** — que é sempre uma

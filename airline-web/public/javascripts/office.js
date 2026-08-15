@@ -434,6 +434,7 @@ function updateIncomeSheet(airlineIncome) {
         extraLine("othersAircraftPayments", -1 * (airlineIncome.othersAircraftPayments || 0))
         extraLine("othersRouteTax", -1 * (airlineIncome.othersRouteTax || 0))
         extraLine("othersCargo", airlineIncome.othersCargo || 0)
+        extraLine("othersSubsidy", airlineIncome.othersSubsidy || 0)
         $("#othersAssetRevenue").text('$' + commaSeparateNumber(airlineIncome.othersAssetRevenue))
         $("#othersServiceInvestment").text('$' + commaSeparateNumber(airlineIncome.othersServiceInvestment))
         $("#othersAdvertisement").text('$' + commaSeparateNumber(airlineIncome.othersAdvertisement))

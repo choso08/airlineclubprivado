@@ -522,6 +522,7 @@ implicit object AirlineIncomeWrite extends Writes[AirlineIncome] {
         "othersAircraftPayments" -> JsNumber(extrasFor(airlineIncome).map(_.aircraftPayments).sum),
         "othersRouteTax" -> JsNumber(extrasFor(airlineIncome).map(_.tax).sum),
         "othersCargo" -> JsNumber(extrasFor(airlineIncome).map(_.cargo).sum),
+        "othersSubsidy" -> JsNumber(extrasFor(airlineIncome).map(_.subsidy).sum),
         "othersAssetRevenue" -> JsNumber(airlineIncome.others.assetRevenue),
         "othersServiceInvestment" -> JsNumber(airlineIncome.others.serviceInvestment),
         "othersAdvertisement" -> JsNumber(airlineIncome.others.advertisement),

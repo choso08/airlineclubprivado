@@ -40,6 +40,26 @@ object Taxes {
     }
   }
 
+  /**
+    * What the state puts into a thin regional route this week.
+    *
+    * Only ever part of a loss, and only between two small airports over a
+    * short distance - a lifeline, not a business. A route that makes money
+    * gets nothing, and nothing here can turn a loss into a profit.
+    */
+  def subsidyFor(fromSize : Int, toSize : Int, distance : Int, profit : Long) : Long = {
+    if (!GameConfig.subsidyEnabled || profit >= 0) {
+      0L
+    } else if (fromSize > GameConfig.subsidyMaxAirportSize || toSize > GameConfig.subsidyMaxAirportSize) {
+      0L
+    } else if (distance > GameConfig.subsidyMaxDistance) {
+      0L
+    } else {
+      val share = Math.round(-profit * GameConfig.subsidyLossPercent / 100)
+      Math.min(share, GameConfig.subsidyWeeklyCap)
+    }
+  }
+
   /** The VAT on something bought, which can be reclaimed against tax owed. */
   def reclaimableVat(amount : Long) : Long = {
     if (GameConfig.vatPercent <= 0 || amount <= 0) 0L

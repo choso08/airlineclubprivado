@@ -1154,6 +1154,7 @@
       'of which aircraft payments:': 'dos quais pagamentos de avioes:',
       'of which country tax:': 'dos quais imposto do pais:',
       'of which freight:': 'dos quais carga:',
+      'of which regional subsidy:': 'dos quais subsidio regional:',
       'Last week, inside "Asset expense"': 'Na semana passada, dentro da "Despesa dos bens"',
       'Aircraft payments': 'Pagamentos de avioes',
       'Country tax on routes': 'Imposto do pais sobre as rotas',

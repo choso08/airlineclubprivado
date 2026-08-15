@@ -258,6 +258,18 @@ object AirlineSimulation {
         //not only about the passengers. Route by route, and only on profit: a
         //route that loses money is not taxed and does not shelter one that
         //earns.
+        //What the state puts into the thin regional routes. Only ever part of
+        //a loss, and only where the airports are small and the route short -
+        //otherwise every route in the world would be worth flying and none of
+        //them would be a decision.
+        val subsidy = flightLinkResultByAirline.get(airline.id) match {
+          case Some(consumptions) =>
+            consumptions.map { details =>
+              Taxes.subsidyFor(details.link.from.size, details.link.to.size, details.link.distance, details.profit)
+            }.sum
+          case None => 0L
+        }
+
         val taxBeforeCredit = flightLinkResultByAirline.get(airline.id) match {
           case Some(consumptions) =>
             consumptions.map { details =>
@@ -289,13 +301,13 @@ object AirlineSimulation {
 
         //The three of them written down separately as well, so the Payments
         //panel can take the asset line apart again - see WeeklyExtrasSource.
-        WeeklyExtrasSource.save(airline.id, WeeklyExtrasSource.WeeklyExtras(cycle, airplanePayments, cargo, routeTax, creditUsed))
+        WeeklyExtrasSource.save(airline.id, WeeklyExtrasSource.WeeklyExtras(cycle, airplanePayments, cargo, routeTax, creditUsed, subsidy))
 
         othersSummary.put(OtherIncomeItemType.ASSET_EXPENSE, -1 * (assetExpense + airplanePayments + routeTax + (if (cargo < 0) -cargo else 0L)))
-        othersSummary.put(OtherIncomeItemType.ASSET_REVENUE, assetRevenue + (if (cargo > 0) cargo else 0L))
+        othersSummary.put(OtherIncomeItemType.ASSET_REVENUE, assetRevenue + subsidy + (if (cargo > 0) cargo else 0L))
 
         totalCashExpense += assetExpense + airplanePayments + routeTax + (if (cargo < 0) -cargo else 0L)
-        totalCashRevenue += assetRevenue + (if (cargo > 0) cargo else 0L)
+        totalCashRevenue += assetRevenue + subsidy + (if (cargo > 0) cargo else 0L)
 
 
         //calculate extra cash flow due to difference in fuel cost

@@ -28,6 +28,7 @@ object WeeklyExtrasSource {
           "cargo BIGINT," +
           "tax BIGINT," +
           "tax_credit_used BIGINT," +
+          "subsidy BIGINT DEFAULT 0," +
           "PRIMARY KEY (airline, cycle))")
       statement.execute()
       statement.close()
@@ -43,6 +44,13 @@ object WeeklyExtrasSource {
       } catch {
         case _ : Throwable => //already the right shape
       }
+      try {
+        val addSubsidy = connection.prepareStatement("ALTER TABLE " + TABLE + " ADD COLUMN subsidy BIGINT DEFAULT 0")
+        addSubsidy.execute()
+        addSubsidy.close()
+      } catch {
+        case _ : Throwable => //already there
+      }
     } catch {
       case e : Throwable => println("Could not make sure the weekly extras table exists: " + e.getMessage)
     } finally {
@@ -50,19 +58,20 @@ object WeeklyExtrasSource {
     }
   }
 
-  case class WeeklyExtras(cycle : Int, aircraftPayments : Long, cargo : Long, tax : Long, taxCreditUsed : Long)
+  case class WeeklyExtras(cycle : Int, aircraftPayments : Long, cargo : Long, tax : Long, taxCreditUsed : Long, subsidy : Long = 0)
 
   def save(airlineId : Int, extras : WeeklyExtras) : Unit = {
     val connection = Meta.getConnection()
     try {
       val statement = connection.prepareStatement(
-        "REPLACE INTO " + TABLE + "(airline, cycle, aircraft_payments, cargo, tax, tax_credit_used) VALUES(?,?,?,?,?,?)")
+        "REPLACE INTO " + TABLE + "(airline, cycle, aircraft_payments, cargo, tax, tax_credit_used, subsidy) VALUES(?,?,?,?,?,?,?)")
       statement.setInt(1, airlineId)
       statement.setInt(2, extras.cycle)
       statement.setLong(3, extras.aircraftPayments)
       statement.setLong(4, extras.cargo)
       statement.setLong(5, extras.tax)
       statement.setLong(6, extras.taxCreditUsed)
+      statement.setLong(7, extras.subsidy)
       statement.executeUpdate()
       statement.close()
     } catch {
@@ -84,7 +93,7 @@ object WeeklyExtrasSource {
       val weeks = scala.collection.mutable.ListBuffer[WeeklyExtras]()
       while (resultSet.next()) {
         weeks += WeeklyExtras(resultSet.getInt("cycle"), resultSet.getLong("aircraft_payments"),
-          resultSet.getLong("cargo"), resultSet.getLong("tax"), resultSet.getLong("tax_credit_used"))
+          resultSet.getLong("cargo"), resultSet.getLong("tax"), resultSet.getLong("tax_credit_used"), resultSet.getLong("subsidy"))
       }
       resultSet.close()
       statement.close()
@@ -119,7 +128,7 @@ object WeeklyExtrasSource {
       val resultSet = statement.executeQuery()
       val extras =
         if (resultSet.next()) Some(WeeklyExtras(resultSet.getInt("cycle"), resultSet.getLong("aircraft_payments"),
-          resultSet.getLong("cargo"), resultSet.getLong("tax"), resultSet.getLong("tax_credit_used")))
+          resultSet.getLong("cargo"), resultSet.getLong("tax"), resultSet.getLong("tax_credit_used"), resultSet.getLong("subsidy")))
         else None
       resultSet.close()
       statement.close()

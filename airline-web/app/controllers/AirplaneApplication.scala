@@ -781,10 +781,15 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
                 if (configuration.isDefined && (configuration.get.airline.id != airlineId || configuration.get.model.id != modelId)) {
                   BadRequest("Configuration is not owned by this airline/model")
                 } else {
-                  //Delivered now, not built: an aircraft today is half of what
-                  //this is for.
+                  //A lease is somebody else's aircraft, already built, and
+                  //having it today is half of what a lease is for. Instalments
+                  //are a new aircraft bought on credit, so it is built like any
+                  //other - otherwise instalments would simply be better than
+                  //buying: same aircraft, same ownership at the end, no wait.
+                  val readyCycle = if (kind == PaymentPlanKind.LEASE) currentCycle else currentCycle + model.constructionTime
+
                   val airplanes = (0 until quantity).map { _ =>
-                    val airplane = Airplane(model, airline, constructedCycle = currentCycle, purchasedCycle = currentCycle,
+                    val airplane = Airplane(model, airline, constructedCycle = readyCycle, purchasedCycle = readyCycle,
                       Airplane.MAX_CONDITION, depreciationRate = 0, value = model.price, home = homeBase.airport, purchaseRate = 1)
                     configuration match {
                       case None => airplane.assignDefaultConfiguration()

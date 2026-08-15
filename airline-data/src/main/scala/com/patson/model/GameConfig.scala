@@ -298,6 +298,32 @@ object GameConfig {
   val nightFromHour: Int = int("simulation.nightFromHour", 0)
   val nightToHour: Int = int("simulation.nightToHour", 10)
 
+  /** Whether the state helps thin regional routes stay in the air.
+    *
+    * Every route in this game has to pay for itself, so the only routes worth
+    * flying are the ones with the passengers - and the small airports stay
+    * empty for ever, which is the opposite of how it works anywhere with a
+    * public service obligation. A route between two small airports that loses
+    * money now gets part of that loss back.
+    *
+    * It only ever reduces a loss: a route that makes money is not subsidised,
+    * and no route can be made profitable by it alone. */
+  val subsidyEnabled: Boolean = boolean("simulation.subsidyEnabled", false)
+
+  /** How big an airport can be and still count as one that needs the help.
+    * Airports run from 1 to about 9; 3 is a regional field. */
+  val subsidyMaxAirportSize: Int = int("simulation.subsidyMaxAirportSize", 3)
+
+  /** How long the route can be, in km. Beyond this it is not a lifeline, it is
+    * a business decision. */
+  val subsidyMaxDistance: Int = int("simulation.subsidyMaxDistance", 1500)
+
+  /** How much of the week's loss on such a route is covered, as a percentage. */
+  val subsidyLossPercent: Double = double("simulation.subsidyLossPercent", 50)
+
+  /** The most one route can be given in a week, whatever its loss. */
+  val subsidyWeeklyCap: Long = long("simulation.subsidyWeeklyCap", 500000L)
+
   /** Whether the country a route leaves from taxes its profit.
     *
     * The game has countries with an income and a name and asks nothing of an

@@ -278,7 +278,7 @@ function loadFinancingTerms(modelId) {
                 "$" + commaSeparateNumber(terms.lease.deposit) + " + $" + commaSeparateNumber(terms.lease.weekly) + "/week, never yours")
             $('#buyAirplaneModal .instalmentTerms').text(
                 "$" + commaSeparateNumber(terms.instalments.deposit) + " + $" + commaSeparateNumber(terms.instalments.weekly) +
-                "/week x " + terms.instalments.weeks + " (" + terms.instalments.ratePercent + "%), then yours")
+                "/week x " + terms.instalments.weeks + " (" + terms.instalments.ratePercent + "%), built like a purchase, then yours")
             $('#buyAirplaneModal .financingOption').show()
             $('#buyAirplaneModal .leaseButton, #buyAirplaneModal .instalmentsButton').show()
         },
