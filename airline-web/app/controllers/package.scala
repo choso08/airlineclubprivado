@@ -458,7 +458,29 @@ package object controllers {
     }
   }
 
-  implicit object AirlineIncomeWrite extends Writes[AirlineIncome] {
+    /**
+    * The weeks that one income row covers.
+    *
+    * A weekly row is one week; a monthly row is the four before it, a yearly
+    * one the fifty two. The extras are recorded week by week, so they
+    * are summed over the same span rather than being shown as a week's worth
+    * against a year's worth of everything else.
+    */
+  private def extrasFor(income : AirlineIncome) : List[WeeklyExtrasSource.WeeklyExtras] = {
+    val weeks = income.period match {
+      case Period.WEEKLY => 1
+      case Period.MONTHLY => 4
+      case Period.YEARLY => 52
+      case _ => 1
+    }
+    try {
+      WeeklyExtrasSource.loadByAirline(income.airlineId, income.cycle - weeks + 1).filter(_.cycle <= income.cycle)
+    } catch {
+      case _ : Throwable => List.empty
+    }
+  }
+
+implicit object AirlineIncomeWrite extends Writes[AirlineIncome] {
      def writes(airlineIncome : AirlineIncome): JsValue = {
       JsObject(List(
         "airlineId" -> JsNumber(airlineIncome.airlineId),
@@ -492,6 +514,14 @@ package object controllers {
         "othersLoungeCost" -> JsNumber(airlineIncome.others.loungeCost),
         "othersLoungeIncome" -> JsNumber(airlineIncome.others.loungeIncome),
         "othersAssetExpense" -> JsNumber(airlineIncome.others.assetExpense),
+        //The three things this fork added that share the asset line above.
+        //Kept in a table of their own rather than in a column of the income
+        //table, which would mean altering the table of a world already being
+        //played in - and a failed alteration would break every week's
+        //accounts. Summed over whatever weeks this row covers.
+        "othersAircraftPayments" -> JsNumber(extrasFor(airlineIncome).map(_.aircraftPayments).sum),
+        "othersRouteTax" -> JsNumber(extrasFor(airlineIncome).map(_.tax).sum),
+        "othersCargo" -> JsNumber(extrasFor(airlineIncome).map(_.cargo).sum),
         "othersAssetRevenue" -> JsNumber(airlineIncome.others.assetRevenue),
         "othersServiceInvestment" -> JsNumber(airlineIncome.others.serviceInvestment),
         "othersAdvertisement" -> JsNumber(airlineIncome.others.advertisement),

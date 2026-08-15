@@ -22,14 +22,27 @@ object WeeklyExtrasSource {
     try {
       val statement = connection.prepareStatement(
         "CREATE TABLE IF NOT EXISTS " + TABLE + "(" +
-          "airline INTEGER PRIMARY KEY," +
+          "airline INTEGER," +
           "cycle INTEGER," +
           "aircraft_payments BIGINT," +
           "cargo BIGINT," +
           "tax BIGINT," +
-          "tax_credit_used BIGINT)")
+          "tax_credit_used BIGINT," +
+          "PRIMARY KEY (airline, cycle))")
       statement.execute()
       statement.close()
+
+      //An earlier version of this table kept one row per airline. Widening the
+      //key to include the week is what lets a month or a year be added up.
+      //Nothing here is worth keeping - it is all derived - so a failure is
+      //ignored rather than handled.
+      try {
+        val widen = connection.prepareStatement("ALTER TABLE " + TABLE + " DROP PRIMARY KEY, ADD PRIMARY KEY (airline, cycle)")
+        widen.execute()
+        widen.close()
+      } catch {
+        case _ : Throwable => //already the right shape
+      }
     } catch {
       case e : Throwable => println("Could not make sure the weekly extras table exists: " + e.getMessage)
     } finally {
@@ -60,10 +73,48 @@ object WeeklyExtrasSource {
     }
   }
 
+  /** Every week recorded for this airline, newest first. */
+  def loadByAirline(airlineId : Int, sinceCycle : Int) : List[WeeklyExtras] = {
+    val connection = Meta.getConnection()
+    try {
+      val statement = connection.prepareStatement("SELECT * FROM " + TABLE + " WHERE airline = ? AND cycle >= ? ORDER BY cycle DESC")
+      statement.setInt(1, airlineId)
+      statement.setInt(2, sinceCycle)
+      val resultSet = statement.executeQuery()
+      val weeks = scala.collection.mutable.ListBuffer[WeeklyExtras]()
+      while (resultSet.next()) {
+        weeks += WeeklyExtras(resultSet.getInt("cycle"), resultSet.getLong("aircraft_payments"),
+          resultSet.getLong("cargo"), resultSet.getLong("tax"), resultSet.getLong("tax_credit_used"))
+      }
+      resultSet.close()
+      statement.close()
+      weeks.toList
+    } catch {
+      case _ : Throwable => List.empty
+    } finally {
+      connection.close()
+    }
+  }
+
+  /** Throw away weeks nobody will look at again. */
+  def deleteBefore(cycle : Int) : Unit = {
+    val connection = Meta.getConnection()
+    try {
+      val statement = connection.prepareStatement("DELETE FROM " + TABLE + " WHERE cycle < ?")
+      statement.setInt(1, cycle)
+      statement.executeUpdate()
+      statement.close()
+    } catch {
+      case _ : Throwable => //nothing worth failing a cycle for
+    } finally {
+      connection.close()
+    }
+  }
+
   def load(airlineId : Int) : Option[WeeklyExtras] = {
     val connection = Meta.getConnection()
     try {
-      val statement = connection.prepareStatement("SELECT * FROM " + TABLE + " WHERE airline = ?")
+      val statement = connection.prepareStatement("SELECT * FROM " + TABLE + " WHERE airline = ? ORDER BY cycle DESC LIMIT 1")
       statement.setInt(1, airlineId)
       val resultSet = statement.executeQuery()
       val extras =

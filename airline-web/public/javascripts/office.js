@@ -418,6 +418,22 @@ function updateIncomeSheet(airlineIncome) {
         $("#othersLoungeCost").text('$' + commaSeparateNumber(airlineIncome.othersLoungeCost))
         $("#othersLoungeIncome").text('$' + commaSeparateNumber(airlineIncome.othersLoungeIncome))
         $("#othersAssetExpense").text('$' + commaSeparateNumber(airlineIncome.othersAssetExpense))
+
+        // The three things that share the asset line above. Each row hides
+        // itself when it is zero, so a world with these switched off shows
+        // exactly the statement it always showed.
+        var extraLine = function(id, amount) {
+            var $row = $("#" + id).closest(".table-row")
+            if (!amount) {
+                $row.hide()
+            } else {
+                $("#" + id).text('$' + commaSeparateNumber(amount))
+                $row.show()
+            }
+        }
+        extraLine("othersAircraftPayments", -1 * (airlineIncome.othersAircraftPayments || 0))
+        extraLine("othersRouteTax", -1 * (airlineIncome.othersRouteTax || 0))
+        extraLine("othersCargo", airlineIncome.othersCargo || 0)
         $("#othersAssetRevenue").text('$' + commaSeparateNumber(airlineIncome.othersAssetRevenue))
         $("#othersServiceInvestment").text('$' + commaSeparateNumber(airlineIncome.othersServiceInvestment))
         $("#othersAdvertisement").text('$' + commaSeparateNumber(airlineIncome.othersAdvertisement))

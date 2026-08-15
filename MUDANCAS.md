@@ -183,6 +183,21 @@ IVA de uma renda de leasing. Todas as semanas o imposto das rotas é pago
 primeiro com esse crédito, e só o que sobrar é cobrado a sério. Fica um aviso no
 registo quando o crédito é criado e outro quando acaba.
 
+### Onde se vê tudo isto
+- **Painel Pagamentos** (topo): o que sai por semana, **quanto falta pagar ao
+  todo**, o IVA por recuperar, e cada avião a pagamento — quanto já pagaste, em
+  quantas semanas, quanto falta e se está a voar.
+- **Demonstração de resultados**: por baixo da *Despesa dos bens* aparecem agora
+  três linhas — *dos quais pagamentos de aviões*, *dos quais imposto do país*,
+  *dos quais carga*. Cada uma desaparece quando é zero, portanto quem tenha isto
+  desligado vê o mapa de resultados exatamente como sempre foi.
+
+  As colunas do mapa de resultados estão fixas na base de dados e acrescentar
+  uma obrigaria a mexer na tabela de um mundo já a ser jogado — se essa
+  alteração falhasse, cada semana passava a rebentar ao gravar as contas. Por
+  isso os três números são guardados numa tabela à parte, semana a semana, e
+  somados ao período que estiveres a ver (semana, mês ou ano).
+
 ### Carga
 O porão de um avião voava vazio todas as semanas. Agora há **contratos**:
 alguém oferece tantas toneladas por semana entre dois aeroportos, durante

@@ -48,6 +48,8 @@ object AirlineSimulation {
 
     val assetsByAirlineId = AirportAssetSource.loadAirportAssetsByAssetCriteria(List.empty).groupBy(_.airline.get.id) //load all owned assets
 
+    WeeklyExtrasSource.deleteBefore(cycle - 260) //five years is more history than any page shows
+
     //VAT waiting to be reclaimed, from aircraft bought or being paid for.
     val taxCredits = TaxCreditSource.all()
 
