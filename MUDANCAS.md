@@ -147,6 +147,31 @@ cada um conquistado uma vez e guardado com o nome de quem lá chegou primeiro. U
 servidor público tem um ranking mundial; cinco amigos não tinham nada em que ser
 os primeiros.
 
+### Incidentes
+Coisas que correm mal a **uma** companhia de cada vez: uma avaria (metade das
+vezes — pagas a reparação e o avião perde condição), uma inspeção (atrasos
+durante algumas semanas) ou uma greve (cancelamentos). Toda a gente é avisada,
+porque metade da graça é os outros verem.
+
+Não é azar a calhar a quem calha: a probabilidade sai do **estado da frota**.
+Com aviões novos é um terço, com aviões acabados é o dobro — a manutenção passa
+a ser uma decisão em vez de uma conta. Medido em 200 semanas de 40 voos, com a
+frota em bom estado: normalmente 1,3 atrasos pequenos e 0,2 cancelamentos por
+semana; com uma inspeção 4,9 pequenos e 2,0 grandes; com uma greve 0,9
+cancelamentos. Alguns por cento da receita da semana.
+
+### Noite mais lenta
+O servidor corre a noite toda para gente que está a dormir — e a 3 minutos por
+semana isso são 160 semanas entre deitar e acordar. Das 00h às 10h uma semana
+passa a demorar 5 minutos.
+
+### Tecto de 30%
+Nada do que foi acrescentado pode mexer na procura ou nos custos mais de 30%
+para cada lado, **por muitas coisas que calhem na mesma semana**. Estações,
+acontecimentos do mundo e o resto são multiplicados juntos e depois presos
+dentro dessa banda, num sítio só. Um boom num país onde também é verão não pode
+duplicar uma rota.
+
 ### Compensações
 Um script para injetar dinheiro numa companhia à mão, quando algo corre mal por
 culpa do servidor (o jogo guarda saldos em cache durante 10 minutos, por isso o
