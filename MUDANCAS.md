@@ -160,6 +160,18 @@ frota em bom estado: normalmente 1,3 atrasos pequenos e 0,2 cancelamentos por
 semana; com uma inspeção 4,9 pequenos e 2,0 grandes; com uma greve 0,9
 cancelamentos. Alguns por cento da receita da semana.
 
+### Impostos por país
+Uma rota passa a pagar imposto ao país **de onde parte** — que é sempre uma
+base tua, porque uma rota não pode começar noutro sítio. A taxa segue o
+rendimento do país: 15% num país médio, oito pontos para cada lado. Medido nos
+dados reais do jogo: **Portugal 8,1%**, Alemanha 21,8%, Suíça e Noruega 23%,
+Índia e Marrocos 7%.
+
+Rota a rota, e só sobre lucro: uma rota que dá prejuízo não paga nada e não
+serve para abater no lucro de outra. A taxa de cada país aparece no painel do
+aeroporto, por baixo da abertura do mercado — dá para ver antes de construir a
+base. Onde pões as bases passou a ser também uma questão de país.
+
 ### Carga
 O porão de um avião voava vazio todas as semanas. Agora há **contratos**:
 alguém oferece tantas toneladas por semana entre dois aeroportos, durante
