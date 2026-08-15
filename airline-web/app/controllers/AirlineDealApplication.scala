@@ -65,8 +65,10 @@ class AirlineDealApplication @Inject()(cc: ControllerComponents) extends Abstrac
 
   /** The aircraft this airline could put into an offer: its own, idle ones. */
   def getOfferableAirplanes(airlineId : Int) = AuthenticatedAirline(airlineId) { request =>
+    val financed = AirplanePaymentPlanSource.all
     val airplanes = AirplaneSource.loadAirplanesByOwner(airlineId)
       .filter(airplane => !airplane.isSold && airplane.isReady)
+      .filter(airplane => !financed.contains(airplane.id)) //aircraft we have not paid for are not ours to give
       .filter(airplane => AirplaneSource.loadAirplaneLinkAssignmentsByAirplaneId(airplane.id).assignments.isEmpty)
     Ok(Json.obj("airplanes" -> airplanes.map(airplaneJson)))
   }
@@ -147,8 +149,9 @@ class AirlineDealApplication @Inject()(cc: ControllerComponents) extends Abstrac
           val proposer = proposerOption.get
 
           val airplanes = deal.offeredAirplaneIds.flatMap(AirplaneSource.loadAirplaneById(_))
+          val financed = AirplanePaymentPlanSource.all
           val stillTheirs = airplanes.size == deal.offeredAirplaneIds.size &&
-            airplanes.forall(airplane => airplane.owner.id == deal.fromAirlineId && !airplane.isSold)
+            airplanes.forall(airplane => airplane.owner.id == deal.fromAirlineId && !airplane.isSold && !financed.contains(airplane.id))
           val stillIdle = airplanes.forall(airplane =>
             AirplaneSource.loadAirplaneLinkAssignmentsByAirplaneId(airplane.id).assignments.isEmpty)
 

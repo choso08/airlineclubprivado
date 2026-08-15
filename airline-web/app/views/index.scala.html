@@ -4789,6 +4789,14 @@
 					<div class="label"><h5>Total:</h5></div>
 					<div class="value"></div>
 				</div>
+				<div class="table-row financingOption leaseOption" style="display: none;">
+					<div class="label"><h5>Lease:</h5></div>
+					<div class="value leaseTerms"></div>
+				</div>
+				<div class="table-row financingOption instalmentsOption" style="display: none;">
+					<div class="label"><h5>Instalments:</h5></div>
+					<div class="value instalmentTerms"></div>
+				</div>
 				<div class="table-row">
 					<div class="cell"><h5>Home airport:</h5></div>
 					<div class="cell">
@@ -4805,6 +4813,8 @@
 				</div>
 			</div>
 			<div class="button add">Purchase</div>
+			<div class="button leaseButton" style="display: none;">Lease</div>
+			<div class="button instalmentsButton" style="display: none;">Instalments</div>
 			<div class="button" onclick="closeModal($('#buyAirplaneModal'))")>Cancel</div>
 		</div>
 	</div>
@@ -4839,6 +4849,10 @@
 					<div class="table-row" id="airplaneDetailsDeliveryRow">
 						<div class="cell"><h5>Deliver in:</h5></div>
 						<div class="cell" id="airplaneDetailsDelivery" style="font-weight: bold;"></div>
+					</div>
+					<div class="table-row" id="airplaneDetailsFinancingRow" style="display: none;">
+						<div class="cell"><h5>Not paid for:</h5></div>
+						<div class="cell" id="airplaneDetailsFinancing"></div>
 					</div>
 					<div class="table-row">
 						<div class="cell"><h5>Selling value:</h5></div>
@@ -4895,6 +4909,7 @@
 				<input type="hidden" id="actionAirplaneId">
 				<div class="button" id ="sellAirplaneButton" onclick="promptConfirm('Sell this airplane?', sellAirplane, $('#actionAirplaneId').val())">Sell</div>
 				<div class="button" id ="replaceAirplaneButton" onclick="promptConfirm('Replace this airplane?', replaceAirplane, $('#actionAirplaneId').val())">Replace</div>
+				<div class="button" id ="returnAirplaneButton" style="display: none;">Hand back</div>
 			</div>
 		</div>
 	</div>

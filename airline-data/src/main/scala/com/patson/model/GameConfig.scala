@@ -194,6 +194,41 @@ object GameConfig {
     * upgrade a headquarters at all. */
   val officeOvertimePercent: Int = int("rules.officeOvertimePercent", 100)
 
+  /** Whether an aircraft can be had without paying for it all at once - by
+    * renting it week by week, or by paying it off in instalments.
+    *
+    * Buying outright is otherwise the only way to get one, and an aircraft
+    * costs more than anything else in the game: the first hour is spent
+    * waiting for money, a route that turns out badly is paid for twice - once
+    * by the route and again by selling the aircraft back at a loss - and a
+    * route worth flying only in summer is not worth flying at all, because the
+    * aircraft is yours all winter as well. */
+  val aircraftFinancingEnabled: Boolean = boolean("rules.aircraftFinancingEnabled", false)
+
+  /** A year of rent as a percentage of what the aircraft costs new.
+    *
+    * At 18 a lease pays for the aircraft roughly every six years, so keeping
+    * one for a long time is dearer than buying it - which is the trade being
+    * offered, and the reason to eventually buy. */
+  val leaseAnnualRatePercent: Int = int("rules.leaseAnnualRatePercent", 18)
+
+  /** Paid once when the lease is signed, as a percentage of the price, and not
+    * given back. Without it a lease would be a free week of flying whenever
+    * demand happened to be high. */
+  val leaseDepositPercent: Int = int("rules.leaseDepositPercent", 10)
+
+  /** Instalments: what has to be paid on the day, as a percentage of the
+    * price. Higher than a lease deposit because this one ends with the
+    * aircraft belonging to the airline. */
+  val instalmentDepositPercent: Int = int("rules.instalmentDepositPercent", 25)
+
+  /** Instalments: how many weeks of payments. 104 is two in-game years. */
+  val instalmentWeeks: Int = int("rules.instalmentWeeks", 104)
+
+  /** Instalments: the yearly interest on what is still owed. The same order as
+    * the bank's, since it is the same favour being asked. */
+  val instalmentAnnualRatePercent: Int = int("rules.instalmentAnnualRatePercent", 12)
+
   /** How much passengers differ from one another in the price they will
     * accept, as a percentage. 0 restores the old behaviour.
     *

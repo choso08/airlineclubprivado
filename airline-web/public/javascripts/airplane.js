@@ -233,7 +233,45 @@ function promptBuyNewAirplane(modelId, fromPlanLink, explicitHomeAirportId) {
         buyAirplane(modelId, quantity, homeAirportId, selectedConfigurationId, callback)
     }
 
-    promptBuyAirplane(modelId, 100, loadedModelsById[modelId].price, loadedModelsById[modelId].constructionTime, explicitHomeAirportId, true, buyAirplaneFunction)
+    //the last argument turns on leasing and instalments: only a new aircraft
+    //can be had that way - a used one is somebody's trade-in
+    promptBuyAirplane(modelId, 100, loadedModelsById[modelId].price, loadedModelsById[modelId].constructionTime, explicitHomeAirportId, true, buyAirplaneFunction, modelId)
+}
+
+/**
+ * What a lease and a set of instalments would cost for this model.
+ *
+ * Worked out by the server with the very functions that will charge for it,
+ * rather than by repeating the arithmetic here - the number on the button has
+ * to be the number that leaves the bank.
+ */
+function loadFinancingTerms(modelId) {
+    $('#buyAirplaneModal').removeData("financing")
+    $('#buyAirplaneModal .financingOption').hide()
+    $('#buyAirplaneModal .leaseButton, #buyAirplaneModal .instalmentsButton').hide()
+
+    $.ajax({
+        type: 'GET',
+        url: "airlines/" + activeAirline.id + "/airplane-financing/" + modelId,
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        success: function(terms) {
+            if (!terms.enabled) {
+                return
+            }
+            $('#buyAirplaneModal').data("financing", terms)
+            $('#buyAirplaneModal .leaseTerms').text(
+                "$" + commaSeparateNumber(terms.lease.deposit) + " now, then $" + commaSeparateNumber(terms.lease.weekly) + " a week - never yours")
+            $('#buyAirplaneModal .instalmentTerms').text(
+                "$" + commaSeparateNumber(terms.instalments.deposit) + " now, then $" + commaSeparateNumber(terms.instalments.weekly) +
+                " a week for " + terms.instalments.weeks + " weeks - yours at the end ($" + commaSeparateNumber(terms.instalments.total) + " in total)")
+            $('#buyAirplaneModal .financingOption').show()
+            $('#buyAirplaneModal .leaseButton, #buyAirplaneModal .instalmentsButton').show()
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log("Could not load the financing terms: " + textStatus)
+        }
+    });
 }
 
 function updateAirplaneTotalPrice(totalPrice) {
@@ -270,8 +308,14 @@ function validateAirplaneQuantity() {
 // Threshold for determining if additional confirmation is required before completing an airplane purchase.
 var SIGNIFICANT_AIRPLANE_PURCHASE_THRESHOLD = 0.5;
 
-function promptBuyAirplane(modelId, condition, price, deliveryTime, explicitHomeAirportId, multipleAble, buyAirplaneFunction) {
+function promptBuyAirplane(modelId, condition, price, deliveryTime, explicitHomeAirportId, multipleAble, buyAirplaneFunction, financeableModelId) {
     var model = loadedModelsById[modelId]
+    if (financeableModelId) {
+        loadFinancingTerms(financeableModelId)
+    } else {
+        $('#buyAirplaneModal .financingOption').hide()
+        $('#buyAirplaneModal .leaseButton, #buyAirplaneModal .instalmentsButton').hide()
+    }
     if (model.imageUrl) {
         var imageLocation = 'assets/images/airplanes/' + model.name.replace(/\s+/g, '-').toLowerCase() + '.png'
         $('#buyAirplaneModal .modelIllustration img').attr('src', imageLocation)
@@ -384,17 +428,38 @@ function promptBuyAirplane(modelId, condition, price, deliveryTime, explicitHome
                 }
                 $('#buyAirplaneModal .table-row.seatConfiguration').show()
             }
-            $('#buyAirplaneModal .add').unbind("click").bind("click", function() {
+            var selectedOptions = function() {
                 var selectedIndex = $("#buyAirplaneModal .configuration-options").data("selectedIndex")
-                var selectedConfigurationId
+                var configurationId
                 if (selectedIndex === undefined) {
-                    selectedConfigurationId = -1
+                    configurationId = -1
                 } else {
-                    selectedConfigurationId = $($("#buyAirplaneModal .configuration-options").children()[selectedIndex]).data("configurationId")
+                    configurationId = $($("#buyAirplaneModal .configuration-options").children()[selectedIndex]).data("configurationId")
                 }
+                return { configurationId : configurationId, homeAirportId : $("#buyAirplaneModal .homeOptions").find(":selected").val() }
+            }
 
-                var homeAirportId = $("#buyAirplaneModal .homeOptions").find(":selected").val();
-                
+            $('#buyAirplaneModal .leaseButton').unbind("click").bind("click", function() {
+                var options = selectedOptions()
+                financeAirplane(modelId, quantity, options.homeAirportId, options.configurationId, 'LEASE')
+            })
+
+            $('#buyAirplaneModal .instalmentsButton').unbind("click").bind("click", function() {
+                var options = selectedOptions()
+                var terms = $('#buyAirplaneModal').data("financing")
+                //Worth a warning: walking away from instalments loses everything
+                //paid so far, unlike a lease, which owes nothing once handed back.
+                var message = "Pay $" + commaSeparateNumber(terms.instalments.weekly) + " a week for " + terms.instalments.weeks +
+                    " weeks. Give the aircraft back before then and what you have paid is gone. Go ahead?"
+                promptConfirm(message, function() {
+                    financeAirplane(modelId, quantity, options.homeAirportId, options.configurationId, 'INSTALMENTS')
+                })
+            })
+
+            $('#buyAirplaneModal .add').unbind("click").bind("click", function() {
+                var selectedConfigurationId = selectedOptions().configurationId
+                var homeAirportId = selectedOptions().homeAirportId
+
                 const totalPrice = quantity * price;
                 var percentOfBalance = totalPrice / activeAirline.balance;
                 if (percentOfBalance >= SIGNIFICANT_AIRPLANE_PURCHASE_THRESHOLD) {
@@ -445,6 +510,67 @@ function buyAirplane(modelId, quantity, homeAirportId, configurationId, callback
         complete: function(){
             $('body .loadingSpinner').hide()
         }
+	});
+}
+
+function financeAirplane(modelId, quantity, homeAirportId, configurationId, plan) {
+	var airlineId = activeAirline.id
+	var url = "airlines/" + airlineId + "/airplane-financing?modelId=" + modelId + "&quantity=" + quantity +
+		"&homeAirportId=" + homeAirportId + "&configurationId=" + configurationId + "&plan=" + plan
+	$.ajax({
+		type: 'PUT',
+		data: JSON.stringify({}),
+		url: url,
+	    contentType: 'application/json; charset=utf-8',
+	    dataType: 'json',
+	    success: function(response) {
+	    	refreshPanels(airlineId)
+	    	showAirplaneCanvas()
+	    	closeModal($('#buyAirplaneModal'))
+	    },
+        error: function(jqXHR, textStatus, errorThrown) {
+            if (typeof showFloatMessage === 'function') {
+                showFloatMessage(jqXHR.responseText || "That did not work")
+            }
+            console.log(JSON.stringify(jqXHR));
+	    },
+	    beforeSend: function() {
+            $('body .loadingSpinner').show()
+        },
+        complete: function(){
+            $('body .loadingSpinner').hide()
+        }
+	});
+}
+
+/**
+ * Give back an aircraft that is not paid for. Nothing comes back with it, so
+ * the confirmation says which kind it is.
+ */
+function returnFinancedAirplane(airplaneId) {
+	$.ajax({
+		type: 'DELETE',
+		url: "airlines/" + activeAirline.id + "/airplane-financing/" + airplaneId,
+	    contentType: 'application/json; charset=utf-8',
+	    dataType: 'json',
+	    success: function(response) {
+	        refreshPanels(activeAirline.id)
+	    	$("#ownedAirplaneDetailModal").data("hasChange", true)
+	    	showAirplaneCanvas()
+	    	closeModal($('#ownedAirplaneDetailModal'))
+	    },
+        error: function(jqXHR, textStatus, errorThrown) {
+            if (typeof showFloatMessage === 'function') {
+                showFloatMessage(jqXHR.responseText || "That did not work")
+            }
+            console.log(JSON.stringify(jqXHR));
+	    },
+        beforeSend: function() {
+             $('body .loadingSpinner').show()
+         },
+         complete: function(){
+             $('body .loadingSpinner').hide()
+         }
 	});
 }
 
@@ -1168,6 +1294,44 @@ function loadOwnedAirplaneDetails(airplaneId, selectedItem, closeCallback, disab
         			$("#airplaneDetailsAgeRow").hide()
         			$("#airplaneDetailsDeliveryRow").show()
         		}
+    	    	//An aircraft that is not paid for is not ours to sell or replace:
+    	    	//the only thing to do with it is hand it back.
+    	    	if (airplane.financing) {
+    	    	    var financing = airplane.financing
+    	    	    var financingText
+    	    	    if (financing.kind == 'LEASE') {
+    	    	        financingText = "Leased - $" + commaSeparateNumber(financing.weeklyPayment) + " a week"
+    	    	        $("#returnAirplaneButton").text("Hand back")
+    	    	    } else {
+    	    	        financingText = "$" + commaSeparateNumber(financing.weeklyPayment) + " a week, " + financing.weeksRemaining + " week(s) left to pay"
+    	    	        $("#returnAirplaneButton").text("Give up")
+    	    	    }
+    	    	    $("#airplaneDetailsFinancing").text(financingText)
+    	    	    $("#airplaneDetailsFinancingRow").show()
+    	    	    $("#sellAirplaneButton").hide()
+    	    	    $("#replaceAirplaneButton").hide()
+    	    	    $("#returnAirplaneButton").show()
+    	    	    if (airplane.links.length > 0) {
+    	    	        disableButton("#returnAirplaneButton", "Take it off its routes first")
+    	    	    } else {
+    	    	        enableButton("#returnAirplaneButton")
+    	    	    }
+    	    	    $("#returnAirplaneButton").unbind("click").bind("click", function() {
+    	    	        if (airplane.links.length > 0) {
+    	    	            return
+    	    	        }
+    	    	        var message = financing.kind == 'LEASE' ?
+    	    	            "Hand this aircraft back? The weekly rent stops, and nothing comes back." :
+    	    	            "Give this aircraft up? Everything paid on it so far is gone."
+    	    	        promptConfirm(message, returnFinancedAirplane, airplane.id)
+    	    	    })
+    	    	} else {
+    	    	    $("#airplaneDetailsFinancingRow").hide()
+    	    	    $("#returnAirplaneButton").hide()
+    	    	    $("#sellAirplaneButton").show()
+    	    	    $("#replaceAirplaneButton").show()
+    	    	}
+
     	    	$("#airplaneDetailsSellValue").text("$" + commaSeparateNumber(airplane.sellValue))
     	    	var replaceCost = model.price - airplane.sellValue
                 $("#airplaneDetailsReplaceCost").text("$" + commaSeparateNumber(replaceCost))

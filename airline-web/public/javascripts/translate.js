@@ -1127,6 +1127,26 @@
       'There is nobody else here to deal with yet.': 'Ainda nao ha mais ninguem com quem negociar.',
       'None idle - aircraft on a route cannot change hands': 'Nenhum livre - avioes numa rota nao mudam de dono',
 
+      // ------------------------------------------- leasing and instalments
+      'Lease': 'Alugar',
+      'Lease:': 'Aluguer:',
+      'Instalments': 'Prestacoes',
+      'Instalments:': 'Prestacoes:',
+      'Not paid for:': 'Por pagar:',
+      'Hand back': 'Devolver',
+      'Give up': 'Desistir',
+      'Take it off its routes first': 'Tira-o primeiro das rotas',
+      'Hand this aircraft back? The weekly rent stops, and nothing comes back.':
+        'Devolver este aviao? A renda semanal para, e nao volta nada.',
+      'Give this aircraft up? Everything paid on it so far is gone.':
+        'Desistir deste aviao? Tudo o que ja pagaste por ele perde-se.',
+      'That aircraft is not paid for - hand it back instead': 'Esse aviao nao esta pago - devolve-o em vez de vender',
+      'That aircraft is not paid for - hand it back and take a newer one': 'Esse aviao nao esta pago - devolve-o e apanha um mais novo',
+      'Aircraft that are not paid for cannot be swapped': 'Avioes por pagar nao podem ser trocados',
+      'That aircraft is paid for - it is yours to keep or sell': 'Esse aviao esta pago - e teu para ficar ou vender',
+      'Not enough cash for the deposit': 'Nao tens dinheiro para a entrada',
+      'Leasing and instalments are switched off in this world': 'Aluguer e prestacoes estao desligados neste mundo',
+
       // ---------------------------------------------------------- olympics
       'Olympics Voting Active': 'Votação olímpica a decorrer',
       'Unclaimed Olympics passenger reward (': 'Prémio olímpico de passageiros por receber (',

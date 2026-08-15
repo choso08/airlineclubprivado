@@ -48,6 +48,33 @@ object AirlineSimulation {
 
     val assetsByAirlineId = AirportAssetSource.loadAirportAssetsByAssetCriteria(List.empty).groupBy(_.airline.get.id) //load all owned assets
 
+    //Aircraft that are not paid for. Tidy up first: a plan whose aircraft no
+    //longer exists would otherwise go on charging somebody for nothing.
+    AirplanePaymentPlanSource.deleteOrphans()
+    val paymentPlans = AirplanePaymentPlanSource.loadLive()
+    val weeklyPaymentByAirlineId = paymentPlans.groupBy(_.airlineId).view.mapValues(_.map(_.weeklyPayment).sum).toMap
+
+    //A week closer to owning it. Leases never end, so only instalments count
+    //down; the ones on their last week are paid off here, and from the moment
+    //the plan is gone the aircraft is theirs like any other - it can be sold,
+    //traded, and counted as something they own.
+    val instalmentPlans = paymentPlans.filter(!_.isLease)
+    if (instalmentPlans.nonEmpty) {
+      val (paidOff, stillOwing) = instalmentPlans.partition(_.weeksRemaining <= 1)
+      AirplanePaymentPlanSource.countDown(stillOwing)
+      if (paidOff.nonEmpty) {
+        AirplanePaymentPlanSource.delete(paidOff.map(_.airplaneId))
+        val logs = paidOff.flatMap { plan =>
+          for {
+            airline <- allAirlines.find(_.id == plan.airlineId)
+            airplane <- AirplaneSource.loadAirplaneById(plan.airplaneId)
+          } yield Log(airline, s"The last instalment on your ${airplane.model.name} is paid - it is yours now",
+            LogCategory.SELF_NOTE, LogSeverity.INFO, cycle)
+        }
+        LogSource.insertLogs(logs)
+      }
+    }
+
     //val shuttleServicesByAirlineId = AirlineSource.loadShuttleServiceByCriteria(List.empty).groupBy(_.airline.id)
 
     val allIncomes = ListBuffer[AirlineIncome]()
@@ -202,10 +229,17 @@ object AirlineSimulation {
           case None => (0L, 0L)
         }
 
-        othersSummary.put(OtherIncomeItemType.ASSET_EXPENSE, -1 * assetExpense)
+        //What is owed this week on aircraft that are not paid for. It goes in
+        //with the assets rather than under a line of its own: the income
+        //statement's columns are fixed in the database, and a new one would
+        //mean altering the table of every world that already exists - a lot of
+        //risk for a label.
+        val airplanePayments = weeklyPaymentByAirlineId.getOrElse(airline.id, 0L)
+
+        othersSummary.put(OtherIncomeItemType.ASSET_EXPENSE, -1 * (assetExpense + airplanePayments))
         othersSummary.put(OtherIncomeItemType.ASSET_REVENUE, assetRevenue)
 
-        totalCashExpense += assetExpense
+        totalCashExpense += assetExpense + airplanePayments
         totalCashRevenue += assetRevenue
 
 

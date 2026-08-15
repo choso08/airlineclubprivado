@@ -1,7 +1,7 @@
 package controllers
 
 import scala.math.BigDecimal.int2bigDecimal
-import com.patson.data.{AirlineSource, AirplaneSource, CashFlowSource, CountrySource, CycleSource, LinkSource}
+import com.patson.data.{AirlineSource, AirplanePaymentPlanSource, AirplaneSource, CashFlowSource, CountrySource, CycleSource, LinkSource, LogSource}
 import com.patson.data.airplane.ModelSource
 import com.patson.model.airplane.{Model, _}
 import com.patson.model._
@@ -229,13 +229,30 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
   }
   
   def getRejection(model: Model, quantity : Int, relationship : AirlineCountryRelationship, ownedModels : Set[Model], airline : Airline) : Option[String]= {
+    getEligibilityRejection(model, relationship, ownedModels, airline) match {
+      case Some(reason) => Some(reason)
+      case None =>
+        val cost: Long = model.price.toLong * quantity
+        if (cost > airline.getBalance()) {
+          Some("Not enough cash to purchase this airplane model")
+        } else {
+          None
+        }
+    }
+  }
+
+  /**
+    * Everything that decides whether this airline may have this aircraft at
+    * all, leaving aside what it costs - so that leasing can ask the same
+    * questions and then ask about the deposit rather than the whole price.
+    */
+  private def getEligibilityRejection(model: Model, relationship : AirlineCountryRelationship, ownedModels : Set[Model], airline : Airline) : Option[String] = {
     if (airline.getHeadQuarter().isEmpty) { //no HQ
       return Some("Must build HQs before purchasing any airplanes")
     }
     if (!model.purchasableWithRelationship(relationship.relationship)) {
       return Some(s"The manufacturer refuses to sell " + model.name + s" to your airline until your relationship with ${CountryCache.getCountry(model.countryCode).get.name} is improved to at least ${Model.BUY_RELATIONSHIP_THRESHOLD}")
     }
-
 
     val ownedModelFamilies = ownedModels.map(_.family)
 
@@ -244,12 +261,27 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
       return Some("Can only own up to " + airline.airlineGrade.getModelFamilyLimit + " different airplane " + familyToken + " at current airline grade")
     }
 
-    val cost: Long = model.price.toLong * quantity
-    if (cost > airline.getBalance()) {
-      return Some("Not enough cash to purchase this airplane model")
-    }
-    
     return None
+  }
+
+  /** The same questions as buying, except that the money which has to be there
+    * is the deposit rather than the whole price - which is the entire point. */
+  private def getFinancingRejection(model : Model, quantity : Int, airline : Airline, deposit : Long) : Option[String] = {
+    if (!GameConfig.aircraftFinancingEnabled) {
+      Some("Leasing and instalments are switched off in this world")
+    } else {
+      val relationship = AirlineCountryRelationship.getAirlineCountryRelationship(model.countryCode, airline)
+      val ownedModels = AirplaneOwnershipCache.getOwnership(airline.id).map(_.model).toSet
+      getEligibilityRejection(model, relationship, ownedModels, airline) match {
+        case Some(reason) => Some(reason)
+        case None =>
+          if (deposit * quantity > airline.getBalance()) {
+            Some("Not enough cash for the deposit")
+          } else {
+            None
+          }
+      }
+    }
   }
   
   def getUsedRejections(usedAirplanes : List[Airplane], model : Model, airline : Airline) : Map[Airplane, String] = {
@@ -460,6 +492,10 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
           Forbidden
         } else if (!airplane.isReady) {
           BadRequest("airplane is not yet constructed or is sold")
+        } else if (AirplanePaymentPlanSource.isFinanced(airplaneId)) {
+          //Selling something that is not yours would turn a deposit into the
+          //full price of an aircraft
+          BadRequest("That aircraft is not paid for - hand it back instead")
         } else {
           val linkAssignments = AirplaneSource.loadAirplaneLinkAssignmentsByAirplaneId(airplaneId)
           if (!linkAssignments.isEmpty) { //still assigned to some link, do not allow selling
@@ -500,6 +536,10 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
           val currentCycle = CycleSource.loadCycle()
           if (!airplane.isReady) {
             BadRequest("airplane is not yet constructed")
+          } else if (AirplanePaymentPlanSource.isFinanced(airplaneId)) {
+            //Replacing pays the difference between this one and a new one -
+            //which on an aircraft that is not ours would be buying it twice
+            BadRequest("That aircraft is not paid for - hand it back and take a newer one")
           } else if (airplane.purchasedCycle > (currentCycle - airplane.model.constructionTime)) {
             BadRequest("airplane is not yet ready to be replaced")
           } else {
@@ -609,6 +649,142 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
     }
   }
 
+  /**
+    * What a lease and a set of instalments would cost for this model.
+    *
+    * Worked out here with the very functions that will charge for it, rather
+    * than by repeating the arithmetic in the browser: the number on the button
+    * has to be the number that leaves the bank.
+    */
+  def getFinancingTerms(airlineId : Int, modelId : Int) = AuthenticatedAirline(airlineId) { request =>
+    ModelSource.loadModelById(modelId) match {
+      case None => BadRequest("unknown model")
+      case Some(originalModel) =>
+        val model = originalModel.applyDiscount(ModelDiscount.getCombinedDiscountsByModelId(airlineId, originalModel.id))
+        Ok(Json.obj(
+          "enabled" -> GameConfig.aircraftFinancingEnabled,
+          "price" -> model.price,
+          "lease" -> Json.obj(
+            "deposit" -> AirplanePaymentPlan.leaseDeposit(model.price),
+            "weekly" -> AirplanePaymentPlan.leaseWeeklyPayment(model.price)),
+          "instalments" -> Json.obj(
+            "deposit" -> AirplanePaymentPlan.instalmentDeposit(model.price),
+            "weekly" -> AirplanePaymentPlan.instalmentWeeklyPayment(model.price),
+            "weeks" -> AirplanePaymentPlan.instalmentWeeks,
+            "total" -> AirplanePaymentPlan.instalmentTotal(model.price))))
+    }
+  }
+
+  /**
+    * Get aircraft without paying for them all at once.
+    *
+    * Deliberately the same shape as buying - same model, same quantity, same
+    * home, same seat configuration - because it is the same decision made
+    * differently: a deposit and a weekly payment rather than the price, and
+    * the aircraft today rather than in however many weeks it takes to build
+    * one.
+    *
+    * The two plans differ only in their numbers and in what happens at the
+    * end. A lease runs for ever and the aircraft is never yours; instalments
+    * run out and then it is.
+    */
+  def financeAirplane(airlineId : Int, modelId : Int, quantity : Int, homeAirportId : Int, configurationId : Int, plan : String) = AuthenticatedAirline(airlineId) { request =>
+    val kind = if (plan == PaymentPlanKind.INSTALMENTS.toString) PaymentPlanKind.INSTALMENTS else PaymentPlanKind.LEASE
+
+    ModelSource.loadModelById(modelId) match {
+      case None => BadRequest("unknown model")
+      case Some(originalModel) =>
+        val model = originalModel.applyDiscount(ModelDiscount.getCombinedDiscountsByModelId(airlineId, originalModel.id))
+        val airline = request.user
+        val currentCycle = CycleSource.loadCycle()
+
+        val depositEach = if (kind == PaymentPlanKind.LEASE) AirplanePaymentPlan.leaseDeposit(model.price) else AirplanePaymentPlan.instalmentDeposit(model.price)
+        val weeklyPayment = if (kind == PaymentPlanKind.LEASE) AirplanePaymentPlan.leaseWeeklyPayment(model.price) else AirplanePaymentPlan.instalmentWeeklyPayment(model.price)
+        val weeksRemaining = if (kind == PaymentPlanKind.LEASE) -1 else AirplanePaymentPlan.instalmentWeeks
+
+        request.user.getBases().find(_.airport.id == homeAirportId) match {
+          case None => BadRequest(s"Home airport ID $homeAirportId is not valid")
+          case Some(homeBase) =>
+            getFinancingRejection(model, quantity, airline, depositEach) match {
+              case Some(reason) => BadRequest(reason)
+              case None =>
+                val configuration : Option[AirplaneConfiguration] =
+                  if (configurationId == -1) None else AirplaneSource.loadAirplaneConfigurationById(configurationId)
+
+                if (configuration.isDefined && (configuration.get.airline.id != airlineId || configuration.get.model.id != modelId)) {
+                  BadRequest("Configuration is not owned by this airline/model")
+                } else {
+                  //Delivered now, not built: an aircraft today is half of what
+                  //this is for.
+                  val airplanes = (0 until quantity).map { _ =>
+                    val airplane = Airplane(model, airline, constructedCycle = currentCycle, purchasedCycle = currentCycle,
+                      Airplane.MAX_CONDITION, depreciationRate = 0, value = model.price, home = homeBase.airport, purchaseRate = 1)
+                    configuration match {
+                      case None => airplane.assignDefaultConfiguration()
+                      case Some(configuration) => airplane.configuration = configuration
+                    }
+                    airplane
+                  }.toList
+
+                  val savedCount = AirplaneSource.saveAirplanes(airplanes)
+                  //saveAirplanes writes the new id back onto each one, which is
+                  //what the plan is keyed on
+                  val financedAirplanes = airplanes.filter(_.id > 0)
+                  if (savedCount <= 0 || financedAirplanes.isEmpty) {
+                    UnprocessableEntity("Cannot save airplane")
+                  } else {
+                    AirplanePaymentPlanSource.save(financedAirplanes.map(airplane =>
+                      AirplanePaymentPlan(airplane.id, airlineId, kind, weeklyPayment, weeksRemaining, currentCycle)))
+
+                    val deposit = depositEach * financedAirplanes.size
+                    if (deposit > 0) {
+                      AirlineSource.adjustAirlineBalance(airlineId, -deposit)
+                      AirlineSource.saveCashFlowItem(AirlineCashFlowItem(airlineId, CashFlowType.BUY_AIRPLANE, -deposit))
+                    }
+
+                    Accepted(Json.obj("updateCount" -> financedAirplanes.size, "deposit" -> deposit, "weeklyPayment" -> weeklyPayment))
+                  }
+                }
+            }
+        }
+    }
+  }
+
+  /**
+    * Give back an aircraft that is not paid for.
+    *
+    * Nothing comes back with it - the deposit is spent and the payments were
+    * for weeks already flown - so this is only ever about stopping the weekly
+    * charge. On instalments that means walking away from what has been paid,
+    * which is why the front end says so first. It must be off every route,
+    * for the same reason an aircraft cannot be sold from under one.
+    */
+  def returnFinancedAirplane(airlineId : Int, airplaneId : Int) = AuthenticatedAirline(airlineId) { request =>
+    AirplaneSource.loadAirplaneById(airplaneId) match {
+      case None => BadRequest("airplane not found")
+      case Some(airplane) =>
+        if (airplane.owner.id != airlineId) {
+          Forbidden
+        } else {
+          AirplanePaymentPlanSource.get(airplaneId) match {
+            case None => BadRequest("That aircraft is paid for - it is yours to keep or sell")
+            case Some(paymentPlan) =>
+              if (!AirplaneSource.loadAirplaneLinkAssignmentsByAirplaneId(airplaneId).assignments.isEmpty) {
+                BadRequest("Take it off its routes first")
+              } else {
+                AirplaneSource.deleteAirplane(airplaneId, Some(airplane.version))
+                AirplanePaymentPlanSource.delete(List(airplaneId))
+                val what = if (paymentPlan.isLease) "Handed back the leased" else "Gave up the part-paid"
+                LogSource.insertLogs(List(Log(request.user,
+                  f"$what ${airplane.model.name} - $$${paymentPlan.weeklyPayment}%,d a week saved",
+                  LogCategory.SELF_NOTE, LogSeverity.INFO, CycleSource.loadCycle())))
+                Ok(Json.obj("ok" -> true))
+              }
+          }
+        }
+    }
+  }
+
   def swapAirplane(airlineId : Int, fromAirplaneId : Int, toAirplaneId : Int) = AuthenticatedAirline(airlineId) { request =>
     val fromAirplaneOption = AirplaneSource.loadAirplaneById(fromAirplaneId)
     val toAirplaneOption = AirplaneSource.loadAirplaneById(toAirplaneId)
@@ -616,7 +792,11 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
     if (fromAirplaneOption.isDefined && toAirplaneOption.isDefined) {
       val fromAirplane = fromAirplaneOption.get
       val toAirplane = toAirplaneOption.get
-      if (fromAirplane.owner.id == airlineId && toAirplane.owner.id == airlineId && fromAirplane.model.id == toAirplane.model.id) {
+      if (AirplanePaymentPlanSource.isFinanced(fromAirplaneId) || AirplanePaymentPlanSource.isFinanced(toAirplaneId)) {
+        //Swapping trades two aircraft's ages and conditions. Do that with an
+        //unpaid one and the payments end up on the wrong aircraft.
+        BadRequest("Aircraft that are not paid for cannot be swapped")
+      } else if (fromAirplane.owner.id == airlineId && toAirplane.owner.id == airlineId && fromAirplane.model.id == toAirplane.model.id) {
         val fromConstructedCycle = fromAirplane.constructedCycle
         val fromPurchaseCycle = fromAirplane.purchasedCycle
         val fromCondition = fromAirplane.condition

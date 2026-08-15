@@ -110,7 +110,14 @@ package object controllers {
         "maxFlightMinutes" -> JsNumber(Airplane.MAX_FLIGHT_MINUTES),
         "homeAirportId" -> JsNumber(airplane.home.id),
         "badConditionThreshold" -> JsNumber(Airplane.BAD_CONDITION),
-        "criticalConditionThreshold" -> JsNumber(Airplane.CRITICAL_CONDITION)
+        "criticalConditionThreshold" -> JsNumber(Airplane.CRITICAL_CONDITION),
+        //Whether it is ours at all. Read from a map held in memory rather than
+        //asked of the database once per aircraft, because a fleet page draws
+        //this for every aircraft an airline has.
+        "financing" -> (AirplanePaymentPlanSource.all.get(airplane.id) match {
+          case Some(plan) => Json.obj("kind" -> plan.kind.toString, "weeklyPayment" -> plan.weeklyPayment, "weeksRemaining" -> plan.weeksRemaining)
+          case None => JsNull
+        })
       ))
     }
   }
