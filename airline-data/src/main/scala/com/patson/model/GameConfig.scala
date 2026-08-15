@@ -314,6 +314,20 @@ object GameConfig {
     * 23%. */
   val taxIncomeSpreadPercent: Double = double("simulation.taxIncomeSpreadPercent", 8)
 
+  /** VAT on an aircraft, as a percentage, reclaimed against the tax on route
+    * profit. 0 switches it off.
+    *
+    * A company in Europe pays this on an aircraft and then gets it back
+    * against what it owes on its profits, which is why one that has just
+    * invested pays no tax for a while. With taxes on route profit in the game,
+    * this is the other half of the same rule - and it is what makes buying an
+    * aircraft a decision about the tax bill and not only about the cash.
+    *
+    * It applies to the price of an aircraft bought outright, to the deposit on
+    * a lease or a set of instalments, and to each weekly payment - exactly as
+    * VAT on a lease rental does. */
+  val vatPercent: Double = double("simulation.vatPercent", 0)
+
   /** Whether freight can be contracted for.
     *
     * An aircraft's hold flies empty every week of its life here, and the only

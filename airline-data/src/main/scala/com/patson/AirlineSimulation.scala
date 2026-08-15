@@ -48,6 +48,9 @@ object AirlineSimulation {
 
     val assetsByAirlineId = AirportAssetSource.loadAirportAssetsByAssetCriteria(List.empty).groupBy(_.airline.get.id) //load all owned assets
 
+    //VAT waiting to be reclaimed, from aircraft bought or being paid for.
+    val taxCredits = TaxCreditSource.all()
+
     //What each country charges on the profit of the routes that leave it.
     //Worked out once here rather than per route: it is the same answer for
     //every route out of the same country.
@@ -253,12 +256,33 @@ object AirlineSimulation {
         //not only about the passengers. Route by route, and only on profit: a
         //route that loses money is not taxed and does not shelter one that
         //earns.
-        val routeTax = flightLinkResultByAirline.get(airline.id) match {
+        val taxBeforeCredit = flightLinkResultByAirline.get(airline.id) match {
           case Some(consumptions) =>
             consumptions.map { details =>
               Taxes.taxOnProfit(details.profit, taxRateByCountry.getOrElse(details.link.from.countryCode, 0.0))
             }.sum
           case None => 0L
+        }
+
+        //The VAT on the aircraft, reclaimed against it - which is why a
+        //company that has just bought one pays no tax for a while. This week's
+        //payments on aircraft that are not paid for build up more of it, as
+        //VAT on a lease rental does.
+        val creditEarnedThisWeek = Taxes.reclaimableVat(airplanePayments)
+        val creditAvailable = taxCredits.getOrElse(airline.id, 0L) + creditEarnedThisWeek
+        val creditUsed = Math.min(creditAvailable, taxBeforeCredit)
+        val routeTax = taxBeforeCredit - creditUsed
+
+        if (creditUsed > 0 || creditEarnedThisWeek > 0) {
+          val remaining = creditAvailable - creditUsed
+          TaxCreditSource.set(airline.id, remaining)
+          //Worth saying once, when the last of it goes: from next week the tax
+          //is real again, and that is a surprise otherwise.
+          if (creditUsed > 0 && remaining == 0) {
+            LogSource.insertLogs(List(Log(airline,
+              f"The last of the VAT on your aircraft has been reclaimed - $$${creditUsed}%,d against this week's tax",
+              LogCategory.SELF_NOTE, LogSeverity.INFO, cycle)))
+          }
         }
 
         othersSummary.put(OtherIncomeItemType.ASSET_EXPENSE, -1 * (assetExpense + airplanePayments + routeTax + (if (cargo < 0) -cargo else 0L)))

@@ -1,7 +1,7 @@
 package controllers
 
 import scala.math.BigDecimal.int2bigDecimal
-import com.patson.data.{AirlineSource, AirplanePaymentPlanSource, AirplaneSource, CashFlowSource, CountrySource, CycleSource, LinkSource, LogSource}
+import com.patson.data.{AirlineSource, AirplanePaymentPlanSource, AirplaneSource, CashFlowSource, CountrySource, CycleSource, LinkSource, LogSource, TaxCreditSource}
 import com.patson.data.airplane.ModelSource
 import com.patson.model.airplane.{Model, _}
 import com.patson.model._
@@ -636,6 +636,16 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
                   AirlineSource.adjustAirlineBalance(airlineId, amount)
                   AirlineSource.saveCashFlowItem(AirlineCashFlowItem(airlineId, CashFlowType.BUY_AIRPLANE, amount))
 
+                  //The VAT on it, to be reclaimed against the tax on route
+                  //profit over the coming weeks - as a company in Europe does.
+                  val vat = Taxes.reclaimableVat(airplane.model.price.toLong * updateCount)
+                  if (vat > 0) {
+                    TaxCreditSource.add(airlineId, vat)
+                    LogSource.insertLogs(List(Log(request.user,
+                      f"$$${vat}%,d of VAT on that purchase can be reclaimed against tax",
+                      LogCategory.SELF_NOTE, LogSeverity.INFO, CycleSource.loadCycle())))
+                  }
+
                   if (originalModel.price != model.price) { //if discounted, count as capital gain
                     AirlineSource.saveTransaction(AirlineTransaction(airlineId = airline.id, transactionType = TransactionType.CAPITAL_GAIN, amount = (originalModel.price - model.price) * updateCount))
                   }
@@ -741,6 +751,9 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
                     if (deposit > 0) {
                       AirlineSource.adjustAirlineBalance(airlineId, -deposit)
                       AirlineSource.saveCashFlowItem(AirlineCashFlowItem(airlineId, CashFlowType.BUY_AIRPLANE, -deposit))
+                      //VAT on the deposit now; the weekly payments earn theirs
+                      //week by week, in AirlineSimulation
+                      TaxCreditSource.add(airlineId, Taxes.reclaimableVat(deposit))
                     }
 
                     Accepted(Json.obj("updateCount" -> financedAirplanes.size, "deposit" -> deposit, "weeklyPayment" -> weeklyPayment))

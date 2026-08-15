@@ -40,6 +40,12 @@ object Taxes {
     }
   }
 
+  /** The VAT on something bought, which can be reclaimed against tax owed. */
+  def reclaimableVat(amount : Long) : Long = {
+    if (GameConfig.vatPercent <= 0 || amount <= 0) 0L
+    else Math.round(amount * GameConfig.vatPercent / 100)
+  }
+
   /** What is owed on a route that earned this much in a country at this rate. */
   def taxOnProfit(profit : Long, ratePercent : Double) : Long = {
     if (profit <= 0 || ratePercent <= 0) 0L
