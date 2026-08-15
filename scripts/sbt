@@ -22,6 +22,22 @@ JVM_ARGS=(
   -Xms512M
   -Xmx"${AIRLINE_SBT_HEAP:-6G}"
   -XX:ReservedCodeCacheSize=256m
+  # A cycle allocates enormously and briefly: millions of small tuples for the
+  # passenger groups and their routes, nearly all of them dead by the end of
+  # the week. G1 is built for exactly that, and these three settings between
+  # them keep the heap from creeping up to its ceiling and staying there -
+  # which is what a JVM does by default, since collecting costs nothing until
+  # the ceiling is near. A heap held at its limit spends its time collecting
+  # rather than simulating, and the game looks stopped while the process is
+  # perfectly alive.
+  -XX:+UseG1GC
+  # Give memory back to the machine instead of sitting on it: this box also
+  # runs other things.
+  -XX:G1PeriodicGCInterval=300000
+  -XX:+G1PeriodicGCInvokesConcurrent
+  # Identical strings - airport codes, model names, country codes - are held
+  # once rather than once per object.
+  -XX:+UseStringDeduplication
 )
 
 if [[ -n "${AIRLINE_SBT_REPOS_FILE:-}" ]]; then
