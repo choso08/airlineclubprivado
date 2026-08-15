@@ -844,15 +844,23 @@ function drawFlightMarker(line, link) {
 	if (departures.length === 0) {
 		return
 	}
+	// Thin the timetable out until no more than the limit are in the air at
+	// once.
+	//
+	// Not by keeping the first few departures and dropping the rest, which was
+	// the first attempt and was wrong: each aircraft is only in the air for a
+	// couple of hours out of a week, so four departures out of a hundred and
+	// forty left the route empty almost all of the time. What has to be capped
+	// is how many are airborne together, and that is set by the gap between
+	// departures against how long a flight is visible for.
 	var markerLimit = maxFlightMarkers()
-	if (departures.length > markerLimit) {
-		//evenly, so what is drawn is still spread across the whole week
-		var sampled = []
-		var step = departures.length / markerLimit
-		for (var s = 0; s < markerLimit; s++) {
-			sampled.push(departures[Math.floor(s * step)])
+	if (departures.length > 1 && markerLimit > 0) {
+		var airborneWindow = (link.duration / flightSpeed()) * 2 //out and back
+		var spacing = MINUTES_PER_WEEK / departures.length
+		var keepEvery = Math.ceil((airborneWindow / markerLimit) / spacing)
+		if (keepEvery > 1) {
+			departures = departures.filter(function(departure, index) { return index % keepEvery === 0 })
 		}
-		departures = sampled
 	}
 
 	// One marker per departure. A route flying twice a week has two aircraft

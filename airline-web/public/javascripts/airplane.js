@@ -222,20 +222,34 @@ function promptBuyUsedAirplane(airplane) {
 }
 
 function promptBuyNewAirplane(modelId, fromPlanLink, explicitHomeAirportId) {
-    var buyAirplaneFunction = function(quantity, homeAirportId, selectedConfigurationId) {
-        var callback
+    // What to do afterwards. Coming from the route dialog, that means going
+    // back to it with the new aircraft already picked - otherwise the aircraft
+    // exists but the dialog you are standing in has not heard about it, and it
+    // takes leaving and coming back to see it.
+    var afterwards = function() {
         if (fromPlanLink) {
-            callback = function() {
+            return function() {
                 planLink($("#planLinkFromAirportId").val(), $("#planLinkToAirportId").val(), true)
                 $("#planLinkModelSelect").data('explicitId', modelId) //force the plan link to use this value after buying a plane
             }
         }
-        buyAirplane(modelId, quantity, homeAirportId, selectedConfigurationId, callback)
+        return undefined
     }
 
-    //the last argument turns on leasing and instalments: only a new aircraft
+    var buyAirplaneFunction = function(quantity, homeAirportId, selectedConfigurationId) {
+        buyAirplane(modelId, quantity, homeAirportId, selectedConfigurationId, afterwards())
+    }
+
+    //Leasing and instalments go back the same way buying does. They did not,
+    //which is why an aircraft taken from inside the route dialog was not there
+    //when the dialog came back.
+    var financeAirplaneFunction = function(quantity, homeAirportId, selectedConfigurationId, plan) {
+        financeAirplane(modelId, quantity, homeAirportId, selectedConfigurationId, plan, afterwards())
+    }
+
+    //the last arguments turn on leasing and instalments: only a new aircraft
     //can be had that way - a used one is somebody's trade-in
-    promptBuyAirplane(modelId, 100, loadedModelsById[modelId].price, loadedModelsById[modelId].constructionTime, explicitHomeAirportId, true, buyAirplaneFunction, modelId)
+    promptBuyAirplane(modelId, 100, loadedModelsById[modelId].price, loadedModelsById[modelId].constructionTime, explicitHomeAirportId, true, buyAirplaneFunction, modelId, financeAirplaneFunction)
 }
 
 /**
@@ -308,7 +322,7 @@ function validateAirplaneQuantity() {
 // Threshold for determining if additional confirmation is required before completing an airplane purchase.
 var SIGNIFICANT_AIRPLANE_PURCHASE_THRESHOLD = 0.5;
 
-function promptBuyAirplane(modelId, condition, price, deliveryTime, explicitHomeAirportId, multipleAble, buyAirplaneFunction, financeableModelId) {
+function promptBuyAirplane(modelId, condition, price, deliveryTime, explicitHomeAirportId, multipleAble, buyAirplaneFunction, financeableModelId, financeAirplaneFunction) {
     var model = loadedModelsById[modelId]
     if (financeableModelId) {
         loadFinancingTerms(financeableModelId)
@@ -439,20 +453,27 @@ function promptBuyAirplane(modelId, condition, price, deliveryTime, explicitHome
                 return { configurationId : configurationId, homeAirportId : $("#buyAirplaneModal .homeOptions").find(":selected").val() }
             }
 
-            $('#buyAirplaneModal .leaseButton').unbind("click").bind("click", function() {
+            var takeOnFinance = function(plan) {
                 var options = selectedOptions()
-                financeAirplane(modelId, quantity, options.homeAirportId, options.configurationId, 'LEASE')
+                if (financeAirplaneFunction) {
+                    financeAirplaneFunction(quantity, options.homeAirportId, options.configurationId, plan)
+                } else {
+                    financeAirplane(modelId, quantity, options.homeAirportId, options.configurationId, plan)
+                }
+            }
+
+            $('#buyAirplaneModal .leaseButton').unbind("click").bind("click", function() {
+                takeOnFinance('LEASE')
             })
 
             $('#buyAirplaneModal .instalmentsButton').unbind("click").bind("click", function() {
-                var options = selectedOptions()
                 var terms = $('#buyAirplaneModal').data("financing")
                 //Worth a warning: walking away from instalments loses everything
                 //paid so far, unlike a lease, which owes nothing once handed back.
                 var message = "$" + commaSeparateNumber(terms.instalments.weekly) + " a week for " + terms.instalments.weeks +
                     " weeks. Give it back before then and what you paid is gone. Go ahead?"
                 promptConfirm(message, function() {
-                    financeAirplane(modelId, quantity, options.homeAirportId, options.configurationId, 'INSTALMENTS')
+                    takeOnFinance('INSTALMENTS')
                 })
             })
 
@@ -513,7 +534,7 @@ function buyAirplane(modelId, quantity, homeAirportId, configurationId, callback
 	});
 }
 
-function financeAirplane(modelId, quantity, homeAirportId, configurationId, plan) {
+function financeAirplane(modelId, quantity, homeAirportId, configurationId, plan, callback) {
 	var airlineId = activeAirline.id
 	var url = "airlines/" + airlineId + "/airplane-financing?modelId=" + modelId + "&quantity=" + quantity +
 		"&homeAirportId=" + homeAirportId + "&configurationId=" + configurationId + "&plan=" + plan
@@ -525,7 +546,12 @@ function financeAirplane(modelId, quantity, homeAirportId, configurationId, plan
 	    dataType: 'json',
 	    success: function(response) {
 	    	refreshPanels(airlineId)
-	    	showAirplaneCanvas()
+	    	//exactly as buying does: back to wherever this was started from
+	    	if (callback) {
+	    		callback()
+	    	} else {
+	    		showAirplaneCanvas()
+	    	}
 	    	closeModal($('#buyAirplaneModal'))
 	    },
         error: function(jqXHR, textStatus, errorThrown) {
