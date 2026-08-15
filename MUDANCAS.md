@@ -172,6 +172,17 @@ serve para abater no lucro de outra. A taxa de cada país aparece no painel do
 aeroporto, por baixo da abertura do mercado — dá para ver antes de construir a
 base. Onde pões as bases passou a ser também uma questão de país.
 
+### IVA dos aviões, recuperado contra o imposto
+Uma empresa na Europa paga IVA num avião e depois recebe-o de volta, contra o
+que deve sobre os lucros — é por isso que uma empresa que acabou de investir
+passa uns tempos sem pagar imposto.
+
+Comprar um avião cria um crédito de **23% do preço**. Alugar ou pagar a
+prestações cria-o sobre a entrada e sobre **cada pagamento semanal**, tal como o
+IVA de uma renda de leasing. Todas as semanas o imposto das rotas é pago
+primeiro com esse crédito, e só o que sobrar é cobrado a sério. Fica um aviso no
+registo quando o crédito é criado e outro quando acaba.
+
 ### Carga
 O porão de um avião voava vazio todas as semanas. Agora há **contratos**:
 alguém oferece tantas toneladas por semana entre dois aeroportos, durante
