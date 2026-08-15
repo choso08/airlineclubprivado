@@ -94,7 +94,9 @@
         '<br/><span style="font-size: 0.85em; opacity: 0.75;">Paid so far ' + money(plan.paidSoFar) +
         ' over ' + plan.weeksPaid + ' week(s)' + (plan.onRoute ? ' &middot; flying' : ' &middot; idle') + '</span>' +
         '</div>' +
-        '<div class="cell" style="width: 42%;">' + money(plan.weeklyPayment) + ' a week</div>' +
+        '<div class="cell" style="width: 42%;">' + money(plan.weeklyPayment) + ' a week' +
+        (lease ? '' : '<br/><div class="button" onclick="settlePayment(' + plan.airplaneId + ', ' + plan.payOffNow + ')">Pay off ' + money(plan.payOffNow) + '</div>') +
+        '</div>' +
         '</div>';
     });
     html += '</div>';
@@ -122,5 +124,33 @@
 
   global.closePayments = function () {
     $('#paymentsPanel').hide();
+  };
+
+  /**
+    * Pay the rest of it now. What is charged is the money still borrowed, not
+    * the payments still to make - the interest in those has not been earned.
+    */
+  global.settlePayment = function (airplaneId, amount) {
+    var go = function () {
+      $.ajax({
+        type: 'PUT',
+        url: 'airlines/' + activeAirline.id + '/airplane-payments/' + airplaneId + '/settle',
+        dataType: 'json',
+        success: function () {
+          reload();
+          if (typeof refreshPanels === 'function') {
+            try { refreshPanels(activeAirline.id) } catch (e) { }
+          }
+        },
+        error: function (jqXHR) {
+          if (typeof showFloatMessage === 'function') {
+            showFloatMessage(jqXHR.responseText || 'That did not work');
+          }
+          reload();
+        }
+      });
+    };
+    var ask = 'Pay ' + money(amount) + ' now and the aircraft is yours. Go ahead?';
+    if (typeof promptConfirm === 'function') { promptConfirm(ask, go) } else { go() }
   };
 })(window);

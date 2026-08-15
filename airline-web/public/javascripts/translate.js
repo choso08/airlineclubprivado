@@ -1151,6 +1151,7 @@
       'Payments': 'Pagamentos',
       'Leaving every week': 'Sai todas as semanas',
       'Still to pay in total': 'Falta pagar ao todo',
+      'Pay off': 'Liquidar',
       'of which aircraft payments:': 'dos quais pagamentos de avioes:',
       'of which country tax:': 'dos quais imposto do pais:',
       'of which freight:': 'dos quais carga:',

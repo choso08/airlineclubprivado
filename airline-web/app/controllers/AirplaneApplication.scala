@@ -685,6 +685,9 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
           //A lease never ends, so there is nothing left to pay on it - only a
           //weekly cost for as long as it is kept
           "leftToPay" -> (if (plan.isLease) JsNull else JsNumber(BigDecimal(Math.max(0, plan.weeksRemaining) * plan.weeklyPayment))),
+          //What it would cost to be rid of it today: the money still borrowed,
+          //not the payments still to make
+          "payOffNow" -> (if (plan.isLease) JsNull else JsNumber(BigDecimal(payOffAmount(plan)))),
           "onRoute" -> !AirplaneSource.loadAirplaneLinkAssignmentsByAirplaneId(airplane.id).assignments.isEmpty)
       }
     }
@@ -713,6 +716,52 @@ class AirplaneApplication @Inject()(cc: ControllerComponents) extends AbstractCo
         case None => JsNull
       }),
       "plans" -> entries))
+  }
+
+  /** The outstanding principal on a set of instalments - see settlePaymentPlan. */
+  private def payOffAmount(plan : AirplanePaymentPlan) : Long = {
+    val weeks = Math.max(0, plan.weeksRemaining)
+    val weeklyRate = AirplanePaymentPlan.instalmentAnnualRatePercent / 100.0 / 52
+    if (weeks == 0) 0L
+    else if (weeklyRate <= 0) weeks.toLong * plan.weeklyPayment
+    else Math.round(plan.weeklyPayment * (1 - Math.pow(1 + weeklyRate, -weeks)) / weeklyRate)
+  }
+
+  /**
+    * Pay off a set of instalments now.
+    *
+    * What is owed is the money still borrowed, not the payments still to make:
+    * the interest in those payments has not been earned yet, and charging it
+    * for weeks that will not happen would make paying early a punishment. So
+    * the remaining payments are discounted back at the rate they were built
+    * with, which is what a bank calls the outstanding principal.
+    *
+    * A lease cannot be paid off - there is nothing to own at the end of one.
+    */
+  def settlePaymentPlan(airlineId : Int, airplaneId : Int) = AuthenticatedAirline(airlineId) { request =>
+    AirplanePaymentPlanSource.get(airplaneId) match {
+      case None => BadRequest("That aircraft is already paid for")
+      case Some(plan) if plan.airlineId != airlineId => Forbidden("Not your aircraft")
+      case Some(plan) if plan.isLease => BadRequest("A lease cannot be paid off - hand it back instead")
+      case Some(plan) =>
+        val owed = payOffAmount(plan)
+
+        if (owed > request.user.getBalance()) {
+          BadRequest(s"Paying it off costs $$$owed and you do not have it")
+        } else {
+          AirplanePaymentPlanSource.delete(List(airplaneId))
+          if (owed > 0) {
+            AirlineSource.adjustAirlineBalance(airlineId, -owed)
+            AirlineSource.saveCashFlowItem(AirlineCashFlowItem(airlineId, CashFlowType.BUY_AIRPLANE, -owed))
+            TaxCreditSource.add(airlineId, Taxes.reclaimableVat(owed))
+          }
+          val name = AirplaneSource.loadAirplaneById(airplaneId).map(_.model.name).getOrElse("aircraft")
+          LogSource.insertLogs(List(Log(request.user,
+            f"Paid off the $name for $$${owed}%,d - it is yours now",
+            LogCategory.SELF_NOTE, LogSeverity.INFO, CycleSource.loadCycle())))
+          Ok(Json.obj("ok" -> true, "paid" -> owed))
+        }
+    }
   }
 
   /**
