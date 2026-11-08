@@ -1,12 +1,23 @@
-> **This is a private fork of [patsonluk/airline](https://github.com/patsonluk/airline)**
-> (vendored at upstream commit `77647f1`), set up for self-hosting.
+> **A self-hosted fork of [patsonluk/airline](https://github.com/patsonluk/airline)**
+> (vendored at upstream commit `77647f1`), set up to run a private world for a
+> handful of friends instead of a public server for thousands.
 >
-> **→ Read [SELF-HOSTING.md](SELF-HOSTING.md) for setup.** The instructions
-> below are upstream's and are partly out of date: they describe the old
-> `activator` tooling, while this tree builds with sbt 1.9.9 / Scala 2.13 /
-> Play 3.0.5 and runs on JDK 21.
+> It fixes what stopped the game running on a current machine (MariaDB, JDK 21,
+> no Elasticsearch), reworks the prices and waiting times that only make sense
+> with thousands of players, and adds leasing and instalments, freight
+> contracts, country tax and VAT, regional subsidies, seasons, world events and
+> incidents — each one switchable, and none of them able to move demand or
+> costs by more than 30%.
 >
-> This fork also adds **Beja (BYJ/LPBJ)** as a playable airport.
+> - **[CHANGES.md](CHANGES.md)** — everything that differs from upstream, and why
+> - **[SELF-HOSTING.md](SELF-HOSTING.md)** — installing it and keeping it running
+> - **[WINDOWS-SETUP.md](WINDOWS-SETUP.md)** — WSL2, Tailscale, access on your own network
+> - **`game-settings.env`** — every adjustable rule, with what upstream used
+>
+> The setup instructions below are upstream's and are partly out of date: they
+> describe the old `activator` tooling, while this tree builds with sbt 1.9.9 /
+> Scala 2.13 / Play 3.0.5 and runs on JDK 21. This fork also adds
+> **Beja (BYJ/LPBJ)** as a playable airport.
 
 ---
 
