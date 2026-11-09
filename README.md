@@ -10,6 +10,7 @@
 > costs by more than 30%.
 >
 > - **[CHANGES.md](CHANGES.md)** — everything that differs from upstream, and why
+> - **[RELEASE-NOTES.md](RELEASE-NOTES.md)** — the short version, release by release
 > - **[SELF-HOSTING.md](SELF-HOSTING.md)** — installing it and keeping it running
 > - **[WINDOWS-SETUP.md](WINDOWS-SETUP.md)** — WSL2, Tailscale, access on your own network
 > - **`game-settings.env`** — every adjustable rule, with what upstream used
